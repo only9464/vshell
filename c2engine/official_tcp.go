@@ -74,6 +74,8 @@ type OfficialTCPServer struct {
 	AuthDelay time.Duration
 	// confDone 记录是否已有 conf 通道完成上报（后续连接不再延迟）。
 	confDone bool
+	// ConfMode 是 conf 阶段的应答顺序实验开关（"" / "session_first" / "delay"）。
+	ConfMode string
 	client   map[string]interface{}
 	results  chan string
 	closed   bool
@@ -324,12 +326,31 @@ func (c *officialConn) handle(plain []byte) error {
 				s.Logf("official-tcp: client registered: host=%v os=%v user=%v",
 					info["HostName"], info["OsName"], info["UserName"])
 			}
-			if err := c.send([]byte{0x01}); err != nil {
-				return err
-			}
-			// 会话 ID（16 字节文本）
-			if err := c.send([]byte(officialSessionID())); err != nil {
-				return err
+			// R30 实验开关：ConfMode 控制 conf 阶段的应答顺序/间隔
+			switch s.ConfMode {
+			case "session_first":
+				if err := c.send([]byte(officialSessionID())); err != nil {
+					return err
+				}
+				if err := c.send([]byte{0x01}); err != nil {
+					return err
+				}
+			case "delay":
+				if err := c.send([]byte{0x01}); err != nil {
+					return err
+				}
+				time.Sleep(50 * time.Millisecond)
+				if err := c.send([]byte(officialSessionID())); err != nil {
+					return err
+				}
+			default:
+				if err := c.send([]byte{0x01}); err != nil {
+					return err
+				}
+				// 会话 ID（16 字节文本）
+				if err := c.send([]byte(officialSessionID())); err != nil {
+					return err
+				}
 			}
 			c.state = "done"
 			s.mu.Lock()
@@ -455,6 +476,8 @@ func officialSessionID() string {
 			buf[i] = byte(time.Now().UnixNano() >> (uint(i%8) * 8))
 		}
 	}
+	// R30 结论：**必须**是 12 字节的 base64 文本（16 字符）。改成纯字母数字串时
+	// agent 连 conf 都不再上报，说明它会 base64 解码并校验字节数。
 	return base64.RawURLEncoding.EncodeToString(buf)
 }
 
