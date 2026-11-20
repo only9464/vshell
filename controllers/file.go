@@ -24,7 +24,11 @@
 package controllers
 
 import (
+	"encoding/base64"
+	"encoding/json"
+	"io"
 	"log"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -235,19 +239,61 @@ func (c *FileController) Wget() {
 }
 
 // Upload 上传文件到客户端（POST /file/upload）。参数：id / path / file / url。
+const maxUploadBytes = 32 << 20
+
+// Upload 上传文件到客户端（POST /file/upload，multipart/form-data）。
+//
+// 流程：浏览器 →（multipart）服务器 →（JSON 命令）agent 落盘。
+//
+//	表单字段：file（文件内容）、id（客户端）、path（目标目录）
+//	下发命令：{"type":"upload","path":"<dir>/<filename>","data":"<base64>"}
+//
+// 之前这里只发一条 `upload <path> <url>` 的文本命令，agent 没有对应解析器，
+// 等于"上传按钮点了什么都不发生"（docs/STATUS.md 里的壳实现）。
 func (c *FileController) Upload() {
 	id := c.clientID()
-	path := c.JsonGetStr("path")
-	url := c.JsonGetStr("url")
-	if id == 0 || path == "" {
+	dir := c.JsonGetStr("path")
+
+	f, hdr, err := c.GetFile("file")
+	if err != nil || hdr == nil {
+		c.JsonErr("file required")
+		return
+	}
+	defer f.Close()
+	if id == 0 {
 		c.JsonErr("id error")
 		return
 	}
-	// 前端先上传到服务器（VITE_GLOB_UPLOAD_URL=/api/file/upload），再下发到客户端
-	if !c.dispatchOrReport(id, "upload "+path+" "+url) {
+
+	data, err := io.ReadAll(io.LimitReader(f, maxUploadBytes+1))
+	if err != nil {
+		c.JsonErr("read upload: " + err.Error())
 		return
 	}
-	c.JsonOkMessage("ok")
+	if len(data) > maxUploadBytes {
+		c.JsonErr("file too large")
+		return
+	}
+
+	name := filepath.Base(hdr.Filename)
+	if name == "." || name == "/" || name == "" {
+		c.JsonErr("bad filename")
+		return
+	}
+	remote := name
+	if dir != "" {
+		remote = joinPath(dir, name)
+	}
+
+	payload, _ := json.Marshal(map[string]string{
+		"type": "upload",
+		"path": remote,
+		"data": base64.StdEncoding.EncodeToString(data),
+	})
+	if !c.dispatchOrReport(id, string(payload)) {
+		return
+	}
+	c.JsonOkVerb("upload")
 }
 
 // DownloadToServer 从客户端下载到服务器（POST /file/downloadtoserver）。

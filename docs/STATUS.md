@@ -35,7 +35,7 @@
 | 监听器 CRUD/启停 | ⚠️ 半 | `listener.go` 全实现，但 `Add` 丢弃 Host → 恒绑 443（`engine.go:201`） |
 | 隧道 CRUD/启停 | ⚠️ 半 | 只翻转 `RunStatus`，无转发实现（`engine.go:236-292`） |
 | 文件管理 11 个接口 | ⚠️ 半 | 全部走文本命令；`ls` 回包契约不匹配（`file.go:379-392`） |
-| 文件上传 | ❌ 壳 | 不读 multipart（`file.go:205-228`） |
+| 文件上传 | ✅ | 读 multipart → base64 → 下发 `{"type":"upload"}`；e2e 用 `cat` 校验落盘 |
 | 下载到浏览器/进度/OSS | ❌ 壳 | `file.go:282-306`、`file.go:474-484` |
 | 载荷下载 6 接口 | ⚠️ 半 + 方法错配 | 生成逻辑存在，但路由仅 POST（`router.go:85-90`） |
 | 插件列表/上传 | ✅ 真 | `runner.go:37-41,184-198` |
@@ -44,7 +44,7 @@
 | 屏幕 WS | ⚠️ 半 | 流中转真，quality 参数是编造值（`screen.go:95-105`） |
 | 截图 | ❌ 实质桩 | agent 不认 `screenshot quality=N` 文本命令 |
 | dashboard | ❌ 假数据 | `engine.go:296-340` 全硬编码 |
-| 设置 | ❌ 内存 map | `setting.go:32-40` 不落盘 |
+| 设置 | ✅ | 写回 `conf/setting.conf`（`utils.UpdateConfig`） |
 | 鉴权 | ⚠️ 弱 | `getMenuList/getPermCode` 只判非空；RBAC 零调用；无 Basic Auth |
 
 ### 2.2 引擎 / c2engine
@@ -145,6 +145,8 @@
 | 协议前缀 | 配置块里的 server 带 scheme（http/kcp/ws/https/dns），agent 据此选传输 | `poServerURL` |
 | 模板缺失 | 直接报 `open <path>: file does not exist`（原版文案），不再生成 MinimalPE 假外壳 | `PoBuild` |
 | 单测 | 配置块写入/读回/缺失/长度非法四个用例 | `c2engine/config_block_test.go` |
+| 文件上传 | multipart → base64 → agent 落盘；e2e 上传后用 `cat` 校验 | `controllers/file.go:Upload`、`e2e §7b` |
+| 设置持久化 | `/setting/edit` 写回 `conf/setting.conf`；`/setting/get` 读配置 | `controllers/setting.go` |
 
 **有意偏差**：配置块格式是复刻端自定义的（原版块与 argv key 未恢复，见 U-01/U-02），
 原版 agent 不认这个块；等逆向补齐后应改为原版格式。

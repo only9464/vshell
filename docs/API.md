@@ -116,7 +116,7 @@ JWT claims：`{token_type, user_id, role_id, username, exp, iat}`，有效期 24
 | POST | `/file/mkdir` | `id`,`path` | ✅ |
 | POST | `/file/modifytime` | `id`,`path`,`time` | ✅ |
 | POST | `/file/wget` | `id`,`url`,`path` | ✅ |
-| POST | `/file/upload` | multipart：`file` + `id` + `path` | ❌ **不读文件**（B5.2） |
+| POST | `/file/upload` | multipart：`file` + `id` + `path` | ✅ 落盘后以 JSON 命令下发给 agent（`{"type":"upload",...}`） |
 | POST | `/file/downloadtoserver` | `id`,`path`,`target` | ⚠️ 无进度 |
 | GET/POST | `/file/downloadtobrowser` | `id`,`target` | ❌ GET 未注册；无附件输出（B0.7/B5.3） |
 | POST | `/file/getdownloadper` | `id` | ⚠️ 恒 0 |
@@ -152,8 +152,8 @@ JWT claims：`{token_type, user_id, role_id, username, exp, iat}`，有效期 24
 | GET | `/runner/list` | — | ✅ 读 `./plugins` |
 | POST | `/runner/upload` | multipart `file` | ✅ 写 `./plugins` |
 | POST | `/runner/runplugin` | `id`,`pluginName`,`procArg` | ❌ 恒 `not aligned` |
-| GET | `/setting/get` | — | ⚠️ 只返回 `wx_key` |
-| POST | `/setting/edit` | `wx_key` 等 | ⚠️ 内存 map，不落盘 |
+| GET | `/setting/get` | — | ✅ 三键（dingding_access_token / dingding_key_word / wx_key） |
+| POST | `/setting/edit` | 三键任一 | ✅ 写回 `conf/setting.conf` |
 | GET | `/screenshot/get` | `id`,`quality` | ❌ agent 不认该命令 |
 | GET | `/dashboard/info` | — | ❌ 40+ 键硬编码 |
 

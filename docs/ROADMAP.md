@@ -120,10 +120,10 @@
 | ID | 任务 | 位置 | 状态 |
 |---|---|---|---|
 | B5.1 | dashboard 真实数据（39 键已对齐；cpu/disk/load/io/tcp/udp/icmp 已改真实采集） | `controllers/engine.go:engineGetAppInfo`、`controllers/metrics.go` | `[~]` |
-| B5.2 | `/api/file/upload` 真收 multipart 并下发 | `controllers/file.go:205-228` | `[ ]` |
+| B5.2 | `/api/file/upload` 真收 multipart 并下发（base64 + JSON 命令） | `controllers/file.go:Upload` | `[x]` |
 | B5.3 | `downloadtobrowser` 输出附件；`getdownloadper` 回填进度 | `controllers/file.go:282-306` | `[ ]` |
 | B5.4 | `runplugin` 真实调用（现在恒 "not aligned"） | `controllers/runner.go:112-126` | `[ ]` |
-| B5.5 | `/api/setting/*` 三键已对齐（仍为内存 map） | `controllers/setting.go` | `[~]` |
+| B5.5 | `/api/setting/*` 三键对齐并持久化到 `conf/setting.conf` | `controllers/setting.go` | `[x]` |
 | B5.6 | RBAC/权限码落地（`auth.go` 里已有，零调用） | `utils/auth.go:92-151` | `[ ]` |
 | B5.7 | Basic Auth 中间件（原版 401 头/文案已抓到，见 REFERENCE R-13） | `router/router.go` | `[ ]` |
 | B5.8 | OSS 上传真发请求（`UploadToOSS` 现在只打日志） | `c2engine/protocol.go:538` | `[ ]` |
@@ -166,6 +166,7 @@
 | 日期 | 轮次 | 变更 |
 |---|---|---|
 | 2026-11-20 | R1 | 建立文档体系（docs/）；**M0 完成**：端到端（HTTP+KCP）打通、面板字段/参数契约修正、e2e 脚本落地 |
+| 2026-11-20 | R5 | **M2 主线打通**（面板生成载荷零 ldflags 上线）；另外补完 B5.2 文件上传（multipart→agent）与 B5.5 设置持久化 |
 | 2026-11-20 | R5 | **M2 主线打通**：服务端写自描述配置块 + agent 自解析 → 面板生成的载荷无需 ldflags 直接上线（e2e 第 14 段）；模板缺失改为原版式错误，删除 MinimalPE 假外壳 |
 | 2026-11-20 | R4 | 逆向工具链落地：`.gopclntab` 恢复 38645 个函数符号、控制器 239 个方法地址表、定点反汇编脚本；发现并提取外层二进制内嵌的 40+ agent 模板（M2 素材）；更正"字面量加密"的误判 |
 | 2026-11-20 | R3 | **四条通道全部打通**（HTTP/KCP/WS/DNS）：agent 补 WebSocket 客户端与 DNS 客户端；DNS 信道对齐 8B agentID 布局、标签分块、TXT base32、结果分片；Basic Auth 与静态服务对齐原版 |
