@@ -120,3 +120,6 @@ agent_*
 .re/first37.bin
 .re/watch1.bin
 .re/wbuf.bin
+
+# --- Extracted agent templates (large, regenerate with scripts/extract-templates.py) ---
+template-extract/

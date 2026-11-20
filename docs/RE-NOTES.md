@@ -45,7 +45,7 @@
 |---|---|---|---|
 | E-23 | `.gopclntab` 完好，但头部魔数被 garble 改为非标准值 `0x840c4ea6`；按字段宽度解析可恢复 **38645 个函数**（11699 个有名字） | `scripts/go-symbols.py`，产物 `docs/inventory/vshell-4.9.3-linux-syms.txt` | 所有"按地址定位函数"的工作 |
 | E-24 | **类型名与方法名保留**（包名被随机化）：13 个业务控制器共 239 个方法可枚举到地址与字节数 | `docs/inventory/controllers.md` | 契约核对、定点反汇编 |
-| E-25 | 字符串字面量被 garble `-literals` 加密：`.rodata` 里是密文（例：`DelFile` 里长度 2 与 5 的两个字面量分别是 `idifinipki…`、`DSELFDScy…`） | `scripts/disas.py` 反汇编 + 直接读 `.rodata` | 静态读不到文案，需动态取 |
+| E-25 | ~~字符串被加密~~ **更正：字面量是明文，紧凑打包**。`DelFile` 的 2 字节参数名就是 `id`（`lea 0x1b27b94` + `mov ecx,2`，该地址起 16 字节是 `idifinipivjskbki…`，即 `id` 后面紧跟别的短串）。之前读 16 字节造成"密文"的误判。已知明文示例：`stageless/`（46 处）、`ebpf_`（12）、`runplugin`、`checkin` | 直接 `bytes.find` + 精确长度读取 | 静态可读；但 46 处多数落在外层二进制的内嵌模板里 |
 | E-26 | 控制器参数名可按"字面量长度"辅助判断（如 `DelFile` 先用长度 2 再长度 5 → `id`/`paths`），与我们的实现一致 | `ClientController.DelFile` @`0x1822d80` | 参数契约核对 |
 
 ### 常用地址（Linux 4.9.3）
@@ -61,6 +61,9 @@
 | `DownloadController.Dll` | `0x1829400` | 4544 |
 
 > 完整清单见 `docs/inventory/controllers.md`。
+
+| E-27 | 外层服务端二进制内**内嵌了 40+ 个 agent 模板**：PE（amd64/i386，console/gui）与 ELF（amd64/arm64），单个 5–12 MB。这正是面板 `stageless/<tp>_<arch>`、`dll/<tp>_<arch>` 要取的文件 | `scripts/extract-templates.py`（PE 头 + program header 推算镜像边界） | M2 载荷链路：可直接拿真模板做 patched 回归 |
+| E-28 | 内嵌模板本身也是 Go 二进制，`.gopclntab` 可用同一脚本恢复：实测 amd64 console 模板 **9482 个函数 / 3444 个有名字**（用户代码被 garble，方法名少量保留，如 `(*Config).Clone`） | `scripts/go-symbols.py` + 手工定位 pcHeader | 反向对照 agent 行为时可比外层更容易定位 |
 
 ## 推断（写明收敛方式，可被推翻）
 

@@ -50,6 +50,18 @@ scripts/disas.py /home/kali/go/bin/vshell ClientController.DelFile
 | 地址是 Linux 构建 | 与 `.re` 里的 Windows `FUN_01xxxxxx` 不同 | 跨版本只按"类型名/方法名/字符串"对应，不搬地址 |
 | 空名字函数 | 26946 个函数名字被抹掉 | 用"包含关系"归属（地址落在哪个命名函数区间内） |
 
+## 内嵌 agent 模板
+
+外层二进制里还内嵌了 40+ 个 agent 镜像（PE amd64/i386 + ELF amd64/arm64，单个 5–12 MB）：
+
+```bash
+scripts/extract-templates.py /home/kali/go/bin/vshell               # 列清单
+scripts/extract-templates.py /home/kali/go/bin/vshell --out /tmp/tpl # 提取
+```
+
+提取出来的 PE/ELF 就是面板"下载载荷"要发的模板（`stageless/<tp>_<arch>` / `dll/<tp>_<arch>`），
+可以直接当 M2 的回归素材；模板自身也能用 `scripts/go-symbols.py` 恢复符号。
+
 ## 下一步（动态）
 
 1. `gdb -p <pid>`（或起第二份实例）+ `break *0x1822d80`，从面板触发对应接口，
