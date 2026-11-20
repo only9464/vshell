@@ -38,6 +38,8 @@
 | `tools/list` | 13 个工具，含 JSON Schema |
 | `tools/call` | 返回 `content:[{type:"text",text:"<JSON>"}]`；失败置 `isError: true` |
 | `ping` | 空结果 |
+| `resources/list` | 6 份只读文档资源（STATUS/ROADMAP/PROTOCOL/API/MCP/REFERENCE） |
+| `resources/read` | 读 `vshell://docs/<file>`；白名单外或路径穿越一律拒绝 |
 
 错误码：`-32700` 解析错误、`-32601` 未知方法、`-32602` 参数错误；未知工具走
 `tools/call` 的 `isError` 通道（不影响协议层）。
@@ -81,8 +83,23 @@ MCP 只是"另一个客户端"，不新增业务逻辑；因此面板与 MCP 的
 若将来需要**脱离面板**运行（比如纯 CLI 模式），可以把 `mcp/tools.go` 的
 `apiJSON/apiRaw` 换成直接调用 `controllers` 的导出函数——接口不变。
 
+## 6.5 资源（resources）
+
+把仓库文档暴露成只读资源，AI 客户端可直接读取项目状态而不必让用户粘贴：
+
+| URI | 内容 |
+|---|---|
+| `vshell://docs/STATUS.md` | 各模块还原状态（附证据） |
+| `vshell://docs/ROADMAP.md` | 里程碑与任务清单 |
+| `vshell://docs/PROTOCOL.md` | 线协议 |
+| `vshell://docs/API.md` | 面板 API 契约 |
+| `vshell://docs/MCP.md` | 本文 |
+| `vshell://docs/REFERENCE.md` | 原版黑盒行为与工具链 |
+
+白名单固定（`mcp/resources.go`），`..` 之类路径穿越会被拒绝；docs 目录从 cwd 向上最多找 4 层（便于从 `web/`、`mcp/` 等子目录启动）。
+
 ## 7. 已验证
 
 - `mcp/server_test.go`：握手/工具清单/错误码/登录取 token/工具打 API 五组用例
-- `scripts/e2e.sh` §7l：真实服务 + 真实 agent 下，`initialize` 与
-  `tools/call list_clients` 返回包含 agent 的 Vkey
+- `scripts/e2e.sh` §7l：真实服务 + 真实 agent 下，`initialize`、
+  `tools/call list_clients`（含 agent Vkey）、`resources/list` + `resources/read` 全部通过

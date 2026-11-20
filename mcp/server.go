@@ -94,7 +94,8 @@ func (s *Server) handleLine(line []byte) {
 		s.writeResult(req.ID, map[string]interface{}{
 			"protocolVersion": ProtocolVersion,
 			"capabilities": map[string]interface{}{
-				"tools": map[string]interface{}{"listChanged": false},
+				"tools":     map[string]interface{}{"listChanged": false},
+				"resources": map[string]interface{}{"subscribe": false, "listChanged": false},
 			},
 			"serverInfo": map[string]interface{}{
 				"name":    "vshell",
@@ -105,6 +106,28 @@ func (s *Server) handleLine(line []byte) {
 		s.writeResult(req.ID, map[string]interface{}{})
 	case "tools/list":
 		s.writeResult(req.ID, map[string]interface{}{"tools": s.tools})
+	case "resources/list":
+		s.writeResult(req.ID, map[string]interface{}{"resources": docResources()})
+	case "resources/read":
+		var p struct {
+			URI string `json:"uri"`
+		}
+		if err := json.Unmarshal(req.Params, &p); err != nil {
+			s.writeError(req.ID, -32602, "invalid params: "+err.Error())
+			return
+		}
+		text, err := readDocResource(p.URI)
+		if err != nil {
+			s.writeError(req.ID, -32602, err.Error())
+			return
+		}
+		s.writeResult(req.ID, map[string]interface{}{
+			"contents": []map[string]interface{}{{
+				"uri":      p.URI,
+				"mimeType": "text/markdown",
+				"text":     text,
+			}},
+		})
 	case "tools/call":
 		var p struct {
 			Name      string                 `json:"name"`

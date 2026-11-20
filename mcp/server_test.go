@@ -165,3 +165,23 @@ func TestMCPToolCallsPanelAPI(t *testing.T) {
 		t.Fatalf("dashboard output = %q", text)
 	}
 }
+
+// MCP 资源：列表与读取（白名单外的 uri 必须拒绝）。
+func TestMCPResources(t *testing.T) {
+	resps := runMCP(t,
+		`{"jsonrpc":"2.0","id":1,"method":"resources/list"}`,
+		`{"jsonrpc":"2.0","id":2,"method":"resources/read","params":{"uri":"vshell://docs/STATUS.md"}}`,
+		`{"jsonrpc":"2.0","id":3,"method":"resources/read","params":{"uri":"vshell://docs/../../etc/passwd"}}`,
+	)
+	list, _ := resps[0]["result"].(map[string]interface{})["resources"].([]interface{})
+	if len(list) < 4 {
+		t.Fatalf("resources/list returned %d items", len(list))
+	}
+	read, _ := resps[1]["result"].(map[string]interface{})["contents"].([]interface{})
+	if len(read) != 1 || !strings.Contains(read[0].(map[string]interface{})["text"].(string), "还原状态") {
+		t.Fatalf("resources/read failed: %v", resps[1])
+	}
+	if e, _ := resps[2]["error"].(map[string]interface{}); e == nil {
+		t.Fatalf("path traversal must be rejected: %v", resps[2])
+	}
+}
