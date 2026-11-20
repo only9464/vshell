@@ -160,3 +160,38 @@ func TestPoBuildWritesOfficialConfigRegion(t *testing.T) {
 		t.Fatalf("server = %q", cfg.Server)
 	}
 }
+
+// L/D/H 与监听器配置的映射：d=DisconnectTimeout、h=PingInterval、
+// l=是否为 listen 独立载荷（R13 第二组取证）。
+func TestPoBuildConfigTimingsFromListener(t *testing.T) {
+	dir := t.TempDir()
+	tpl := append(bytes.Repeat([]byte{0x7f}, 256), bytes.Repeat([]byte{0x19}, AgentConfigRegionSize)...)
+	if err := os.MkdirAll(dir+"/stageless", 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(dir+"/stageless/tcp_linux_amd64", tpl, 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	prev, _ := os.Getwd()
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(prev) })
+
+	l := &Listener{ID: 2, Mode: "tcp", ListenAddr: "1.2.3.4:4444", VerifyKey: "vk2",
+		PingInterval: 7, DisconnectTimeout: 99}
+	p := PoBuild(l, PoConfig{Mode: "stageless", Arch: "linux_amd64"})
+	if p.Err != nil {
+		t.Fatalf("PoBuild: %v", p.Err)
+	}
+	cfg, err := DecodeAgentConfigRegion(p.Data[256:256+AgentConfigRegionSize], "vk2")
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if cfg.D != 99 || cfg.H != 7 {
+		t.Fatalf("d/h = %d/%d, want 99/7", cfg.D, cfg.H)
+	}
+	if cfg.L {
+		t.Fatalf("stageless payload must have l=false")
+	}
+}

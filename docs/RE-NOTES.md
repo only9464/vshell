@@ -145,6 +145,16 @@
 另有 `stageless/ebpf_<tp>_linux_<arch>`。Windows 产物带 `.exe`，但服务器拼出的
 相对路径不带后缀（因此 `arch=windows_amd64` 会返回 `open ...: file does not exist`）。
 
+字段语义（第二组取证：另建 listener `PingInterval=7 / DisconnectTimeout=99`，
+下载后解出 `"d":99,"h":7,"l":false`）：
+
+| 字段 | 含义 |
+|---|---|
+| `l` | listen 独立载荷为 `true`，stageless 为 `false` |
+| `d` | DisconnectTimeout（秒） |
+| `h` | PingInterval（秒） |
+| `e` | 仍待定（两例均为 `false`） |
+
 验证产物：`testdata/original/payload/config_region_tcp_linux_amd64.bin`
 （20480 字节配置区）+ `config_region_meta.json`（请求参数与明文），
 `c2engine/agentconfig_test.go` 用它做**黄金向量**：复刻端编码器输出与官方逐字节一致。

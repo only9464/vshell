@@ -47,8 +47,12 @@ type AgentWireConfig struct {
 	Vkey   string `json:"vkey"`
 	Proxy  string `json:"proxy"`
 	Salt   string `json:"salt"`
-	// L/E/D/H 语义待定（R13 取证时它们恒为 true/false/30/10）：
-	// 推测 L=允许自定义（listen 模式）, E=?, D=断连超时或重连间隔, H=心跳上限。
+	// 以下四个字段语义已由 R13 的第二轮取证确认（对照组：listener 2，
+	// PingInterval=7、DisconnectTimeout=99 → 产物里 d=99、h=7）：
+	//   L = listen 模式（/download/listen 独立载荷为 true，stageless 为 false）
+	//   D = DisconnectTimeout（断连超时，秒）
+	//   H = PingInterval（心跳间隔，秒）
+	//   E = 仍待定（两次取证均为 false）
 	L bool `json:"l"`
 	E bool `json:"e"`
 	D int  `json:"d"`

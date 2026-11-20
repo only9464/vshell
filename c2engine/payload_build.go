@@ -209,10 +209,10 @@ func PoBuild(l *Listener, cfg PoConfig) *PoPayload {
 		Vkey:   verifier,
 		Proxy:  cfg.Proxy,
 		Salt:   salt,
-		L:      true,
+		L:      cfg.Mode == "listen",
 		E:      false,
-		D:      30,
-		H:      10,
+		D:      poDisconnectTimeout(l),
+		H:      poPingInterval(l),
 	}
 	if off, perr := PatchAgentConfig(res.Data, wireCfg); perr != nil {
 		Logf("payload: %s has no official config region (%v); official-format config skipped", path, perr)
@@ -504,4 +504,20 @@ func itoa(v int) string {
 		buf[i] = '-'
 	}
 	return string(buf[i:])
+}
+
+// poDisconnectTimeout / poPingInterval 取监听器上的真实配置（缺省 30 / 10，
+// 与官方默认一致；R13 取证：d=DisconnectTimeout、h=PingInterval）。
+func poDisconnectTimeout(l *Listener) int {
+	if l != nil && l.DisconnectTimeout > 0 {
+		return l.DisconnectTimeout
+	}
+	return 30
+}
+
+func poPingInterval(l *Listener) int {
+	if l != nil && l.PingInterval > 0 {
+		return l.PingInterval
+	}
+	return 10
 }
