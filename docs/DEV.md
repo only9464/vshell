@@ -79,9 +79,11 @@ go vet ./...
 （历史上 7 处断点就是这么漏掉的）。跨模块的底线由 `scripts/e2e.sh` 兜住，CI 里跑：
 
 ```bash
-./scripts/e2e.sh       # 约 25 秒：HTTP + KCP 双通道 + 面板契约 + 下载 + 批量删除
+./scripts/e2e.sh       # 约 60 秒：HTTP/KCP/WebSocket/DNS 四条通道 + 面板契约 + 下载 + 批量删除
 ./scripts/e2e.sh -v    # 额外打印命令回显
 ```
+
+四条通道各跑一条 `id` 并校验回显；任一条断掉都会整体失败并打印两端的日志尾巴。
 
 新增能力时，先在 `scripts/e2e.sh` 里加断言，再写实现。
 
@@ -99,7 +101,9 @@ go vet ./...
 7. 断言 /client/list 的字段契约（Id/OsName/.../IsConnect）
 8. GET /api/download/stage 断言 200 + 非空 body
 9. 批量删除（JSON 数组）断言生效
-10. 再来一遍 KCP 通道（Mode=kcp，agent ServerAddr=kcp://…）
+10. KCP 通道（Mode=kcp，agent ServerAddr=kcp://…）
+11. WebSocket 通道（Mode=websocket，agent ServerAddr=ws://…）
+12. DNS 通道（Mode=dns + DNSDomain，agent ServerAddr=dns://…、DNSServer=127.0.0.1:<port>）
 ```
 
 ---
