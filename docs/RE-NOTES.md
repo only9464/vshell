@@ -223,4 +223,39 @@
   1. 可运行的官方 agent（见 E-31）以获得真实线格式，或
   2. IDA 反编译 `0x1820680` 与其下层函数。
 
+### E-33 官方 agent 线格式实证（R19，重大）
+
+**背景**：R15 之所以跑不起官方 agent，是因为误用了 `listen` 模式载荷——它是**绑定监听**
+型（`l:true`），会 `bind()` 配置里的地址，端口被占就直接 `exit_group(0)` 静默退出
+（`strace` 里 `bind(...) = -1 EADDRINUSE` → 立刻退出）。改用 **stageless**（`l:false`）
+后，agent 会主动 `connect()` 回来。
+
+**方法**：
+1. 官方实例 `/listener/add` 支持 `ListenAddr` 与 **`ConnectAddr`** 两个键
+   （`Host`/`Port` 被忽略，与早期结论一致）；
+2. `stageless` 载荷的 `server` 取自监听器的 **ConnectAddr**；
+3. 用一个 Python 假服务器监听该地址，抓 agent 主动送来的帧并解密。
+
+**抓到的线格式**：
+
+```
+[u32 LE 长度][12B nonce][AES-256-GCM 密文][16B tag]
+key = hex(md5(salt)) 的 32 字节 ASCII（salt 为空 → d41d8cd98f00b204e9800998ecf8427e）
+```
+
+**首个记录明文**：`05 00 00 00 34 2e 39 2e 33` = `[u32 LE 5]["4.9.3"]`（agent 版本）。
+一条连接上会连发两条相同记录，之后等待服务器回应。
+
+**意义**：复刻端的 `FrameEncrypt`/`FrameDecrypt`（`c2engine/protocol.go`）与官方
+**完全一致**（长度前缀、nonce 位置、GCM tag、密钥派生）。已固化为黄金向量测试：
+`c2engine/wire_golden_test.go` + `testdata/original/wire/tcp_version_handshake.json`
+（4 条真实抓包样本，逐条用复刻端代码解密并比对明文）。
+
+**新增确认的接口约定**：
+
+| 键 | 效果 |
+|---|---|
+| `ListenAddr` | `/listener/add` 会**真的绑定**该地址（`ss` 可见） |
+| `ConnectAddr` | stageless 载荷配置区里的 `server` 取这个值 |
+
 

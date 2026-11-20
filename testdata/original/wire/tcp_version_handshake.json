@@ -1,0 +1,27 @@
+{
+  "source": "原版 vshell 4.9.3 agent（/download/stageless 产物，type=tcp，vkey=VK-I3，salt 为空）",
+  "capture_method": "python 假服务器监听 127.0.0.1:18602，agent 主动连接后抓包（R19）",
+  "wire_layout": "[u32 LE 长度][12B nonce][AES-256-GCM 密文][16B tag]",
+  "key_derivation": "key = hex(md5(salt))，salt 为空 → d41d8cd98f00b204e9800998ecf8427e 的 32 字节 ASCII",
+  "notes": "与复刻端 c2engine.FrameEncrypt/FrameDecrypt 完全一致；首记录明文 = [u32 LE 5]['4.9.3']",
+  "samples": [
+    {
+      "name": "version_handshake_1",
+      "hex": "25000000312ad39df4b6411f01c21fa4ae7a24450dabe8534b9d38ac2b13f65ce349a4266ea4967a7c"
+    },
+    {
+      "name": "version_handshake_2",
+      "hex": "25000000244bd5fca4e66b57b82314955ba40ab886b5d3f3178a43c5828af7a2138942866118176cc3"
+    },
+    {
+      "name": "version_handshake_3",
+      "hex": "250000001884bd8e8ccf5d678ca1f8b18d225c530d9203c1f7e95fd676db32035da21a33df47169c52"
+    },
+    {
+      "name": "version_handshake_4",
+      "hex": "250000000565d4390842cec96ab5343dfee2b31c0c05ceca14fe35b8b1b2884249f9755edc9dddaac9"
+    }
+  ],
+  "decrypted_plaintext_hex": "05000000342e392e33",
+  "decrypted_plaintext_ascii": "\\x05\\x00\\x00\\x004.9.3"
+}
