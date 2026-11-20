@@ -157,7 +157,7 @@ func (a *Application) StartListener(config *Listener) error {
 		if _, exists := a.dnsListeners[config.ID]; exists {
 			return nil
 		}
-		dl := NewDNSListener(config.ID, config.DNSDomain, config.PublicDNS, config.VerifyKey, config.MaxDNSsize)
+		dl := NewDNSListener(config.ID, config.DNSDomain, config.PublicDNS, config.VerifyKey, config.MaxDNSsize, config.ListenAddr)
 		if err := dl.Start(); err != nil {
 			return err
 		}

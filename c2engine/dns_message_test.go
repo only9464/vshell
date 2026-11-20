@@ -30,7 +30,7 @@ func buildDNSQuery(t *testing.T, name string) []byte {
 // TestDNSHandleQueryDecodesSubdomainData verifies the DNS C2 channel decodes
 // agent data encoded in subdomains of the C2 domain.
 func TestDNSHandleQueryDecodesSubdomainData(t *testing.T) {
-	dl := NewDNSListener(20, "ns.test.local", "8.8.8.8", "dns-vkey", 512)
+	dl := NewDNSListener(20, "ns.test.local", "8.8.8.8", "dns-vkey", 512, "")
 
 	// Encode a short checkin message the way the agent would: hex(JSON) . domain
 	// (must fit one DNS label: <= 63 chars)
@@ -69,7 +69,7 @@ func TestDNSHandleQueryDecodesSubdomainData(t *testing.T) {
 // TestDNSHandleQueryIgnoresForeignDomains verifies queries NOT for the C2
 // domain are ignored (no response).
 func TestDNSHandleQueryIgnoresForeignDomains(t *testing.T) {
-	dl := NewDNSListener(21, "ns.test.local", "8.8.8.8", "dns-vkey", 512)
+	dl := NewDNSListener(21, "ns.test.local", "8.8.8.8", "dns-vkey", 512, "")
 
 	// A foreign-domain query must NOT match the C2 suffix check.
 	packet := buildDNSQuery(t, "www.example.com.")
@@ -86,7 +86,7 @@ func TestDNSHandleQueryIgnoresForeignDomains(t *testing.T) {
 // TestDNSSubdomainFormatMatchesAgentEncoding verifies the full subdomain
 // format: <encoded_data>.<agent_id>.<domain> with suffix matching.
 func TestDNSSubdomainFormatMatchesAgentEncoding(t *testing.T) {
-	dl := NewDNSListener(22, "ns.test.local", "8.8.8.8", "dns-vkey", 512)
+	dl := NewDNSListener(22, "ns.test.local", "8.8.8.8", "dns-vkey", 512, "")
 
 	msg := `{"type":"result","id":1,"result":"ok"}`
 	encoded := dl.encodeData(msg)

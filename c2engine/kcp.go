@@ -1117,7 +1117,7 @@ func StartListenerByMode(config *Listener) error {
 		return km.StartListener(config)
 
 	case ListenerModeDNS:
-		dl := NewDNSListener(config.ID, config.DNSDomain, config.PublicDNS, config.VerifyKey, config.MaxDNSsize)
+		dl := NewDNSListener(config.ID, config.DNSDomain, config.PublicDNS, config.VerifyKey, config.MaxDNSsize, config.ListenAddr)
 		return dl.Start()
 
 	case ListenerModeCDNWebSocket:

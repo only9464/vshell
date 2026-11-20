@@ -270,6 +270,15 @@ func engineAddListener(l EngineListener) error {
 	if l.DisconnectTimeout > 0 {
 		updates["disconnect_timeout"] = l.DisconnectTimeout
 	}
+	if l.DNSDomain != "" {
+		updates["dns_domain"] = l.DNSDomain
+	}
+	if l.PublicDNS != "" {
+		updates["public_dns"] = l.PublicDNS
+	}
+	if l.MaxDNSsize > 0 {
+		updates["max_dns_size"] = l.MaxDNSsize
+	}
 	if _, err := c2engine.GetEngine().UpdateListener(listener.ID, updates); err != nil {
 		return err
 	}
@@ -307,6 +316,15 @@ func engineEditListener(l EngineListener) error {
 	}
 	if l.DisconnectTimeout > 0 {
 		updates["disconnect_timeout"] = l.DisconnectTimeout
+	}
+	if l.DNSDomain != "" {
+		updates["dns_domain"] = l.DNSDomain
+	}
+	if l.PublicDNS != "" {
+		updates["public_dns"] = l.PublicDNS
+	}
+	if l.MaxDNSsize > 0 {
+		updates["max_dns_size"] = l.MaxDNSsize
 	}
 	updates["vip"] = l.IsVIP
 	_, err := c2engine.GetEngine().UpdateListener(l.ID, updates)

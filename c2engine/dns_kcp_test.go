@@ -36,7 +36,7 @@ func TestDNSEncodeDecodeRoundTrip(t *testing.T) {
 // TestDNSListenerConfig verifies DNS listener setup fields match the
 // original listener config (DNSDomain/PublicDNS/MaxDNSsize).
 func TestDNSListenerConfig(t *testing.T) {
-	dl := NewDNSListener(10, "ns.example.com", "8.8.8.8", "dns-key", 512)
+	dl := NewDNSListener(10, "ns.example.com", "8.8.8.8", "dns-key", 512, "")
 	if dl == nil {
 		t.Fatal("NewDNSListener returned nil")
 	}

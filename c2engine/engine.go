@@ -584,6 +584,15 @@ func (e *Engine) UpdateListener(id int64, updates map[string]interface{}) (*List
 	if v, ok := updates["vip"].(bool); ok {
 		l.IsVIP = v
 	}
+	if v, ok := updates["dns_domain"].(string); ok {
+		l.DNSDomain = v
+	}
+	if v, ok := updates["public_dns"].(string); ok {
+		l.PublicDNS = v
+	}
+	if v, ok := updates["max_dns_size"].(int); ok && v > 0 {
+		l.MaxDNSsize = v
+	}
 	if v, ok := updates["ping_interval"].(int); ok && v > 0 {
 		l.PingInterval = v
 	}

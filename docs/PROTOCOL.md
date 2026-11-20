@@ -95,17 +95,29 @@ GET  {listener}/health                                → 健康检查
 > R3 之前 agent 侧没有 WS 客户端（互通矩阵里是 ❌）；现在两端都有，e2e 覆盖。
 > 注意：这是**复刻端自造**的 JSON 帧协议，原版的 WS 与 KCP 共用"链路帧 + 记录"两层，M1 之后收敛。
 
-### 2.4 DNS（`c2engine/dns.go`）
+### 2.4 DNS（`c2engine/dns.go` + `agent/dns_transport.go`）
+
+对称实现（R3 打通，e2e 覆盖）：
 
 ```
-查询名 = <base32(消息)>.…[.<agentID>].<Domain>
-消息   = "checkin:host|user|os" | "task" | "result:<taskID>:<data>"
-响应   = TXT 记录，内容 "ok:<clientID>:<interval>" / "task:<id>:<base32(cmd)>" / "noop" / "ack"
+查询名 = <labels>.<zone>            labels = base32([8B agentID 大端][消息]) 按 60 字符切块
+响应   = TXT 记录（服务端把响应 base32 后按 60 字符切多条 TXT，agent 拼回再解码）
 ```
 
-- base32：Go 标准字母表、**无填充**（黑盒实锤：原版报错 `base32 decoding: illegal base32 data`）。
-- **当前缺陷**：agent 侧用 `rgst:`/`main:`/`conf:` 前缀且不读 TXT 响应；服务端绑死 `:53`（失败退 5353），
-  忽略监听器地址。两端等于各写一半。
+| 消息 | 方向 | 载荷 | 响应 |
+|---|---|---|---|
+| `checkin:<host>\|<user>\|<os>` | agent→server | — | `ok:<clientID>:<interval>` |
+| `task` | agent→server | — | `task:<taskID>:<base32(cmd)>` 或 `noop` |
+| `result:<taskID>:<seq>/<total>:<b64>` | agent→server | 60 字节原始数据/片 | `ack` |
+| `result:<taskID>:<data>` | 兼容 | 短结果整体 | `ack` |
+
+要点（**踩过的坑，别再踩**）：
+1. 域名总长 ≤255、单标签 ≤63 —— 长消息必须切块；结果上传按 60 字节/片，
+   片大小是量出来的（96 字节时整名 268 字节，服务端根本收不到查询）。
+2. 问题名是 FQDN（带尾点），域名后缀比较前必须 `TrimSuffix(".")`。
+3. 服务端 TXT 响应是 base32 编码的，agent 必须先解码。
+4. `task` 这种无冒号命令以前被解析成 `"unknown"`，导致 DNS 通道永远取不到任务。
+5. 服务端 task 分支改用 `GetAndMarkPendingTasks`（原子领取），剩余任务放回 pending。
 
 ## 3. 20 字节/24 字节记录（原版任务与结果载体）
 
@@ -171,7 +183,7 @@ type: 0 结束 / 1 会话数据1 / 2 会话数据2 / 3 会话命令1 / 4 会话�
 |---|---|---|---|---|
 | HTTP/HTTPS | ✅ | ✅ | ✅ | R1 打通（服务端容错解码 + 盐派生） |
 | KCP | ✅ | ✅ | ✅ | R1 打通（握手键名容错 + 主信道帧加解密） |
-| DNS | ⚠️ 单任务、无 ack | ⚠️ 不读响应 | ❌ | M1 处理 |
+| DNS | ✅ | ✅ | ✅ | R3 打通（分片结果上传 + TXT base32 解码） |
 | WebSocket | ✅ | ✅ | ✅ | R3 打通（自造 JSON 帧；待 M1 收敛为记录层） |
 | 裸 TCP | ❌ 无监听器 | ✅ | ❌ | M1 处理（二选一） |
 
