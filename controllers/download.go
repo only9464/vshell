@@ -21,9 +21,11 @@
 //	ListenDll:  id / host / tp / arch / vkey / salt / upx
 //
 // 每个 handler 的响应都由 FUN_00c2a460 组装，字段顺序为
-//   "binary"（DAT_01bd9b33）+ 模板字节（或空）+
-//   "Expires"（DAT_01bdac68）+ DAT_01dbd4e60 的 span{0,0x330} +
-//   FUN_01913320 字符串 + "Pragma"（DAT_01bd97d9）+ "public"（DAT_01bda44b）
+//
+//	"binary"（DAT_01bd9b33）+ 模板字节（或空）+
+//	"Expires"（DAT_01bdac68）+ DAT_01dbd4e60 的 span{0,0x330} +
+//	FUN_01913320 字符串 + "Pragma"（DAT_01bd97d9）+ "public"（DAT_01bda44b）
+//
 // 即原版返回的是一个"可下载文件"（binary + 头字段），不是 JSON。
 package controllers
 

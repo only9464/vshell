@@ -64,19 +64,19 @@ type EngineClient struct {
 // EngineListener 引擎中的监听器记录（/listener/list 反编译 JSON 键：
 // Id / Mode / Status / OssUrl / Remark / Vkey / Port 等）。
 type EngineListener struct {
-	ID       int64
-	Mode     string // http/https/dns/kcp/websocket
-	Status   bool
-	OssUrl   string
-	Remark   string
-	Vkey     string
-	Port     int
-	Host     string
-	Proxy    string
-	Salt     string
-	Type     int
-	IsVIP    bool
-	Expires  int64
+	ID      int64
+	Mode    string // http/https/dns/kcp/websocket
+	Status  bool
+	OssUrl  string
+	Remark  string
+	Vkey    string
+	Port    int
+	Host    string
+	Proxy   string
+	Salt    string
+	Type    int
+	IsVIP   bool
+	Expires int64
 
 	// 面板表单可直接指定监听/回连地址与心跳参数（原版 Add 的入参超集）。
 	ListenAddr        string

@@ -28,14 +28,13 @@ import (
 	"encoding/json"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
-
 )
 
 // FileController 管理客户端文件系统。
@@ -46,7 +45,6 @@ type FileController struct {
 func (c *FileController) clientID() int64 {
 	return int64(c.JsonGetInt("id"))
 }
-
 
 // dispatchOrReport 下发一条命令；客户端不可用时写 "connection error" 并返回 false。
 //
@@ -717,4 +715,3 @@ func engineDownloadFileTracked(clientID int64, remotePath string, taskID int64) 
 	}
 	return out, ""
 }
-
