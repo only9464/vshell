@@ -11,6 +11,9 @@
 
 ### A-1 任务记录层（opcode + argv / 结果帧）
 
+- **进展（R27）**：新增**官方 agent 模拟器**（`vshell-server official-agent-sim`），
+  证明服务端的认证→通道注册→任务→结果全链路正确（e2e §7p 已覆盖）。
+  与真官方 agent 的差异只剩"它为什么不发 main"一处。
 - **进展（R26）**：带时间戳抓包发现真实服务端回 `sucs` 有 ~300ms 延迟（复刻端已对齐），
   会话 ID 是 12 字节随机数的 base64；但复刻端发完会话 ID 后 agent 立即 EOF 关闭 conf
   连接（真实服务端不会），因此仍拿不到 `main`。见 RE-NOTES E-40。

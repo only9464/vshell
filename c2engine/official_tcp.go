@@ -70,11 +70,14 @@ type OfficialTCPServer struct {
 	// AuthExtras 为 true 时在认证通过后追加 ack + 会话 ID（实验开关）。
 	AuthExtras bool
 	// AuthDelay 是校验 md5(vkey) 之后、回 "sucs" 之前的等待（实测真实服务端约 300ms）。
+	// 该延迟只用于第一条（conf）连接。
 	AuthDelay time.Duration
-	client    map[string]interface{}
-	results   chan string
-	closed    bool
-	Logf      func(format string, args ...interface{})
+	// confDone 记录是否已有 conf 通道完成上报（后续连接不再延迟）。
+	confDone bool
+	client   map[string]interface{}
+	results  chan string
+	closed   bool
+	Logf     func(format string, args ...interface{})
 }
 
 // officialConn 是一条连接的状态机。
@@ -259,9 +262,13 @@ func (c *officialConn) handle(plain []byte) error {
 		// 期望 md5(vkey)
 		want := OfficialAuthResponse(s.vkey)
 		if strings.EqualFold(string(plain), want) {
-			// 实测（R26，带时间戳的抓包）：真实服务端在收到 md5(vkey) 后约
-			// 270–370ms 才回 "sucs"。立即回或只等 20ms 都会让 agent 不认。
-			if d := s.AuthDelay; d > 0 {
+			// 实测（R26）：真实服务端在收到 md5(vkey) 后约 270–370ms 才回 "sucs"。
+			// R27 补充：延迟只对**第一条（conf）连接**需要；conf 完成后的后续连接
+			// 立刻回 sucs，否则 agent 不会声明 main/chan。
+			s.mu.Lock()
+			confDone := s.confDone
+			s.mu.Unlock()
+			if d := s.AuthDelay; d > 0 && !confDone {
 				time.Sleep(d)
 			}
 			if err := c.send([]byte(officialAuthOK)); err != nil {
@@ -326,6 +333,9 @@ func (c *officialConn) handle(plain []byte) error {
 				return err
 			}
 			c.state = "done"
+			s.mu.Lock()
+			s.confDone = true
+			s.mu.Unlock()
 			return nil
 		}
 		return nil

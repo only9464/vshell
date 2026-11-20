@@ -26,6 +26,7 @@ AGENT_KCP_PID=""
 AGENT_WS_PID=""
 AGENT_DNS_PID=""
 AGENT_PAY_PID=""
+OTCP_PID=""
 TGT_PID=""
 
 log()  { printf '\033[36m[e2e]\033[0m %s\n' "$*"; }
@@ -48,6 +49,7 @@ cleanup() {
   [[ -n "$AGENT_DNS_PID" ]] && kill "$AGENT_DNS_PID" 2>/dev/null
   [[ -n "$AGENT_PAY_PID" ]] && kill "$AGENT_PAY_PID" 2>/dev/null
   [[ -n "$TGT_PID"      ]] && kill "$TGT_PID"      2>/dev/null
+  [[ -n "$OTCP_PID"     ]] && kill "$OTCP_PID"     2>/dev/null
   [[ -n "$SERVER_PID"    ]] && kill "$SERVER_PID"    2>/dev/null
   rm -rf "$TMP"
 }
@@ -419,6 +421,20 @@ api POST /install/install "{\"id\":$CLIENT_ID,\"name\":\"e2e-persist\"}" | grep 
 api POST /install/remove "{\"id\":$CLIENT_ID,\"name\":\"e2e-persist\"}" | grep -q '"code":0' \
   || fail "remove failed"
 log "install/remove ok (persist/cleanup 命令已下发)"
+
+# ---------------------------------------------------------------- 7p. 官方协议服务端 + agent 模拟器（R27）
+log "check official-tcp server + official agent simulator"
+OTCP_PORT=$((25000 + RANDOM % 500))
+"$TMP/vshell-server" official-tcp -listen "127.0.0.1:$OTCP_PORT" -vkey OFFICIAL-VK -cmd id \
+  > "$TMP/otcp.log" 2>&1 &
+OTCP_PID=$!
+sleep 1
+SIM_OUT=$("$TMP/vshell-server" official-agent-sim -addr "127.0.0.1:$OTCP_PORT" -vkey OFFICIAL-VK -timeout 6 2>/dev/null || true)
+echo "$SIM_OUT" | grep -q "registered=true tasks=1" || fail "official agent sim failed: $SIM_OUT"
+grep -q "main channel registered" "$TMP/otcp.log" || fail "official-tcp server did not register main channel"
+grep -q "uid=" "$TMP/otcp.log" || fail "official-tcp server did not receive command output"
+kill "$OTCP_PID" 2>/dev/null
+log "official-tcp ok: 模拟 agent 完成认证/通道注册/任务执行"
 
 # ---------------------------------------------------------------- 8. 面板契约
 log "check /client/list field contract (B0.8)"

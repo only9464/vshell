@@ -68,6 +68,13 @@ func main() {
 		return
 	}
 
+	// `vshell-server official-agent-sim` 扮演**官方 agent**，用于在没有原版载荷的
+	// 机器上验证 official-tcp 服务端（也可当演示）。
+	if len(os.Args) > 1 && os.Args[1] == "official-agent-sim" {
+		runOfficialAgentSim(os.Args[2:])
+		return
+	}
+
 	if len(os.Args) > 1 && os.Args[1] == "mcp" {
 		runMCPServer()
 		return
@@ -170,4 +177,28 @@ func runOfficialTCP(args []string) {
 		}
 	}()
 	select {}
+}
+
+// runOfficialAgentSim 启动官方 agent 模拟器。
+func runOfficialAgentSim(args []string) {
+	fs := flag.NewFlagSet("official-agent-sim", flag.ExitOnError)
+	addr := fs.String("addr", "127.0.0.1:18650", "服务端地址")
+	vkey := fs.String("vkey", "vkey", "Vkey（应答 md5(vkey)）")
+	salt := fs.String("salt", "", "加密盐")
+	host := fs.String("host", "sim-host", "上报的主机名")
+	secs := fs.Int("timeout", 10, "运行秒数")
+	_ = fs.Parse(args)
+
+	sim := &c2engine.OfficialAgentSim{Addr: *addr, Vkey: *vkey, Salt: *salt, HostName: *host}
+	res, err := sim.Run(time.Duration(*secs) * time.Second)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "official-agent-sim: %v\n", err)
+	}
+	fmt.Printf("sim done: registered=%v tasks=%d results=%d\n", res.Registered, res.Tasks, len(res.Results))
+	for _, r := range res.Results {
+		fmt.Printf("result: %s\n", r)
+	}
+	if !res.Registered {
+		os.Exit(1)
+	}
 }

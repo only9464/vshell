@@ -464,4 +464,28 @@ plaintext 序列与我们完全一致（`md5("4.9.3")` → `sucs` → `\x01` →
 下一轮方向：把真实服务端在会话 ID 之后**是否还有字节**查清（用只读探针在
 conn1 上挂住更久），或对 agent 的 conf 处理做定点反编译。
 
+### E-41 官方 agent 模拟器（R27）
+
+为了在没有原版载荷的机器上验证 `official-tcp` 服务端，实现了**官方 agent 模拟器**
+（`c2engine/official_agent_sim.go`，CLI：`vshell-server official-agent-sim`）：
+按抓包顺序完成 版本×2 → 挑战 → `md5(vkey)` → `sucs` → `conf`/`main`/`chan` 三条连接，
+收到任务后执行并回 `->|输出|<-`。
+
+实测（本机）：
+
+```
+$ vshell-server official-tcp -listen 127.0.0.1:18660 -vkey VKGO -cmd id
+official-tcp: client registered: host=sim-host os=linux_amd64 user=sim-user
+official-tcp: main channel registered from 127.0.0.1:38200
+official-tcp: result: ->|uid=1000(kali) ...
+command "id" output: ->|uid=1000(kali) ...
+
+$ vshell-server official-agent-sim -addr 127.0.0.1:18660 -vkey VKGO
+sim done: registered=true tasks=1 results=1
+```
+
+**意义**：证明服务端一侧的「认证 → 通道注册 → 任务下发 → 结果回传」全链路正确；
+与**真官方 agent** 的差异只剩「它为什么不发 `main`」这一处（见 E-40）。
+模拟器同时进入 e2e（§7p）作为回归守卫。
+
 
