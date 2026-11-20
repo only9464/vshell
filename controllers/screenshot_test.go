@@ -71,6 +71,9 @@ func TestScreenshotGetReturnsRawBase64(t *testing.T) {
 // A missing client is reported as an error envelope; no task is queued for it.
 // The HTTP status stays 200 — JsonErr leaves the status alone, matching the
 // original binary's convention (errors ride in "code", the SPA checks that).
+//
+// 文案取自原版 4.9.3 黑盒实测（scripts/probe-original.sh）：
+// 不存在的客户端 → "connection error"；存在但离线 → "client is close"。
 func TestScreenshotGetReportsClosedClient(t *testing.T) {
 	initEngineStorage(t)
 
@@ -80,8 +83,8 @@ func TestScreenshotGetReportsClosedClient(t *testing.T) {
 	ctrl.Get()
 
 	body := rec.Body.String()
-	if !strings.Contains(body, `"code":-1`) || !strings.Contains(body, "client is close") {
-		t.Fatalf("body = %q, want an error envelope for a closed client", body)
+	if !strings.Contains(body, `"code":-1`) || !strings.Contains(body, "connection error") {
+		t.Fatalf("body = %q, want \"connection error\" for a missing client", body)
 	}
 	if n := len(c2engine.GetEngine().GetPendingTasks(777)); n != 0 {
 		t.Fatalf("queued %d tasks for a closed client, want 0", n)

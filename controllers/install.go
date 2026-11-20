@@ -21,7 +21,10 @@ func (c *InstallController) Install() {
 		c.JsonErr("id err")
 		return
 	}
-	dispatchCmd(id, "install "+name)
+	if _, err := dispatchCmd(id, "install "+name); err != nil {
+		c.JsonErr(err.Error())
+		return
+	}
 	c.JsonOkMessage("ok")
 }
 
@@ -33,6 +36,9 @@ func (c *InstallController) Remove() {
 		c.JsonErr("id err")
 		return
 	}
-	dispatchCmd(id, "uninstall "+name)
+	if _, err := dispatchCmd(id, "uninstall "+name); err != nil {
+		c.JsonErr(err.Error())
+		return
+	}
 	c.JsonOkMessage("ok")
 }

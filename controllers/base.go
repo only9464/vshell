@@ -254,6 +254,33 @@ func (c *ApiBaseController) JsonGetStrList(key string) []string {
 	return splitComma(c.GetString(key))
 }
 
+// JsonOkVerb 输出原版"成功"响应的另一种形态：
+//
+//	{"code":0,"message":"<verb> success","type":"success"}
+//
+// 黑盒实测（4.9.3，127.0.0.1:39082）：
+//
+//	listener/add        -> add success
+//	listener/edit       -> save success
+//	listener/editremark -> save success
+//	listener/start      -> start success
+//	listener/stop       -> stop success
+//	listener/del        -> delete success
+//	client/delprocess   -> delete success
+//	client/dellist      -> delete success
+//	setting/edit        -> modified success
+//
+// 注意与 JsonOkMessage 的区别：后者的文本落在 type 字段（message 恒 "ok"），
+// 而原版这些接口把动词放进 message、type 恒 "success"。
+func (c *ApiBaseController) JsonOkVerb(verb string) {
+	c.Data["json"] = map[string]interface{}{
+		"code":    0,
+		"message": verb + " success",
+		"type":    "success",
+	}
+	c.ServeJSON()
+}
+
 // JsonOkMessage 成功消息响应：{"code":0,"message":"ok","type":<msg>}
 // 反编译（0x18d88e0）键集合：code / message / type。
 func (c *ApiBaseController) JsonOkMessage(msg string) {

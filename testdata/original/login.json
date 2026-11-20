@@ -1,0 +1,18 @@
+{
+  "code": 0,
+  "message": "ok",
+  "result": {
+    "desc": "manager",
+    "realName": "admin",
+    "roles": [
+      {
+        "roleName": "Super Admin",
+        "value": "super"
+      }
+    ],
+    "token": "<TOKEN>",
+    "userId": "1",
+    "username": "admin"
+  },
+  "type": "success"
+}

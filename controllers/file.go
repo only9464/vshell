@@ -40,6 +40,21 @@ func (c *FileController) clientID() int64 {
 	return int64(c.JsonGetInt("id"))
 }
 
+
+// dispatchOrReport 下发一条命令；客户端不可用时写 "connection error" 并返回 false。
+//
+// 黑盒（原版 4.9.3）：文件类接口在客户端不存在时返回
+// {"code":-1,"message":"connection error","type":"error"}，而 id 缺省时是
+// "id error"。此前复刻端忽略 dispatchCmd 的返回值，一律回 ok —— 面板看起来
+// "操作成功"其实什么都没发生。
+func (c *FileController) dispatchOrReport(id int64, cmd string) bool {
+	if _, err := dispatchCmd(id, cmd); err != nil {
+		c.JsonErr(err.Error())
+		return false
+	}
+	return true
+}
+
 // Getdisk 列出客户端磁盘（POST /file/getdisk）。参数：id。
 func (c *FileController) Getdisk() {
 	id := c.clientID()
@@ -47,7 +62,9 @@ func (c *FileController) Getdisk() {
 		c.JsonErr("id error")
 		return
 	}
-	dispatchCmd(id, "getdisk")
+	if !c.dispatchOrReport(id, "getdisk") {
+		return
+	}
 	c.JsonOkMessage("ok")
 }
 
@@ -84,7 +101,9 @@ func (c *FileController) Mv() {
 		c.JsonErr("id error")
 		return
 	}
-	dispatchCmd(id, "mv "+path)
+	if !c.dispatchOrReport(id, "mv "+path) {
+		return
+	}
 	c.JsonOkMessage("ok")
 }
 
@@ -96,7 +115,9 @@ func (c *FileController) Rm() {
 		c.JsonErr("id error")
 		return
 	}
-	dispatchCmd(id, "rm "+path)
+	if !c.dispatchOrReport(id, "rm "+path) {
+		return
+	}
 	c.JsonOkMessage("ok")
 }
 
@@ -131,7 +152,9 @@ func (c *FileController) Cat() {
 		c.JsonErr("id error")
 		return
 	}
-	dispatchCmd(id, "cat "+joinPath(path, target))
+	if !c.dispatchOrReport(id, "cat "+joinPath(path, target)) {
+		return
+	}
 	c.JsonOkMessage("ok")
 }
 
@@ -144,7 +167,9 @@ func (c *FileController) Touch() {
 		c.JsonErr("id error")
 		return
 	}
-	dispatchCmd(id, "touch "+joinPath(path, target))
+	if !c.dispatchOrReport(id, "touch "+joinPath(path, target)) {
+		return
+	}
 	c.JsonOkMessage("ok")
 }
 
@@ -158,7 +183,9 @@ func (c *FileController) Modifytime() {
 		c.JsonErr("id error")
 		return
 	}
-	dispatchCmd(id, "touch -d "+t+" "+joinPath(path, target))
+	if !c.dispatchOrReport(id, "touch -d "+t+" "+joinPath(path, target)) {
+		return
+	}
 	c.JsonOkMessage("ok")
 }
 
@@ -171,7 +198,9 @@ func (c *FileController) Mkdir() {
 		c.JsonErr("id error")
 		return
 	}
-	dispatchCmd(id, "mkdir -p "+joinPath(path, target))
+	if !c.dispatchOrReport(id, "mkdir -p "+joinPath(path, target)) {
+		return
+	}
 	c.JsonOkMessage("ok")
 }
 
@@ -184,7 +213,9 @@ func (c *FileController) Edit() {
 		c.JsonErr("id error")
 		return
 	}
-	dispatchCmd(id, "edit "+joinPath(path, target))
+	if !c.dispatchOrReport(id, "edit "+joinPath(path, target)) {
+		return
+	}
 	c.JsonOkMessage("ok")
 }
 
@@ -197,7 +228,9 @@ func (c *FileController) Wget() {
 		c.JsonErr("id error")
 		return
 	}
-	dispatchCmd(id, "wget -O "+joinPath(path, target))
+	if !c.dispatchOrReport(id, "wget -O "+joinPath(path, target)) {
+		return
+	}
 	c.JsonOkMessage("ok")
 }
 
@@ -211,7 +244,9 @@ func (c *FileController) Upload() {
 		return
 	}
 	// 前端先上传到服务器（VITE_GLOB_UPLOAD_URL=/api/file/upload），再下发到客户端
-	dispatchCmd(id, "upload "+path+" "+url)
+	if !c.dispatchOrReport(id, "upload "+path+" "+url) {
+		return
+	}
 	c.JsonOkMessage("ok")
 }
 
@@ -300,7 +335,9 @@ func (c *FileController) DownloadToOSS() {
 		c.JsonErr("id error")
 		return
 	}
-	dispatchCmd(id, "download "+path+" "+target)
+	if !c.dispatchOrReport(id, "download "+path+" "+target) {
+		return
+	}
 	c.JsonOkMessage("ok")
 }
 

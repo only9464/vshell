@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -41,10 +43,33 @@ func newTestListener(t *testing.T, listenAddr, connectAddr, mode, vkey, salt str
 	return id
 }
 
+
+// withTemplateDir 切到临时目录并按原版路径写入模板文件。
+//
+// 模板路径规则取自原版黑盒（docs/PROTOCOL.md / PoTemplatePath）：
+//
+//	stage/stageless/listen -> stageless/<tp>_<arch>
+//	dll/listendll          -> dll/<tp>_<arch>
+func withTemplateDir(t *testing.T, files map[string]string) {
+	t.Helper()
+	dir := t.TempDir()
+	for rel, content := range files {
+		full := filepath.Join(dir, rel)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatalf("mkdir for %s: %v", rel, err)
+		}
+		if err := os.WriteFile(full, []byte(content), 0o644); err != nil {
+			t.Fatalf("write %s: %v", rel, err)
+		}
+	}
+	t.Chdir(dir)
+}
+
 // 反编译 FUN_00c2a460 + FUN_00c28a40：下载响应是"二进制 body + 头字段"，
 // 不是 JSON。前端以浏览器导航方式请求这些端点，因此 body 必须是可保存的载荷。
 func TestDownloadReturnsBinaryBodyNotJSON(t *testing.T) {
 	id := newTestListener(t, "0.0.0.0:55555", "127.0.0.1:55555", "tcp", "vk-1", "salt-1")
+	withTemplateDir(t, map[string]string{"stageless/tcp_windows_amd64.exe": "MZ-template-bytes"})
 
 	ctrl, rec := newDownloadController(httptest.NewRequest(http.MethodGet,
 		"/api/download/stageless?id="+itoa(int(id))+"&arch=windows_amd64.exe&upx=false", nil))
@@ -77,6 +102,7 @@ func TestDownloadReturnsBinaryBodyNotJSON(t *testing.T) {
 // （配置块字段值 + argv 密文解密后）。
 func TestDownloadPayloadCarriesInjectedConfig(t *testing.T) {
 	id := newTestListener(t, "0.0.0.0:55555", "127.0.0.1:55555", "tcp", "vk-secret", "salt-secret")
+	withTemplateDir(t, map[string]string{"stageless/tcp_windows_amd64.exe": "MZ-template-bytes"})
 
 	ctrl, rec := newDownloadController(httptest.NewRequest(http.MethodGet,
 		"/api/download/listen?id="+itoa(int(id))+
@@ -122,6 +148,7 @@ func TestDownloadPayloadCarriesInjectedConfig(t *testing.T) {
 // Stageless + DNS 传输走 FUN_01912ac0 的 "stageless/ebpf_%s_%s" 文件名模板。
 func TestStagelessDNSUsesEBPFNameTemplate(t *testing.T) {
 	id := newTestListener(t, "0.0.0.0:53", "127.0.0.1:53", "dns", "vk", "salt")
+	withTemplateDir(t, map[string]string{"stageless/ebpf_dns_linux_amd64": "ELF-template"})
 
 	ctrl, rec := newDownloadController(httptest.NewRequest(http.MethodGet,
 		"/api/download/stageless?id="+itoa(int(id))+"&arch=linux_amd64", nil))
@@ -190,4 +217,25 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// 模板文件缺失时的错误文本必须与原版逐字一致（黑盒实测）：
+//
+//	{"code":-1,"message":"open stageless/tcp_windows_amd64: file does not exist",...}
+func TestDownloadMissingTemplateReportsOriginalError(t *testing.T) {
+	id := newTestListener(t, "0.0.0.0:55555", "127.0.0.1:55555", "tcp", "vk", "salt")
+	withTemplateDir(t, nil)
+
+	ctrl, rec := newDownloadController(httptest.NewRequest(http.MethodGet,
+		"/api/download/stageless?id="+itoa(int(id))+"&arch=windows_amd64", nil))
+	ctrl.Stageless()
+
+	body := rec.Body.String()
+	want := "open stageless/tcp_windows_amd64: file does not exist"
+	if !strings.Contains(body, want) {
+		t.Fatalf("body = %q, want %q", body, want)
+	}
+	if ct := rec.Header().Get("Content-Disposition"); ct != "" {
+		t.Errorf("Content-Disposition = %q, want empty on error", ct)
+	}
 }

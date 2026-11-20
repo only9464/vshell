@@ -1,0 +1,10 @@
+{
+  "code": 0,
+  "message": "ok",
+  "result": {
+    "dingding_access_token": "t1",
+    "dingding_key_word": "w1",
+    "wx_key": "k1"
+  },
+  "type": "success"
+}

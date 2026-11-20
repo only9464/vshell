@@ -1,0 +1,6 @@
+{
+  "code": -1,
+  "message": "open stageless/tcp_windows_amd64: file does not exist",
+  "result": null,
+  "type": "error"
+}

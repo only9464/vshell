@@ -15,6 +15,7 @@
 | [FRONTEND.md](FRONTEND.md) | Vue3 重开发方案（技术选型、目录、页面、联调） | 前端开发者 |
 | [DEV.md](DEV.md) | 构建、运行、调试、测试、端到端联调 | 所有人 |
 | [RE-NOTES.md](RE-NOTES.md) | 逆向结论与证据分级（哪些是硬证据、哪些是推断、哪些未恢复） | 做对齐的人 |
+| [REFERENCE.md](REFERENCE.md) | 本机原版 4.9.3 实例的取证流程、已确认行为（R-01…R-13）、IDA/pclntab 工具链 | 做对齐与逆向的人 |
 
 ## 三条硬规则
 

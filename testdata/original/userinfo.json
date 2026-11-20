@@ -1,0 +1,20 @@
+{
+  "code": 0,
+  "message": "ok",
+  "result": {
+    "avatar": "",
+    "desc": "manager",
+    "homePath": "/dashboard/index",
+    "realName": "admin",
+    "roles": [
+      {
+        "roleName": "Super Admin",
+        "value": "super"
+      }
+    ],
+    "token": "",
+    "userId": "1",
+    "username": "admin"
+  },
+  "type": "success"
+}

@@ -82,6 +82,9 @@ type EngineListener struct {
 	ConnectAddr       string
 	PingInterval      int
 	DisconnectTimeout int
+	DNSDomain         string
+	PublicDNS         string
+	MaxDNSsize        int
 }
 
 // EngineTunnel 引擎中的隧道记录（/tunnel/list 反编译 JSON 键：Id / Target / Mode / Remark / Port）。
@@ -174,6 +177,9 @@ func engineGetListenerList(offset, limit int, field, order, search, sort string,
 			ID: l.ID, Mode: l.Mode, Status: l.Status, OssUrl: l.OssUrl,
 			Remark: l.Remark, Vkey: l.VerifyKey, Port: l.Port, Host: l.Host,
 			Proxy: l.Proxy, Salt: l.EncryptSalt, IsVIP: l.IsVIP,
+			ListenAddr: l.ListenAddr, ConnectAddr: l.ConnectAddr,
+			PingInterval: l.PingInterval, DisconnectTimeout: l.DisconnectTimeout,
+			DNSDomain: l.DNSDomain, PublicDNS: l.PublicDNS, MaxDNSsize: l.MaxDNSsize,
 		})
 	}
 	return out, total
@@ -202,7 +208,7 @@ func engineDelListeners(ids []int64) {
 func engineStartListener(id int64) error {
 	l := c2engine.GetEngine().GetListener(id)
 	if l == nil {
-		return errors.New("listener not found")
+		return errors.New("not found")
 	}
 	if err := c2engine.GetApplication().StartListener(l); err != nil {
 		return err
@@ -267,6 +273,14 @@ func engineAddListener(l EngineListener) error {
 	if _, err := c2engine.GetEngine().UpdateListener(listener.ID, updates); err != nil {
 		return err
 	}
+
+	// 原版在 add 里就把监听器置为运行态（随后 start 返回 "already start"）。
+	// 启动失败不阻塞创建：状态仍由 UpdateListener/StartListener 的副作用决定。
+	if err := c2engine.GetApplication().StartListener(listener); err != nil {
+		log.Printf("[C2Engine] listener %d created but failed to start: %v", listener.ID, err)
+		return nil
+	}
+	listener.Status = true
 	return nil
 }
 
@@ -279,6 +293,22 @@ func engineEditListener(l EngineListener) error {
 		"vkey":         l.Vkey,
 		"encrypt_salt": l.Salt,
 	}
+	if l.ListenAddr != "" {
+		updates["listen_addr"] = l.ListenAddr
+	}
+	if l.ConnectAddr != "" {
+		updates["connect_addr"] = l.ConnectAddr
+	}
+	if l.OssUrl != "" {
+		updates["oss_url"] = l.OssUrl
+	}
+	if l.PingInterval > 0 {
+		updates["ping_interval"] = l.PingInterval
+	}
+	if l.DisconnectTimeout > 0 {
+		updates["disconnect_timeout"] = l.DisconnectTimeout
+	}
+	updates["vip"] = l.IsVIP
 	_, err := c2engine.GetEngine().UpdateListener(l.ID, updates)
 	return err
 }
@@ -328,9 +358,18 @@ func engineStopTunnel(id int64) {
 // engineAddTunnel 新增隧道。原版隧道的端口/目标绑定在客户端的连接处理器上，
 // 复刻端以 clientID=0 登记（无归属客户端），与 GetTunnel → RunStatus 的启停
 // 语义一致。
-func engineAddTunnel(t EngineTunnel) error {
-	_, err := c2engine.GetEngine().NewTunnel(0, t.Port, t.Mode, t.Target)
+func engineAddTunnel(t EngineTunnel, clientID int64) error {
+	_, err := c2engine.GetEngine().NewTunnel(clientID, t.Port, t.Mode, t.Target)
 	return err
+}
+
+// engineGetTunnel 返回单条隧道（供控制器判断存在性）。
+func engineGetTunnel(id int64) *EngineTunnel {
+	t := c2engine.GetEngine().GetTunnel(id)
+	if t == nil {
+		return nil
+	}
+	return &EngineTunnel{ID: t.ID, Port: t.Port, Mode: t.Mode, Target: t.Target, Remark: t.Remark}
 }
 
 // engineEditTunnel 编辑隧道（原版 FUN_01717ce0 / FUN_01718940 的字段更新分支）。
@@ -360,49 +399,79 @@ func engineEditTunnel(t EngineTunnel) error {
 
 // ---- 统计 / dashboard（FUN_0171a2e0 GetAppInfo）----
 
+// engineGetAppInfo 组装 /api/dashboard/info 的 result。
+//
+// 键集合按原版 4.9.3 抓包对齐（testdata/original/dashboard.json，39 个键），
+// 数值来自真实采集：客户端/监听器计数走引擎，cpu/disk/load/io/套接字/ICMP
+// 走 collectHostMetrics（读 /proc），web_port/web_basic_auth/logLevel 走配置。
+//
+// 与原版的已知差异：
+//   - clientNum / licTime / vip 来自许可证状态，未配置许可证时用观测值 99 /
+//     20991201 / true（原版由许可文件决定）；
+//   - ip 恒 0（语义未恢复，原版同样恒 0）。
 func engineGetAppInfo() map[string]interface{} {
-	// 黑盒验证（原版 /api/dashboard/info 响应，40+ 键逐字确认）：
-	// clientCount/clientNum/clientOnlineCount/cpu/disk/swap_mem/virtual_mem/
-	// exportFlowCount/inletFlowCount/flowStoreInterval/hostCount/httpProxyCount/
-	// httpProxyPort/httpsProxyPort/io_recv/io_send/ipLimit/licTime/listenerCount/
-	// listenerOnlineCount/load{load1,load5,load15}/logLevel/logPath/p2pCount/
-	// p2pPort/secretCount/socks5Count/tcpC/tcpCount/udpCount/version/vip/
-	// web_basic_auth/web_port。
+	cfg := utils.GetFullSettings()
+	m := collectHostMetrics()
+	eng := c2engine.GetEngine()
+
+	clients, clientTotal := eng.GetClientList(0, 0, "", "", "", "", 0)
+	online := int64(0)
+	for _, c := range clients {
+		if c.Status {
+			online++
+		}
+	}
+	listeners := eng.GetListenerList()
+	listenerOnline := 0
+	for _, l := range listeners {
+		if l.Status {
+			listenerOnline++
+		}
+	}
+	hosts := eng.GetHostList()
+
+	lic := utils.GetLicenseStatus()
+
 	return map[string]interface{}{
-		"clientCount":         0,
-		"clientNum":           "99",
-		"clientOnlineCount":   0,
-		"cpu":                 10,
-		"disk":                70,
-		"swap_mem":            97,
-		"virtual_mem":         88,
+		"clientCount":         clientTotal,
+		"clientNum":           itoa(lic.MaxClients),
+		"clientOnlineCount":   online,
+		"cpu":                 m.CPU,
+		"disk":                m.Disk,
 		"exportFlowCount":     0,
-		"inletFlowCount":      0,
 		"flowStoreInterval":   "",
-		"hostCount":           0,
+		"hostCount":           len(hosts),
 		"httpProxyCount":      0,
 		"httpProxyPort":       "",
 		"httpsProxyPort":      "",
-		"io_recv":             0,
-		"io_send":             0,
+		"icmp":                m.ICMP,
+		"icmpmsg":             m.ICMPMsg,
+		"inletFlowCount":      0,
+		"io_recv":             m.IORecv,
+		"io_send":             m.IOSend,
+		"ip":                  0,
 		"ipLimit":             "",
-		"licTime":             "20991201",
-		"listenerCount":       0,
-		"listenerOnlineCount": 0,
-		"load":                map[string]interface{}{"load1": 0, "load5": 0, "load15": 0},
-		"logLevel":            "7",
-		"logPath":             "",
+		"licTime":             lic.EndTime,
+		"listenerCount":       len(listeners),
+		"listenerOnlineCount": listenerOnline,
+		"load":                m.Load,
+		"logLevel":            itoa(cfg.LogLevel),
+		"logPath":             cfg.LogPath,
 		"p2pCount":            0,
 		"p2pPort":             "",
 		"secretCount":         0,
 		"socks5Count":         0,
+		"swap_mem":            m.SwapMem,
+		"tcp":                 m.TCP,
 		"tcpC":                0,
 		"tcpCount":            0,
+		"udp":                 m.UDP,
 		"udpCount":            0,
 		"version":             "4.9.3",
-		"vip":                 true,
-		"web_basic_auth":      true,
-		"web_port":            "8082",
+		"vip":                 lic.Advanced,
+		"virtual_mem":         m.VirtualMem,
+		"web_basic_auth":      cfg.WebBasicAuth,
+		"web_port":            itoa(cfg.WebPort),
 	}
 }
 

@@ -32,6 +32,11 @@ func (c *TunnelController) List() {
 	list, total := engineGetTunnelList((page-1)*pageSize, pageSize,
 		c.JsonGetStr("field"), c.JsonGetStr("order"),
 		c.JsonGetStr("search"), c.JsonGetStr("sort"))
+	if len(list) == 0 {
+		// 黑盒：原版空列表返回 {"items":null,"total":0}。
+		c.JsonOkResult(map[string]interface{}{"items": nil, "total": total})
+		return
+	}
 	items := make([]map[string]interface{}, 0, len(list))
 	for _, t := range list {
 		items = append(items, map[string]interface{}{
@@ -54,11 +59,23 @@ func (c *TunnelController) Add() {
 		Target: c.JsonGetStr("Target"),
 		Remark: c.JsonGetStr("Remark"),
 	}
+	// 黑盒：没有 clientId 时原版回中文 "未找到客户端"（隧道必须归属某个客户端）。
+	clientID := int64(c.JsonGetInt("clientId"))
+	if clientID == 0 {
+		clientID = int64(c.JsonGetInt("ClientId"))
+	}
+	if clientID == 0 {
+		clientID = int64(c.JsonGetInt("client_id"))
+	}
+	if clientID == 0 {
+		c.JsonErr("未找到客户端")
+		return
+	}
 	if t.Port == 0 || t.Target == "" {
 		c.JsonErr("port and target required")
 		return
 	}
-	if err := engineAddTunnel(t); err != nil {
+	if err := engineAddTunnel(t, clientID); err != nil {
 		c.JsonErr("add tunnel failed: " + err.Error())
 		return
 	}
@@ -83,7 +100,7 @@ func (c *TunnelController) Edit() {
 		c.JsonErr("edit tunnel failed: " + err.Error())
 		return
 	}
-	c.JsonOkMessage("ok")
+	c.JsonOkVerb("save")
 }
 
 // EditRemark 修改隧道备注（POST /tunnel/editremark）。参数：id / remark。
@@ -96,7 +113,7 @@ func (c *TunnelController) EditRemark() {
 	}
 	// 原版仅更新备注字段
 	engineEditTunnel(EngineTunnel{ID: id, Remark: remark})
-	c.JsonOkMessage("ok")
+	c.JsonOkVerb("save")
 }
 
 // Del 删除隧道（POST /tunnel/del）。参数：id。
@@ -107,7 +124,7 @@ func (c *TunnelController) Del() {
 		return
 	}
 	engineDelTunnel(id)
-	c.JsonOkMessage("ok")
+	c.JsonOkVerb("delete")
 }
 
 // DelList 批量删除隧道（POST /tunnel/dellist）。参数：id（逗号分隔）。
@@ -122,7 +139,7 @@ func (c *TunnelController) DelList() {
 		id64[i] = int64(v)
 	}
 	engineDelTunnels(id64)
-	c.JsonOkMessage("ok")
+	c.JsonOkVerb("delete")
 }
 
 // Start 启动隧道（POST /tunnel/start）。参数：id。
@@ -132,8 +149,13 @@ func (c *TunnelController) Start() {
 		c.JsonErr("id err")
 		return
 	}
+	// 黑盒：不存在的隧道 → "start error"。
+	if engineGetTunnel(id) == nil {
+		c.JsonErr("start error")
+		return
+	}
 	engineStartTunnel(id)
-	c.JsonOkMessage("ok")
+	c.JsonOkVerb("start")
 }
 
 // Stop 停止隧道（POST /tunnel/stop）。参数：id。
@@ -143,6 +165,10 @@ func (c *TunnelController) Stop() {
 		c.JsonErr("id err")
 		return
 	}
+	if engineGetTunnel(id) == nil {
+		c.JsonErr("stop error")
+		return
+	}
 	engineStopTunnel(id)
-	c.JsonOkMessage("ok")
+	c.JsonOkVerb("stop")
 }

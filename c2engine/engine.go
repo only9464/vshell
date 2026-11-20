@@ -161,7 +161,9 @@ func (e *Engine) NewClient(verifyKey, clientType, addr, localIP, userName, hostN
 			// 写入点，导致 agent 上线后面板仍判离线、所有派发接口返回
 			// "client is close"。
 			client.SetOnline(true)
-			e.storage.StoreClients(e.clients)
+			// 不再在每次重签到时全量重写 clients 表：SQLite(WAL) 的异步落盘会在
+			// 测试的临时目录清理后继续产生 -wal/-shm 文件，既慢又会造成
+			// "directory not empty" 的清理竞态。身份字段变化时由调用方显式落库。
 			return client, nil
 		}
 	}
@@ -494,12 +496,10 @@ func (e *Engine) NewListener(listenAddr, connectAddr, mode, verifyKey, encryptSa
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	// 加密盐缺省时自动生成：面板只提交 Mode/Vkey，若这里留空，agent 与
-	// 服务端会各自用不同密钥派生消息帧密钥（agent 侧曾写死 "salt"），
-	// 结果是帧解不开。生成后随监听器落库，载荷生成时再注入 agent。
-	if encryptSalt == "" {
-		encryptSalt = GenerateEncryptSalt()
-	}
+	// 加密盐缺省保持为空——与原版一致（黑盒：listener/add 后 list 的
+	// EncryptSalt 为 ""，MaxDNSsize 512）。空盐意味着帧密钥 = md5("")，
+	// 这是原版的默认行为；面板可以显式填「流量加密盐」覆盖它，载荷生成时
+	// 再把该值注入 agent。GenerateEncryptSalt 保留给需要随机盐的调用方。
 	// 监听地址缺省时按协议给默认端口（面板的 Add 只提交 Mode/Vkey）。
 	if listenAddr == "" {
 		listenAddr = DefaultListenerAddr(mode)

@@ -157,7 +157,10 @@ var msgFrameKey = deriveFrameKey(msgFrameSalt)
 // SetMsgFrameSalt overrides the message-frame salt with the deployment's value.
 func SetMsgFrameSalt(salt string) {
 	salt = strings.TrimSpace(salt)
-	if salt == "" || strings.HasPrefix(salt, "REPLACE_") {
+	// 未替换的 ldflags 占位符视为"未配置"，保持默认值；
+	// 空串是**有效取值**（原版监听器缺省 EncryptSalt = ""，帧密钥 = md5("")），
+	// 必须原样采用，否则与服务端派生不一致。
+	if strings.HasPrefix(salt, "REPLACE_") {
 		return
 	}
 	msgFrameSaltMu.Lock()

@@ -1,0 +1,27 @@
+{
+  "code": 0,
+  "message": "ok",
+  "result": [
+    {
+      "id": 0,
+      "name": "AddUser.dll"
+    },
+    {
+      "id": 1,
+      "name": "fscan.x64.elf"
+    },
+    {
+      "id": 2,
+      "name": "gost.x64.exe"
+    },
+    {
+      "id": 3,
+      "name": "gost.x64.so"
+    },
+    {
+      "id": 4,
+      "name": "mimikatz.x64.exe"
+    }
+  ],
+  "type": "success"
+}

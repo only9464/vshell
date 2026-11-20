@@ -65,7 +65,7 @@ func TestEngineListenerLifecycle(t *testing.T) {
 func TestEngineTunnelEditRules(t *testing.T) {
 	initEngineStorage(t)
 
-	if err := engineAddTunnel(EngineTunnel{Port: 8080, Mode: "tcp", Target: "127.0.0.1:22", Remark: "r"}); err != nil {
+	if err := engineAddTunnel(EngineTunnel{Port: 8080, Mode: "tcp", Target: "127.0.0.1:22", Remark: "r"}, 0); err != nil {
 		t.Fatalf("add tunnel: %v", err)
 	}
 	list, _ := engineGetTunnelList(0, 10, "", "", "", "")

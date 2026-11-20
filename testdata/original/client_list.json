@@ -1,0 +1,11 @@
+{
+  "code": 0,
+  "message": "ok",
+  "result": {
+    "clientCount": -1,
+    "clientOnlineCount": 0,
+    "items": [],
+    "total": 0
+  },
+  "type": "success"
+}

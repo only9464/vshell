@@ -1,8 +1,9 @@
 # 面板 API 契约（API）
 
-> 基线：原版 SPA（`static/assets/*.js`）实际发出的请求 + 后端现状。
-> 契约以本表为准：**前端按此开发，后端按此实现**。
-> 标记：✅ 与前端一致 · ⚠️ 有偏差（见"修复"列） · ❌ 未实现
+> 基线：**原版 4.9.3 活体抓包**（`scripts/probe-original.sh` → `testdata/original/`）
+> + 原版 SPA 的请求清单。契约以本表为准：**前端按此开发，后端按此实现**。
+> 回归：`controllers/contract_test.go`（键集合与文案逐项比对）。
+> 标记：✅ 已对齐 · ⚠️ 有偏差（见备注） · ❌ 未实现
 
 ---
 
@@ -205,3 +206,46 @@ JWT claims：`{token_type, user_id, role_id, username, exp, iat}`，有效期 24
 | 日期 | 变更 |
 |---|---|
 | 2026-11-20 | 建立本文：以原版 SPA 实际请求为基线整理全部端点与字段契约 |
+
+---
+
+## 11. 成功/错误文案总表（黑盒逐字，R-06）
+
+| 接口 | 结果 | 响应 |
+|---|---|---|
+| login 成功 | 0 | `{"code":0,"message":"ok","result":{...},"type":"success"}` |
+| login 失败/空参 | -1 | `{"code":-1,"message":"Incorrect account or password！","result":null,"type":"error"}` |
+| listener/add | 0 | `{"code":0,"message":"add success","type":"success"}` |
+| listener/edit / editremark | 0 | `…"message":"save success"…` |
+| listener/start | 0 / -1 | `start success` / `already start` / `not found` |
+| listener/stop | 0 | `stop success` |
+| listener/del / dellist | 0 | `delete success`（不存在也成功） |
+| client/delprocess / dellist | 0 | `delete success` |
+| client/editremark 缺失 | -1 | `client ID not found` |
+| client/delfile 缺失 | -1 | `client id not found` |
+| setting/edit | 0 | `modified success` |
+| tunnel/add 缺 clientId | -1 | `未找到客户端` |
+| tunnel/start / stop 缺失 | -1 | `start error` / `stop error` |
+| tunnel/del | 0 | `delete success` |
+| file/* 缺 id | -1 | `id error` |
+| file/* 客户端不存在 | -1 | `connection error` |
+| screenshot/get 客户端不存在 | -1 | `connection error` |
+| install/* 缺 id | -1 | `id err`；客户端不存在 → `connection error` |
+| terminal/shell 客户端不存在/离线 | -1 | `client is close` |
+| runner/runplugin 客户端不存在 | -1 | `connection error` |
+| download/* 监听器不存在 | -1 | `not found` |
+| download/stage、shellcode 模式非 tcp/ws | -1 | `Stage support TCP/WS only` |
+| download/* 模板缺失 | -1 | `open stageless/http_windows_amd64: file does not exist` |
+
+> 两种 `x success` 形态的区别：`message` 携带动词、`type` 恒为 `success`
+> （多数 CRUD 接口）；另一种是 `message:"ok"`、`type` 携带动词（旧写法）。
+> 前端只应看 `code`，不要把文案当协议。
+
+## 12. 与原版的已知偏差（有意保留）
+
+| # | 偏差 | 原因 |
+|---|---|---|
+| 1 | `/api/getMenuList`、`/api/getPermCode` 有实现（原版 404） | 自研 Vue3 前端需要动态菜单；保留为扩展 |
+| 2 | `/api/client/add` 可用（原版 500） | 原版 bug，保留可用实现 |
+| 3 | `client/list` 的 `clientCount` 为真实总数（原版曾出现 -1） | 原版计数器语义未恢复 |
+| 4 | listener 支持 `Host/Port/ListenAddr/EncryptSalt` 入参 | 原版 Add 不接受地址；复刻端需要可指定端口（e2e 依赖） |

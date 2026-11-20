@@ -10,9 +10,10 @@
 | 维度 | 当前 | 说明 |
 |---|---|---|
 | 代码结构还原 | ~75% | 包/表/帧结构与原版对应，注释带反编译地址 |
-| 面板功能可用性 | ~50% | 登录、监听器、任务队列真实；dashboard/上传/插件为壳 |
+| 面板功能可用性 | ~65% | 契约（字段/文案/空列表）已按黑盒逐项对齐；dashboard 改为真实采集；上传/插件仍为壳 |
 | 端到端投递闭环 | ~70% | R1 打通 HTTP/KCP 两条链路（§4），`scripts/e2e.sh` 可复现 |
-| 与官方二进制协议互通 | ~10% | 加密帧对齐；命令层是自造文本/JSON |
+| 与官方二进制协议互通 | ~10% | 加密帧对齐；命令层是自造文本/JSON（M1 处理） |
+| 面板 API 契约等价 | ~85% | `controllers/contract_test.go` 对 16 个端点做键集/文案比对（原版 4.9.3 抓包） |
 | 载荷投递 | ~10% | 无 embedded 模板，产物不可执行 |
 
 构建与测试基线（R1 实测）：`go build ./...` 通过；`go test ./...` 5 包全绿；
@@ -111,6 +112,20 @@
 | ⑦ | `dellist` 不读 JSON 数组 → 恒 `id err` | `jsonBodyRaw` + 数组/字符串/逗号三形态 | `controllers/base.go`、e2e 断言删除生效 |
 | ⑧ | `listener/add` 丢 Host → 恒绑 443 | 解析 `ListenAddr/Host/Port/Salt/PingInterval` | `controllers/listener.go`、e2e 自定义端口 |
 | ⑨ | KCP 握手键名 + 加密方向不一致 → 配 key 即拒连 | `hsString`/`msgInt64`/`sendMain`/`openMain`；agent 侧 `decryptWire` 剥头 | `c2engine/kcp.go`、`agent/main.go`、e2e KCP 段 |
+
+### 4.1b R2 修复（对齐原版 4.9.3 黑盒）
+
+| 项 | 内容 | 证据 |
+|---|---|---|
+| 登录 | 改为原版信封 `{code,message,result{desc,realName,roles,token,userId,username},type}`；失败文案 `Incorrect account or password！` | `testdata/original/login.json` |
+| 监听器 | `add` 即启动（`start` → `already start`）；成功文案 add/save/start/stop/delete success；list 14 键；空列表 null；盐缺省空 | R-02…R-05 |
+| 隧道 | add 需 clientId（缺失 → `未找到客户端`）；start/stop 缺失 → `start error`/`stop error`；空列表 null | R-06 |
+| 客户端 | editremark 缺失 → `client ID not found`；delfile 缺失 → `client id not found`；delprocess/dellist → `delete success` | R-06 |
+| 文件/截图/安装/插件 | 缺失客户端 → `connection error`（terminal 例外，仍是 `client is close`） | R-06 |
+| 设置 | get 返回三键；edit → `modified success` | R-06 |
+| 仪表盘 | 39 键对齐；cpu/disk/load/io/tcp/udp/icmp 改为读 `/proc` 真实采集；web_port 取配置 | `controllers/metrics.go` |
+| 载荷 | 模板路径改为 `stageless|dll/<tp>_<arch>`、DNS `ebpf_` 前缀；缺失模板报 `open …: file does not exist`；去掉 MinimalPE 外壳 | E-19 |
+| 契约测试 | `controllers/contract_test.go`：16 个端点键集/文案与原版抓包比对 | `testdata/original/` |
 
 ### 4.2 仍存在的断点（M1/M2 处理）
 

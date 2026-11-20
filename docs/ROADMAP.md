@@ -49,7 +49,7 @@
 | B0.1 | `Client.Status` 生命周期：checkin 置在线、心跳超期置离线 | `c2engine/engine.go`、`c2engine/health.go` | 上线后 `/api/client/list` 返回 `status:true`；`terminal/shell` 不再回 `client is close` | `[x]` |
 | B0.2 | HTTP body 兼容：服务端在 JSON 解析失败后先试 base64 再解帧 | `c2engine/listener.go:handleCheckin/handlePostResult` | agent 出厂状态即可 checkin（不再 400） | `[x]` |
 | B0.3 | 帧密钥接盐：agent 的 `msgFrameSalt` 由 `EncryptSalt` 派生，去掉硬编码 `"salt"` | `agent/message_wire.go:123`、`agent/main.go` | 监听器盐 ≠ `"salt"` 时仍能互通 | `[x]` |
-| B0.4 | 监听器盐自动生成并落库 | `c2engine/engine.go:NewListener`、`controllers/engine.go:engineAddListener` | 新建监听器 `Salt` 非空且两端一致 | `[x]` |
+| B0.4 | 监听器盐：**与原版一致缺省为空**，支持显式指定并落库（R-03 修正了原计划"自动生成"的做法） | `c2engine/engine.go:NewListener`、`controllers/listener.go:Add` | 新建监听器 `EncryptSalt` 可为空，agent 用同一取值即可互通 | `[x]` |
 | B0.5 | 结果通道键名统一：服务端同时接受 `CommandID/client_id` 与 `command_id/ClientID` | `c2engine/protocol.go`、`listener.go`、`kcp.go` | agent 回传结果能落到对应 task | `[x]` |
 | B0.6 | KCP 握手键名兼容（`VerifyKey` vs `verify_key`）；KCP 载荷加密方向统一 | `c2engine/kcp.go:560`、`agent/main.go:kcpTransport` | KCP 监听器配了 key 时 agent 能上线 | `[x]` |
 | B0.7 | `/api/download/*` 与 `/api/file/downloadtobrowser` 同时注册 GET | `router/router.go:81,85-90` | 浏览器直接访问返回 200 + 文件流 | `[x]` |
@@ -166,3 +166,4 @@
 | 日期 | 轮次 | 变更 |
 |---|---|---|
 | 2026-11-20 | R1 | 建立文档体系（docs/）；**M0 完成**：端到端（HTTP+KCP）打通、面板字段/参数契约修正、e2e 脚本落地 |
+| 2026-11-20 | R2 | 接入**活体原版 4.9.3** 做黑盒对照：`scripts/probe-original.sh` + `testdata/original/` + `controllers/contract_test.go`；登录/监听器/隧道/客户端/文件/设置/仪表盘/载荷错误文案逐项对齐；dump 原版 SQLite 确认 schema 逐列一致 |

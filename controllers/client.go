@@ -120,11 +120,16 @@ func (c *ClientController) EditRemark() {
 	id := int64(c.JsonGetInt("id"))
 	remark := c.JsonGetStr("remark")
 	if id == 0 {
-		c.JsonErr("id err")
+		c.JsonErr("client ID not found")
+		return
+	}
+	if engineGetClient(id) == nil {
+		// 黑盒：client/editremark 对不存在的 id 回 "client ID not found"。
+		c.JsonErr("client ID not found")
 		return
 	}
 	engineEditClientRemark(id, remark)
-	c.JsonOkMessage("ok")
+	c.JsonOkVerb("save")
 }
 
 // DelFile 删除客户端上的文件（POST /client/delfile）。
@@ -132,16 +137,24 @@ func (c *ClientController) EditRemark() {
 func (c *ClientController) DelFile() {
 	id := int64(c.JsonGetInt("id"))
 	paths := c.JsonGetStr("paths")
-	if id == 0 || paths == "" {
+	if id == 0 {
+		// 黑盒：client/delfile 对 id=0 与不存在的 id 都回 "client id not found"。
+		c.JsonErr("client id not found")
+		return
+	}
+	if paths == "" {
 		c.JsonErr("id and paths required")
 		return
 	}
 	for _, p := range strings.Split(paths, "|<-") {
 		if p = strings.TrimSpace(p); p != "" {
-			dispatchCmd(id, "rm -rf "+p)
+			if _, err := dispatchCmd(id, "rm -rf "+p); err != nil {
+				c.JsonErr(err.Error())
+				return
+			}
 		}
 	}
-	c.JsonOkMessage("ok")
+	c.JsonOkVerb("delete")
 }
 
 // DelProcess 结束客户端进程（POST /client/delprocess）。
@@ -160,8 +173,9 @@ func (c *ClientController) DelProcess() {
 	} else {
 		cmd = "pkill -9 " + name
 	}
-	dispatchCmd(id, cmd)
-	c.JsonOkMessage("ok")
+	// 黑盒：delprocess 即使客户端不存在也回 "delete success"（不校验连接）。
+	_, _ = dispatchCmd(id, cmd)
+	c.JsonOkVerb("delete")
 }
 
 // DelList 批量删除客户端（POST /client/dellist）。

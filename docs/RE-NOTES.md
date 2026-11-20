@@ -30,6 +30,12 @@
 | E-14 | garble 字符串池解码 = `dst_blob - src_blob`（逐字节 mod 256），loader `0x116d020`、decode 站 `0x116d0c2` | 反汇编 | `c2engine/string_decrypt.go` |
 | E-15 | SPA 线契约：`/runner/runplugin` 参数 `pluginName`/`procArg`；屏幕 `quality ∈ {big,normal,small}`；截图返回裸 base64；`/download/*` 返回裸二进制 + `Content-Disposition` | 前后端联调 + 前端 chunk 内字面量 | `docs/API.md` |
 | E-16 | 登录 = 明口令比对 → JWT；JWT claims `{token_type,user_id,role_id,username,exp,iat}` | 黑盒登录响应逐字 | `utils/auth.go:192-208` |
+| E-17 | SQLite 运行时 schema 与 `decodedCreateTables` **逐列一致**（clients 22 / tunnels 25 / hosts 23 / listeners 15） | 直接 dump 本机原版 `db/data.db`（R-12） | `c2engine/storage.go:28-122` |
+| E-18 | 面板成功/错误文案全集（add/save/start/stop/delete/modified success、connection error、client is close、already start、not found …） | 黑盒逐接口探测（R-01/R-06） | `controllers/*`、`tests/contract_test.go` |
+| E-19 | 载荷模板路径 `stageless/<tp>_<arch>`、`dll/<tp>_<arch>`、DNS 前缀 `ebpf_` | 黑盒 download 错误信息（R-07） | `c2engine/payload_build.go:PoTemplatePath` |
+| E-20 | `listener/add` 即运行态、`EncryptSalt` 缺省空、`MaxDNSsize=512`；list 项 14 键 | 黑盒（R-02/R-03/R-04） | `controllers/listener.go` |
+| E-21 | 空列表序列化为 `items: null` | 黑盒（R-05） | `controllers/{listener,tunnel}.go` |
+| E-22 | `/api/getMenuList`、`/api/getPermCode` 在原版 404；`/api/client/add` 原版 500 | 黑盒（R-09/R-10） | `router/router.go`（保留为扩展，登记偏差） |
 
 ---
 
@@ -77,6 +83,12 @@
 | X-08 | 面板 API 是 REST 风格 `/api/clients` | 原版是 beego 风格 `/api/client/list`（POST） | 曾据此写了错误的前端/自写面板 |
 
 ---
+
+## 参考环境（活体）
+
+本机有原版 4.9.3 实例与 IDA（见 [REFERENCE.md](REFERENCE.md)）。黑盒取证脚本
+`scripts/probe-original.sh` 把响应抓成 `testdata/original/*.json`，并由
+`controllers/contract_test.go` 逐项比对——这是"行为等价"的回归底线。
 
 ## 待办：如何补证据
 

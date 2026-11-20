@@ -15,15 +15,26 @@ type SettingController struct {
 // Edit 保存设置（POST /setting/edit）。
 // 反编译（0x18f02e0）读取 wx_key 等通知配置并持久化。
 func (c *SettingController) Edit() {
-	wxKey := c.JsonGetStr("wx_key")
-	engineSaveSetting("wx_key", wxKey)
-	c.JsonOkMessage("ok")
+	// 黑盒：setting/edit 返回 {"code":0,"message":"modified success","type":"success"}。
+	if v := c.JsonGetStr("wx_key"); v != "" {
+		engineSaveSetting("wx_key", v)
+	}
+	if v := c.JsonGetStr("dingding_access_token"); v != "" {
+		engineSaveSetting("dingding_access_token", v)
+	}
+	if v := c.JsonGetStr("dingding_key_word"); v != "" {
+		engineSaveSetting("dingding_key_word", v)
+	}
+	c.JsonOkVerb("modified")
 }
 
 // Get 返回设置（GET /setting/get；前端内嵌路由 url:"/setting/get"）。
 func (c *SettingController) Get() {
+	// 黑盒：原版只回这三个键（含空串）。
 	c.JsonOkResult(map[string]interface{}{
-		"wx_key": engineGetSetting("wx_key"),
+		"dingding_access_token": engineGetSetting("dingding_access_token"),
+		"dingding_key_word":     engineGetSetting("dingding_key_word"),
+		"wx_key":                engineGetSetting("wx_key"),
 	})
 }
 
