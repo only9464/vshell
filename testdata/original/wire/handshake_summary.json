@@ -1,0 +1,23 @@
+{
+  "source": "官方 vshell 4.9.3（/home/kali/go/bin/vshell）agent ↔ server 的 MITM 明文记录",
+  "method": "python 代理监听 :18602 转发到官方监听器 :18611；stageless 载荷的 ConnectAddr 指向代理；用 key=hex(md5(salt)) 解密",
+  "record_layout": "[u32 LE 长度][12B nonce][AES-256-GCM 密文][16B tag]；明文是以 u32 LE 长度开头的文本记录",
+  "handshake": [
+    "C→S  [5]\"4.9.3\"      ×2（版本）",
+    "S→C  [32] 十六进制挑战串",
+    "C→S  [32] 十六进制应答串",
+    "S→C  [4]\"sucs\"",
+    "C→S  [4]\"conf\"",
+    "S→C  [1]\"\\x01\"",
+    "C→S  \"conf \\x01\\x00\\x00{client json}\"",
+    "S→C  [1]\"\\x01\"",
+    "S→C  [16] 会话 ID",
+    "C→S  [4]\"main\"（注册主通道）"
+  ],
+  "heartbeat": [
+    "C→S  7 字节：00 ff ff ff ff 1e 00",
+    "C→S  30 字节：RFC3339 时间戳",
+    "S→C  7 字节：08 ff ff ff ff 1e 00（应答）"
+  ],
+  "notes": "conf 记录的 JSON 与服务端 /api/client 的字段一致（Id/IsConnect/VerifyKey/Tp/Addr/...），说明 agent 上线即上报整条 client 记录"
+}

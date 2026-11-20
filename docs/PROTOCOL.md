@@ -186,6 +186,19 @@ region = [16B IV][AES-128-CBC(JSON + 0x00 填充)]     // key = IV = md5(vkey)
 
 面板按 1 MiB 分块拉取，逐块回填 `downloadTasks` 进度，供 `/file/getdownloadper` 计算百分比。
 
+## 2.7 官方 tcp 传输的真实记录（R20 MITM 实证）
+
+```
+线格式：[u32 LE 长度][12B nonce][AES-256-GCM 密文][16B tag]
+密钥  ：key = hex(md5(salt))（32 字节 ASCII；salt 为空 → d41d8cd9…）
+记录  ：[u32 LE 长度] + 文本/JSON
+```
+
+握手（明文）：`"4.9.3"` ×2 → 服务端 32 字节十六进制挑战 → agent 32 字节应答 →
+`"sucs"` → `"conf"` → `\x01` → `"conf \x01\x00\x00{client json}"` → `\x01` →
+16 字节会话 ID → `"main"`。心跳：`00 ff ff ff ff 1e 00` + RFC3339 时间戳，
+服务端回 `08 ff ff ff ff 1e 00`。详见 `docs/RE-NOTES.md` E-34。
+
 ## 3. 20 字节/24 字节记录（原版任务与结果载体）
 
 服务端已有编码器（`c2engine/wire.go`），agent 已有生成器（`agent/main.go:1078-1160`），

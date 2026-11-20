@@ -258,4 +258,40 @@ key = hex(md5(salt)) 的 32 字节 ASCII（salt 为空 → d41d8cd98f00b204e9800
 | `ListenAddr` | `/listener/add` 会**真的绑定**该地址（`ss` 可见） |
 | `ConnectAddr` | stageless 载荷配置区里的 `server` 取这个值 |
 
+### E-34 握手与心跳记录实证（R20，MITM）
+
+方法：官方监听器绑 `127.0.0.1:18611`，stageless 载荷的 `ConnectAddr` 指向
+**Python MITM 代理**（`:18602` → `:18611`），代理逐帧解密并打印。官方 agent 通过代理
+**成功上线**（面板 `clientOnlineCount=1`，`HostName=kali`、`OsName=linux_amd64`）。
+
+完整握手（明文；`[n]` 表示 u32 LE 长度前缀）：
+
+| 方向 | 明文 | 说明 |
+|---|---|---|
+| C→S | `[5]"4.9.3"` ×2 | agent 版本（同一连接连发两条） |
+| S→C | `[32]<hex>` | 服务端挑战串（十六进制文本） |
+| C→S | `[32]<hex>` | agent 应答串 |
+| S→C | `[4]"sucs"` | 认证通过 |
+| C→S | `[4]"conf"` | 请求配置下发 |
+| S→C | `[1]"\x01"` | 许可（1） |
+| C→S | `"conf \x01\x00\x00{client json}"` | **上线记录**：整条 client 记录（Id/IsConnect/VerifyKey/Tp/Addr/LocalIP/UserName/HostName/OsName/ProcessName/…与 `/api/client` 字段一致） |
+| S→C | `[1]"\x01"` | 接受 |
+| S→C | `[16]` 会话 ID | 如 `IVAoXA2etic7VgbY` |
+| C→S | `[4]"main"` | 注册主通道 |
+
+心跳（每 5 秒）：
+
+| 方向 | 明文 |
+|---|---|
+| C→S | 7 字节 `00 ff ff ff ff 1e 00` |
+| C→S | 30 字节 RFC3339 时间戳 |
+| S→C | 7 字节 `08 ff ff ff ff 1e 00`（应答） |
+
+要点：
+- 记录 = `[u32 LE 长度] + 文本/JSON`，**不是**纯二进制结构；命令与状态都走文本词汇
+  （`sucs`/`conf`/`main` 等）。
+- `conf` 后的 `\x01\x00\x00` 三个字节含义待定（可能是通道号/标志）。
+- 证据：[testdata/original/wire/mitm_session_2026-11-20.log](mitm log 全文) 与
+  `handshake_summary.json`。
+
 
