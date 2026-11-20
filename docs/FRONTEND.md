@@ -1,0 +1,213 @@
+# 前端重开发方案（FRONTEND）
+
+> 决策：**不复用原版 SPA**（`static/assets/`，200 个 Vite chunk，字段契约与当前后端不符，
+> 且无源码）。以 [API.md](API.md) 为唯一契约，用 Vue3 重写。
+> 原版 SPA 保留在 `static/` 直到新前端 M6 完成，仅作交互参考。
+
+---
+
+## 1. 技术选型
+
+| 层 | 选型 | 理由 |
+|---|---|---|
+| 构建 | Vite 5 + TypeScript | 快、生态标准 |
+| 框架 | Vue 3.5（`<script setup>`） | — |
+| 路由 | Vue Router 4（history 模式，后端已做 SPA 回退） | — |
+| 状态 | Pinia + `pinia-plugin-persistedstate`（存 token） | — |
+| UI | Element Plus（表格/表单/弹窗齐全，C2 面板形态最省事） | 备选 shadcn-vue，但表格/树/虚拟滚动需自己拼 |
+| 动效/装饰 | vue-bits（背景、数字滚动）、UnoCSS 或 Tailwind 做间距 | 可选 |
+| 终端 | xterm.js + `@xterm/addon-fit` + `@xterm/addon-attach` | 与服务端 text 帧对齐 |
+| 屏幕 | `<canvas>`/`<img>` + `pako`（inflate 服务端 zlib 帧） | 协议见 API.md §8.2 |
+| 图表 | ECharts（dashboard 流量/CPU） | — |
+| 图标 | `@iconify/vue` | — |
+| HTTP | axios + 统一拦截器（`Token` 头、`code!=0` 抛错、401 跳登录） | — |
+
+> 不引入完整的 Vben/Admin 模板：本项目页面少（9 个），自己搭壳更快，也避免再出现
+> "模板字段与后端不符"的问题。
+
+---
+
+## 2. 目录结构
+
+```
+web/
+├── index.html
+├── vite.config.ts          # base:'/', proxy /api → http://127.0.0.1:8082
+├── src/
+│   ├── main.ts
+│   ├── App.vue
+│   ├── api/
+│   │   ├── http.ts         # axios 实例 + 拦截器
+│   │   ├── auth.ts         # login/logout/getUserInfo/getMenuList/getPermCode
+│   │   ├── client.ts       # /client/*
+│   │   ├── listener.ts     # /listener/*
+│   │   ├── tunnel.ts       # /tunnel/*
+│   │   ├── file.ts         # /file/*
+│   │   ├── download.ts     # /download/*（GET + token，用 <a download> 或 blob）
+│   │   ├── runner.ts       # /runner/*
+│   │   ├── setting.ts      # /setting/*
+│   │   ├── screenshot.ts   # /screenshot/get
+│   │   └── dashboard.ts    # /dashboard/info
+│   ├── stores/
+│   │   ├── auth.ts         # token / userInfo / perms / menus
+│   │   └── app.ts          # 主题、折叠状态
+│   ├── router/
+│   │   ├── index.ts        # 静态路由 + 守卫
+│   │   └── routes.ts       # 与后端 getMenuList 的 path 对齐
+│   ├── layouts/
+│   │   ├── BasicLayout.vue # 侧边栏 + 顶栏 + 面包屑 + <router-view>
+│   │   └── BlankLayout.vue
+│   ├── views/
+│   │   ├── login/LoginView.vue
+│   │   ├── dashboard/index.vue
+│   │   ├── client/list.vue
+│   │   ├── client/detail/{Terminal,Files,Screen,Screenshot,Install}.vue
+│   │   ├── listener/list.vue
+│   │   ├── tunnel/list.vue
+│   │   ├── download/{Stage,Stageless,Listen,Shellcode,Dll,ListenDll}.vue
+│   │   ├── plugin/index.vue
+│   │   ├── setting/index.vue
+│   │   └── about/index.vue
+│   ├── components/
+│   │   ├── TerminalView.vue      # xterm 封装
+│   │   ├── ScreenViewer.vue      # 屏幕 + 鼠标键盘事件
+│   │   ├── FileBrowser.vue       # 树 + 列表 + 编辑器
+│   │   └── StatCard.vue
+│   ├── composables/
+│   │   ├── useWebSocket.ts       # 断线重连 + token 拼接
+│   │   └── useDownload.ts        # GET + token + 文件名
+│   └── styles/
+└── package.json
+```
+
+构建产物输出到仓库根 `static/`（`vite.config.ts: build.outDir = '../static'`），
+服务端无需改动即可托管；`/admin`、`/index6us` 等旧入口在切换后删除。
+
+---
+
+## 3. 路由（与 `getMenuList` 对齐）
+
+| 路径 | 页面 | 需要的 API |
+|---|---|---|
+| `/login` | 登录 | `/login` |
+| `/dashboard/index` | 仪表盘 | `/dashboard/info` |
+| `/client/list` | 客户端列表 | `/client/list`、`/client/{editremark,dellist,delfile,delprocess}` |
+| `/client/terminal?id=` | 终端 | WS `/api/terminal/ws` |
+| `/client/filemanager?id=` | 文件管理 | `/file/*` |
+| `/client/screen?id=` | 屏幕直播 | WS `/api/screen/ws` |
+| `/client/screenshot?id=` | 截图 | `/screenshot/get` |
+| `/client/serviceInstall?id=` | 安装/卸载 | `/install/*` |
+| `/listener/list` | 监听器 | `/listener/*` |
+| `/tunnel/list` | 隧道 | `/tunnel/*` |
+| `/download/{stage,stageless,listen,shellcode,dll,listendll}` | 载荷 | `/download/*`（GET） |
+| `/pluginrunner/index` | 插件 | `/runner/*` |
+| `/setting/index` | 设置 | `/setting/*` |
+| `/about/index` | 关于 | — |
+
+守卫：无 token → `/login`；`getUserInfo` 401 → 清 token 跳登录。
+
+---
+
+## 4. 关键实现要点
+
+### 4.1 HTTP 封装（对应 API.md §0）
+
+```ts
+// api/http.ts
+const http = axios.create({ baseURL: '/api', timeout: 30_000 })
+http.interceptors.request.use((c) => {
+  const t = useAuthStore().token
+  if (t) c.headers.Token = t
+  return c
+})
+http.interceptors.response.use(
+  (r) => {
+    const d = r.data
+    if (d && typeof d.code === 'number' && d.code !== 0) {
+      return Promise.reject(new Error(d.message || 'request failed'))
+    }
+    return d?.result ?? d          // 登录接口例外：直接取 {token,userInfo}
+  },
+  (e) => {
+    if (e.response?.status === 401) useAuthStore().logout()
+    return Promise.reject(e)
+  },
+)
+```
+
+### 4.2 下载（必须 GET + token）
+
+```ts
+// composables/useDownload.ts
+function download(path: string, params: Record<string, any>, filename: string) {
+  const qs = new URLSearchParams({ ...params, token: useAuthStore().token! })
+  const a = document.createElement('a')
+  a.href = `/api${path}?${qs}`
+  a.download = filename
+  a.click()
+}
+```
+
+### 4.3 终端
+
+```ts
+const term = new Terminal({ fontSize: 14, scrollback: 5000 })
+const fit = new FitAddon(); term.loadAddon(fit)
+const ws = new WebSocket(`${wsBase}/api/terminal/ws?id=${id}&token=${token}`)
+ws.binaryType = 'arraybuffer'
+ws.onmessage = (e) => term.write(typeof e.data === 'string' ? e.data : new Uint8Array(e.data))
+term.onData((d) => ws.send(d))                       // 原始按键，服务端自己 base64
+term.onResize(({ cols, rows }) => ws.send(JSON.stringify({ type: '1', cols, rows })))
+```
+
+### 4.4 屏幕
+
+```ts
+ws.onmessage = async (e) => {
+  if (typeof e.data === 'string') return            // 控制帧，忽略
+  const png = pako.inflate(new Uint8Array(await e.data.arrayBuffer?.() ?? e.data))
+  img.src = URL.createObjectURL(new Blob([png], { type: 'image/png' }))
+}
+// 鼠标事件 → ws.send(JSON.stringify({type:'1',absX,absY,...}))
+```
+
+### 4.5 表格字段
+
+客户端列表**必须**用大写字段（`Id/OsName/UserName/HostName/LocalIP/Addr/Tp/Location/ProcessName/IsConnect/Remark/PingCheckTime/Port/DnsPort`），
+见 [API.md](API.md) §2 的契约表。这是当前后端 B0.8 的修复目标；在前端侧同时做一层
+`normalize(row)` 兜底（大写取不到时回落小写），避免后端没修完就白屏。
+
+---
+
+## 5. 开发与联调
+
+```bash
+# 后端
+go build -o vshell-server . && ./vshell-server        # 默认 :8082
+
+# 前端
+cd web && pnpm i && pnpm dev                          # Vite :5173，/api 代理到 :8082
+pnpm build                                            # 产物 → ../static/
+```
+
+联调检查清单：
+1. 登录 → 拿到 token 且刷新页面仍保持（persistedstate）。
+2. 客户端列表出现字段（若空白，先看后端 B0.8 是否已修）。
+3. 终端能交互（依赖 B0.1 在线状态）。
+4. 下载页能拿到文件（依赖 B0.7 的 GET 注册）。
+5. 屏幕页能出图（依赖 agent 屏幕帧链路）。
+
+---
+
+## 6. 里程碑（M6 拆分）
+
+| ID | 内容 | 依赖 |
+|---|---|---|
+| B6.1 | 脚手架 + 布局 + 登录 + 守卫 | 无 |
+| B6.2 | 客户端列表/详情/备注/删除 | B0.1、B0.8 |
+| B6.3 | 监听器管理 | B0.10 |
+| B6.4 | 载荷下载六页 | B0.7、B2.x |
+| B6.5 | 终端 | B0.1 |
+| B6.6 | 屏幕 + 截图 | B3.4 |
+| B6.7 | 文件管理 | B1.3、B5.2 |
+| B6.8 | 隧道/插件/设置/关于 | B4.1、B5.4、B5.5 |

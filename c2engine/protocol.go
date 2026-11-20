@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -145,6 +146,79 @@ type ResultRequest struct {
 type ResultResponse struct {
 	Status   string `json:"status"`
 	Received bool   `json:"received"`
+}
+
+// UnmarshalJSON 让 ResultRequest 同时接受两种键名拼写：
+//
+//	ClientID / client_id / clientid      → ClientID
+//	CommandID / command_id / commandid   → CommandID
+//	Result / result, Status / status, VerifyKey / verify_key
+//
+// 这是两端历史漂移的兼容层：服务端的结构体用 Go 惯用的首字母大写标签
+// （`ClientID`），而 agent 侧用的是 snake_case（`client_id`），Go 的 JSON
+// 解码只做大小写不敏感匹配、不做下划线归一化，于是结果永远落不到对应任务上
+// （CommandID 恒 0）。新客户端统一用 snake_case，见 docs/PROTOCOL.md。
+func (r *ResultRequest) UnmarshalJSON(b []byte) error {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	pick := func(names ...string) (json.RawMessage, bool) {
+		for _, n := range names {
+			if v, ok := raw[n]; ok {
+				return v, true
+			}
+		}
+		norm := func(s string) string {
+			return strings.ToLower(strings.ReplaceAll(s, "_", ""))
+		}
+		for k, v := range raw {
+			nk := norm(k)
+			for _, n := range names {
+				if nk == norm(n) {
+					return v, true
+				}
+			}
+		}
+		return nil, false
+	}
+
+	r.ClientID, _ = pickInt64(raw, pick, "ClientID", "client_id")
+	r.CommandID, _ = pickInt64(raw, pick, "CommandID", "command_id")
+	if v, ok := pick("Result", "result"); ok {
+		_ = json.Unmarshal(v, &r.Result)
+	}
+	if v, ok := pick("Status", "status"); ok {
+		_ = json.Unmarshal(v, &r.Status)
+	}
+	if v, ok := pick("VerifyKey", "verify_key"); ok {
+		_ = json.Unmarshal(v, &r.VerifyKey)
+	}
+	return nil
+}
+
+// pickInt64 从 JSON 原始值中取整数（兼容数字与字符串两种写法）。
+func pickInt64(_ map[string]json.RawMessage, pick func(...string) (json.RawMessage, bool), names ...string) (int64, bool) {
+	v, ok := pick(names...)
+	if !ok {
+		return 0, false
+	}
+	var n json.Number
+	if err := json.Unmarshal(v, &n); err == nil {
+		if i, err := n.Int64(); err == nil {
+			return i, true
+		}
+		if f, err := n.Float64(); err == nil {
+			return int64(f), true
+		}
+	}
+	var s string
+	if err := json.Unmarshal(v, &s); err == nil {
+		if i, err := strconv.ParseInt(strings.TrimSpace(s), 10, 64); err == nil {
+			return i, true
+		}
+	}
+	return 0, false
 }
 
 // ============================================================================

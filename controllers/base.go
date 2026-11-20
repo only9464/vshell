@@ -162,26 +162,25 @@ func (c *ApiBaseController) JsonGetBool(key string) bool {
 	return v
 }
 
-// JsonGetIntList 读取 int 列表参数（反编译：FUN_018d8200；逗号分隔或 JSON 数组）。
-func (c *ApiBaseController) JsonGetIntList(key string) []int {
-	s := c.GetString(key)
-	if s == "" {
+// jsonBodyRaw 返回 JSON 请求体里 key 对应的原始值（取不到返回 nil）。
+//
+// 面板的批量删除（/client/dellist、/listener/dellist、/tunnel/dellist）以
+// `{"id":[1,2]}` 提交，而 beego 的 GetString 只认查询串/表单，拿不到数组，
+// 于是这些接口此前恒回 "id err"（见 docs/API.md §9-③）。
+func (c *ApiBaseController) jsonBodyRaw(key string) json.RawMessage {
+	body := c.Ctx.Input.RequestBody
+	if len(body) == 0 {
 		return nil
 	}
-	parts := strings.Split(s, ",")
-	out := make([]int, 0, len(parts))
-	for _, p := range parts {
-		n, err := strconv.Atoi(strings.TrimSpace(p))
-		if err == nil {
-			out = append(out, n)
-		}
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(body, &m); err != nil {
+		return nil
 	}
-	return out
+	return m[key]
 }
 
-// JsonGetStrList 读取 string 列表参数（反编译：FUN_018d84a0；逗号分隔或 JSON 数组）。
-func (c *ApiBaseController) JsonGetStrList(key string) []string {
-	s := c.GetString(key)
+// splitComma 拆分逗号分隔串并去掉空白项。
+func splitComma(s string) []string {
 	if s == "" {
 		return nil
 	}
@@ -193,6 +192,66 @@ func (c *ApiBaseController) JsonGetStrList(key string) []string {
 		}
 	}
 	return out
+}
+
+// JsonGetIntList 读取 int 列表参数（反编译：FUN_018d8200）。
+//
+// 支持三种提交形态：查询串 `id=1,2`、JSON 数组 `{"id":[1,2]}`、JSON 字符串
+// `{"id":"1,2"}`。面板用第二种。
+func (c *ApiBaseController) JsonGetIntList(key string) []int {
+	out := make([]int, 0, 4)
+
+	if raw := c.jsonBodyRaw(key); len(raw) > 0 {
+		var arr []int
+		if err := json.Unmarshal(raw, &arr); err == nil {
+			return arr
+		}
+		var arrF []float64
+		if err := json.Unmarshal(raw, &arrF); err == nil {
+			for _, f := range arrF {
+				out = append(out, int(f))
+			}
+			return out
+		}
+		var single int
+		if err := json.Unmarshal(raw, &single); err == nil {
+			return []int{single}
+		}
+		var str string
+		if err := json.Unmarshal(raw, &str); err == nil {
+			for _, p := range splitComma(str) {
+				if n, err := strconv.Atoi(p); err == nil {
+					out = append(out, n)
+				}
+			}
+			return out
+		}
+	}
+
+	for _, p := range splitComma(c.GetString(key)) {
+		if n, err := strconv.Atoi(p); err == nil {
+			out = append(out, n)
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+// JsonGetStrList 读取 string 列表参数（反编译：FUN_018d84a0；同样支持三种形态）。
+func (c *ApiBaseController) JsonGetStrList(key string) []string {
+	if raw := c.jsonBodyRaw(key); len(raw) > 0 {
+		var arr []string
+		if err := json.Unmarshal(raw, &arr); err == nil {
+			return arr
+		}
+		var str string
+		if err := json.Unmarshal(raw, &str); err == nil {
+			return splitComma(str)
+		}
+	}
+	return splitComma(c.GetString(key))
 }
 
 // JsonOkMessage 成功消息响应：{"code":0,"message":"ok","type":<msg>}

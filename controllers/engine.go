@@ -46,6 +46,18 @@ type EngineClient struct {
 	OSType   string
 	Arch     string
 	LastTime int64
+
+	// 面板列契约（原版 /client/list 的响应键，见 docs/API.md §2）。
+	VerifyKey     string
+	Type          string // 通道类型 http/https/kcp/dns/websocket
+	Addr          string // 外网地址（= IP）
+	LocalIP       string
+	UserName      string
+	HostName      string
+	ProcessName   string
+	Location      string
+	IsConnect     bool
+	PingCheckTime int64
 }
 
 // EngineListener 引擎中的监听器记录（/listener/list 反编译 JSON 键：
@@ -64,6 +76,12 @@ type EngineListener struct {
 	Type     int
 	IsVIP    bool
 	Expires  int64
+
+	// 面板表单可直接指定监听/回连地址与心跳参数（原版 Add 的入参超集）。
+	ListenAddr        string
+	ConnectAddr       string
+	PingInterval      int
+	DisconnectTimeout int
 }
 
 // EngineTunnel 引擎中的隧道记录（/tunnel/list 反编译 JSON 键：Id / Target / Mode / Remark / Port）。
@@ -81,18 +99,30 @@ func engineGetClientList(offset, limit int, field, order, search, sort string, s
 	clients, total := c2engine.GetEngine().GetClientList(offset, limit, field, order, search, sort, status)
 	out := make([]EngineClient, 0, len(clients))
 	for _, c := range clients {
+		online := c.Status || c.NowConn > 0
 		out = append(out, EngineClient{
-			ID:      c.ID,
-			IP:      c.Addr,
-			Status:  c.Status || c.NowConn > 0,
-			Remark:  c.Remark,
-			Port:    c.Port,
-			DnsPort: c.DnsPort,
-			Version: c.Version,
-			IsAdmin: c.IsAdmin,
-			OSType:  c.OsName,
-			Arch:    c.Arch,
+			ID:       c.ID,
+			IP:       c.Addr,
+			Status:   online,
+			Remark:   c.Remark,
+			Port:     c.Port,
+			DnsPort:  c.DnsPort,
+			Version:  c.Version,
+			IsAdmin:  c.IsAdmin,
+			OSType:   c.OsName,
+			Arch:     c.Arch,
 			LastTime: c.LastTime,
+
+			VerifyKey:     c.VerifyKey,
+			Type:          c.Type,
+			Addr:          c.Addr,
+			LocalIP:       c.LocalIP,
+			UserName:      c.UserName,
+			HostName:      c.HostName,
+			ProcessName:   c.ProcessName,
+			Location:      c.Location,
+			IsConnect:     online,
+			PingCheckTime: c.PingCheckTime,
 		})
 	}
 	return out, total
@@ -199,8 +229,45 @@ func engineEditListenerRemark(id int64, remark string) {
 }
 
 func engineAddListener(l EngineListener) error {
-	_, err := c2engine.GetEngine().NewListener(l.Host, "", l.Mode, l.Vkey, l.Salt, l.Remark)
-	return err
+	// 监听地址：显式 ListenAddr > Host:Port > Host > Port > 协议默认。
+	addr := l.ListenAddr
+	if addr == "" && l.Host != "" {
+		addr = l.Host
+		if l.Port > 0 {
+			addr = l.Host + ":" + strconv.Itoa(l.Port)
+		}
+	}
+	if addr == "" && l.Port > 0 {
+		addr = "0.0.0.0:" + strconv.Itoa(l.Port)
+	}
+
+	listener, err := c2engine.GetEngine().NewListener(
+		addr, l.ConnectAddr, l.Mode, l.Vkey, l.Salt, l.Remark)
+	if err != nil {
+		return err
+	}
+
+	// 其余字段（OSS/VIP/心跳）在创建后回填；NewListener 只负责地址/密钥/备注。
+	updates := map[string]interface{}{"vip": l.IsVIP}
+	if l.OssUrl != "" {
+		updates["oss_url"] = l.OssUrl
+	}
+	if l.Host != "" {
+		updates["host"] = l.Host
+	}
+	if l.Port > 0 {
+		updates["port"] = l.Port
+	}
+	if l.PingInterval > 0 {
+		updates["ping_interval"] = l.PingInterval
+	}
+	if l.DisconnectTimeout > 0 {
+		updates["disconnect_timeout"] = l.DisconnectTimeout
+	}
+	if _, err := c2engine.GetEngine().UpdateListener(listener.ID, updates); err != nil {
+		return err
+	}
+	return nil
 }
 
 // engineEditListener 编辑监听器（原版 FUN_01902720：更新字段并落库；监听器
@@ -601,11 +668,17 @@ func AppBackground() {
 	log.Printf("[AppBackground] licTime=%d clientNum=%d verified=%v master=%s basicAuth=%v logPath=%s",
 		licTime, clientNum, verified, masterType, basicAuth, logPath)
 
+	// 在线巡检：超过 clientOnlineTimeout 没有任何动静的客户端标记离线。
+	// 原版由常驻后台对象维护在线位（FUN_0194d140，未恢复）；复刻端用最直接的
+	// 方式补上——没有这一步，Status 永远为假，面板所有下发接口都回
+	// "client is close"。
 	// 未对齐（见报告）：FUN_0194cde0 构造的常驻服务字符串、FUN_0194d140 的对象
 	// 类型与运行循环、FUN_00a28780 / FUN_0043e220 启动的 goroutine 均无法从
 	// garble 二进制恢复，因此不在此处臆造服务。license 未配置时原版还会在
 	// FUN_0194bd60 里把 licTime 写回设置单例（FUN_00c8db00），复刻端把该值
 	// 暴露为 backgroundState 供上层读取，不再回写配置文件。
+
+	startClientOnlineSweeper()
 }
 
 // ---- 下载任务（FUN_01906e80 GetDownloadPer 等）----

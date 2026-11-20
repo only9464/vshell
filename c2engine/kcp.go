@@ -10,6 +10,8 @@ import (
 	"io"
 	"log"
 	"net"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -557,7 +559,7 @@ func (kl *KCPListener) handleSession(conn *kcp.UDPSession) {
 
 	// Verify key（客户端结构字段：VerifyKey/Tp/Addr/UserName/HostName/
 	// OsName/ProcessName，SQL 模式列实锤）
-	vkey, _ := handshake["VerifyKey"].(string)
+	vkey := hsString(handshake, "VerifyKey", "verify_key", "vkey")
 	if kl.VerifyKey != "" && vkey != kl.VerifyKey {
 		Logf("[KCP %d] Rejected connection with wrong key from %s", kl.ID, conn.RemoteAddr())
 		conn.Close()
@@ -565,11 +567,11 @@ func (kl *KCPListener) handleSession(conn *kcp.UDPSession) {
 	}
 
 	// Register client（原版 checkin = "conf" 命令 + JSON）
-	hostname, _ := handshake["HostName"].(string)
-	username, _ := handshake["UserName"].(string)
-	osName, _ := handshake["OsName"].(string)
-	processName, _ := handshake["ProcessName"].(string)
-	arch, _ := handshake["Arch"].(string)
+	hostname := hsString(handshake, "HostName", "hostname", "host")
+	username := hsString(handshake, "UserName", "username", "user")
+	osName := hsString(handshake, "OsName", "os", "osname")
+	processName := hsString(handshake, "ProcessName", "process", "processname")
+	arch := hsString(handshake, "Arch", "arch")
 
 	client, err := engine.NewClient(
 		vkey, "kcp", conn.RemoteAddr().String(), "",
@@ -604,7 +606,7 @@ func (kl *KCPListener) handleSession(conn *kcp.UDPSession) {
 		Interval: 5,
 		Timeout:  30,
 	})
-	if err := link.WriteMain(resp); err != nil {
+	if err := kl.sendMain(link, resp); err != nil {
 		return
 	}
 
@@ -634,6 +636,11 @@ func (kl *KCPListener) communicationLoop(link *Link, client *Client) {
 			msgType, data, err := link.ReadFlagRetry()
 			if err != nil {
 				continue
+			}
+			// 主信道载荷经消息帧加密（与 HTTP 通道同一套 AES-256-GCM），
+			// 明文 JSON 仍被接受以兼容旧客户端与手工调试。
+			if msgType == LinkMsgMain {
+				data = kl.openMain(data)
 			}
 
 			switch msgType {
@@ -669,18 +676,18 @@ func (kl *KCPListener) communicationLoop(link *Link, client *Client) {
 				}
 				// The verify key is the only credential on the task/result channel:
 				// without it, any reachable peer could read queued commands or
-				// forge results for any client.
+				// forge results for any client. 键名同时接受 agent 的
+				// snake_case 与服务端习惯的首字母大写（见 hsString）。
 				if kl.VerifyKey != "" {
-					vkey, _ := msg["VerifyKey"].(string)
-					if vkey != kl.VerifyKey {
+					if hsString(msg, "VerifyKey", "verify_key") != kl.VerifyKey {
 						continue
 					}
 				}
 				// Task result (agent posts command_id/result/status).
-				if cmdID, ok := msg["CommandID"].(float64); ok {
-					result, _ := msg["Result"].(string)
-					status, _ := msg["Status"].(string)
-					cid, _ := msg["ClientID"].(float64)
+				if cmdID, ok := msgInt64(msg, "CommandID", "command_id"); ok {
+					result := hsString(msg, "Result", "result")
+					status := hsString(msg, "Status", "status")
+					cid, _ := msgInt64(msg, "ClientID", "client_id")
 					// Live streams (terminal output / screen frames) must be
 					// relayed to the web-panel viewers like the HTTP result path
 					// does — storing them as task results would leave the
@@ -692,12 +699,12 @@ func (kl *KCPListener) communicationLoop(link *Link, client *Client) {
 				}
 				// Task poll (agent requests pending commands).
 				if typ, _ := msg["type"].(string); typ == "task_poll" {
-					cid, _ := msg["ClientID"].(float64)
-					client := engine.GetClient(int64(cid))
+					cid, _ := msgInt64(msg, "ClientID", "client_id")
+					client := engine.GetClient(cid)
 					if client != nil {
 						client.UpdateSeen()
 					}
-					pending := engine.GetAndMarkPendingTasks(int64(cid))
+					pending := engine.GetAndMarkPendingTasks(cid)
 					tasks := make([]TaskItem, 0, len(pending))
 					for _, t := range pending {
 						tasks = append(tasks, TaskItem{ID: t.ID, Command: t.Command, Timeout: t.Timeout})
@@ -706,7 +713,7 @@ func (kl *KCPListener) communicationLoop(link *Link, client *Client) {
 						tasks = []TaskItem{}
 					}
 					resp, _ := json.Marshal(TaskResponse{Tasks: tasks, Interval: 5})
-					if err := link.WriteMain(resp); err != nil {
+					if err := kl.sendMain(link, resp); err != nil {
 						return
 					}
 					continue
@@ -1142,3 +1149,91 @@ func StopListenerByMode(config *Listener) error {
 // Ensure io import context is used
 var _ = context.Background
 var _ = io.ReadFull
+
+// ---------------------------------------------------------------------------
+// KCP 主信道载荷加密（B0.6）
+// ---------------------------------------------------------------------------
+
+// hsString 按多个候选键名读取握手字段。
+//
+// 两端曾各写一套键名：服务端读 "VerifyKey"，agent 发 "verify_key"（Go 的
+// JSON 解码大小写不敏感，但不会把下划线归一化），于是配了密钥的监听器直接
+// 拒连。这里同时接受两种拼写，新客户端统一用 snake_case。
+func hsString(m map[string]interface{}, names ...string) string {
+	for _, n := range names {
+		if v, ok := m[n].(string); ok && v != "" {
+			return v
+		}
+	}
+	// 大小写/下划线不敏感匹配
+	norm := func(s string) string {
+		return strings.ToLower(strings.ReplaceAll(s, "_", ""))
+	}
+	for k, v := range m {
+		s, ok := v.(string)
+		if !ok || s == "" {
+			continue
+		}
+		nk := norm(k)
+		for _, n := range names {
+			if nk == norm(n) {
+				return s
+			}
+		}
+	}
+	return ""
+}
+
+// sendMain 在主信道上发送经消息帧加密的载荷。
+func (kl *KCPListener) sendMain(l *Link, payload []byte) error {
+	enc, err := FrameEncrypt(payload, kl.EncryptSalt)
+	if err != nil {
+		return err
+	}
+	return l.WriteMain(enc)
+}
+
+// openMain 解开主信道载荷；解不开则按明文返回（兼容旧客户端/调试）。
+func (kl *KCPListener) openMain(data []byte) []byte {
+	if pt, err := FrameDecrypt(data, kl.EncryptSalt); err == nil {
+		return pt
+	}
+	return data
+}
+
+// msgInt64 从 JSON 对象里按多个候选键名读取整数（兼容 float64 与字符串）。
+func msgInt64(m map[string]interface{}, names ...string) (int64, bool) {
+	for _, n := range names {
+		if v, ok := m[n]; ok {
+			switch t := v.(type) {
+			case float64:
+				return int64(t), true
+			case int64:
+				return t, true
+			case string:
+				if i, err := strconv.ParseInt(strings.TrimSpace(t), 10, 64); err == nil {
+					return i, true
+				}
+			}
+		}
+	}
+	// 大小写/下划线不敏感匹配
+	norm := func(s string) string { return strings.ToLower(strings.ReplaceAll(s, "_", "")) }
+	for k, v := range m {
+		nk := norm(k)
+		for _, n := range names {
+			if nk != norm(n) {
+				continue
+			}
+			switch t := v.(type) {
+			case float64:
+				return int64(t), true
+			case string:
+				if i, err := strconv.ParseInt(strings.TrimSpace(t), 10, 64); err == nil {
+					return i, true
+				}
+			}
+		}
+	}
+	return 0, false
+}

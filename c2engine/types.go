@@ -179,6 +179,44 @@ func (c *Client) UpdateSeen() {
 	c.PingCheckTime = now.Unix()
 }
 
+// SetOnline 设置客户端在线状态（原版客户端结构 +0x50 的状态位）。
+//
+// 原版把该位用于两处：面板的在线计数（/client/list 的 clientOnlineCount）与
+// 所有派发路径的前置检查（终端/文件/截图/插件在 Status 为假时统一回
+// "client is close"）。复刻端此前只读不写，导致 agent 上线后依然被判离线，
+// 全部面板操作返回 "client is close"。
+//
+// SetOnline sets the client's online flag (original struct +0x50). Both the panel's
+// online counters and every dispatch path gate on it.
+func (c *Client) SetOnline(online bool) {
+	c.Lock()
+	defer c.Unlock()
+	c.Status = online
+	c.IsConnect = online
+	if online {
+		now := time.Now()
+		c.LastSeen = now
+		c.LastTime = now.Unix()
+		c.PingCheckTime = now.Unix()
+	}
+}
+
+// IsOnline 返回在线状态（原版 +0x50）。
+// IsOnline reports the online flag.
+func (c *Client) IsOnline() bool {
+	c.RLock()
+	defer c.RUnlock()
+	return c.Status
+}
+
+// LastSeenAt 返回最近活跃时间。
+// LastSeenAt returns the last-seen timestamp.
+func (c *Client) LastSeenAt() time.Time {
+	c.RLock()
+	defer c.RUnlock()
+	return c.LastSeen
+}
+
 // HasTunnel 查询客户端是否已建隧道（反编译 0x119cd40：查引擎隧道表）。
 func (c *Client) HasTunnel(tunnelID int64) bool {
 	return GetEngine().tunnelExists(c.ID, tunnelID)

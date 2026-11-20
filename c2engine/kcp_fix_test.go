@@ -18,6 +18,7 @@ import (
 // [2-byte length][LinkMsgType][payload] frames.
 type testKCPClient struct {
 	sess *kcp.UDPSession
+	salt string // 主信道载荷的消息帧盐（与 agent 的 EncryptSalt 同义）
 }
 
 func dialTestKCP(addr, salt, vkey string) (*testKCPClient, error) {
@@ -30,10 +31,18 @@ func dialTestKCP(addr, salt, vkey string) (*testKCPClient, error) {
 	sess.SetNoDelay(1, 10, 2, 1)
 	sess.SetWindowSize(128, 128)
 	sess.SetMtu(1350)
-	return &testKCPClient{sess: sess}, nil
+	return &testKCPClient{sess: sess, salt: salt}, nil
 }
 
 func (c *testKCPClient) writeFrame(msgType LinkMsgType, payload []byte) error {
+	// 主信道载荷经消息帧加密（与 agent 的 kcpTransport.writeFrame 一致）。
+	if msgType == LinkMsgMain && c.salt != "" {
+		enc, err := FrameEncrypt(payload, c.salt)
+		if err != nil {
+			return err
+		}
+		payload = enc
+	}
 	msg := make([]byte, 1+len(payload))
 	msg[0] = byte(msgType)
 	copy(msg[1:], payload)
@@ -59,7 +68,14 @@ func (c *testKCPClient) readFrame() (LinkMsgType, []byte, error) {
 	if len(data) == 0 {
 		return 0, nil, nil
 	}
-	return LinkMsgType(data[0]), data[1:], nil
+	msgType := LinkMsgType(data[0])
+	payload := data[1:]
+	if msgType == LinkMsgMain {
+		if pt, err := FrameDecrypt(payload, c.salt); err == nil {
+			payload = pt
+		}
+	}
+	return msgType, payload, nil
 }
 
 func (c *testKCPClient) close() { c.sess.Close() }

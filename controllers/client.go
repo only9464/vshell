@@ -58,12 +58,28 @@ func (c *ClientController) List() {
 			online++
 		}
 		items = append(items, map[string]interface{}{
+			// —— 原版 SPA 的列契约（大小写敏感，见 docs/API.md §2）——
+			"Id":            cl.ID,
+			"VerifyKey":     cl.VerifyKey,
+			"Tp":            cl.Type,
+			"Addr":          cl.Addr,
+			"LocalIP":       cl.LocalIP,
+			"UserName":      cl.UserName,
+			"HostName":      cl.HostName,
+			"OsName":        cl.OSType,
+			"ProcessName":   cl.ProcessName,
+			"Location":      cl.Location,
+			"IsConnect":     cl.Status || cl.IsConnect,
+			"PingCheckTime": cl.PingCheckTime,
+			"Remark":        cl.Remark,
+			"Port":          cl.Port,
+			"DnsPort":       cl.DnsPort,
+
+			// —— 旧键（复刻端早期写法，保留一版以免其它调用方断裂）——
 			"id":       cl.ID,
 			"ip":       cl.IP,
 			"status":   cl.Status,
 			"remark":   cl.Remark,
-			"Port":     cl.Port,
-			"DnsPort":  cl.DnsPort,
 			"version":  cl.Version,
 			"isAdmin":  cl.IsAdmin,
 			"os":       cl.OSType,

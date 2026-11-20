@@ -78,16 +78,16 @@ func registerAPIRoutes() {
 		beego.Router("/api/file/upload", &controllers.FileController{}, "post:Upload")
 		beego.Router("/api/file/downloadtoserver", &controllers.FileController{}, "post:DownloadToServer")
 		beego.Router("/api/file/getdownloadper", &controllers.FileController{}, "post:GetDownloadPer")
-		beego.Router("/api/file/downloadtobrowser", &controllers.FileController{}, "post:DownloadToBrowser")
+		beego.Router("/api/file/downloadtobrowser", &controllers.FileController{}, "get:DownloadToBrowser;post:DownloadToBrowser")
 		beego.Router("/api/file/downloadtooss", &controllers.FileController{}, "post:DownloadToOSS")
 
 		// 载荷下载
-		beego.Router("/api/download/stage", &controllers.DownloadController{}, "post:Stage")
-		beego.Router("/api/download/stageless", &controllers.DownloadController{}, "post:Stageless")
-		beego.Router("/api/download/listen", &controllers.DownloadController{}, "post:Listen")
-		beego.Router("/api/download/shellcode", &controllers.DownloadController{}, "post:Shellcode")
-		beego.Router("/api/download/dll", &controllers.DownloadController{}, "post:Dll")
-		beego.Router("/api/download/listendll", &controllers.DownloadController{}, "post:ListenDll")
+		beego.Router("/api/download/stage", &controllers.DownloadController{}, "get:Stage;post:Stage")
+		beego.Router("/api/download/stageless", &controllers.DownloadController{}, "get:Stageless;post:Stageless")
+		beego.Router("/api/download/listen", &controllers.DownloadController{}, "get:Listen;post:Listen")
+		beego.Router("/api/download/shellcode", &controllers.DownloadController{}, "get:Shellcode;post:Shellcode")
+		beego.Router("/api/download/dll", &controllers.DownloadController{}, "get:Dll;post:Dll")
+		beego.Router("/api/download/listendll", &controllers.DownloadController{}, "get:ListenDll;post:ListenDll")
 
 		// 安装
 		beego.Router("/api/install/install", &controllers.InstallController{}, "post:Install")
