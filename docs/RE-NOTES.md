@@ -179,4 +179,31 @@
 - **官方载荷文件里没有 argv 条目**：复刻端 `PoArgvEntry` 追加的 2 字节 key 记录
   属于复刻端构造，已登记为偏差（不再用于官方格式产物）。
 
+### E-31 互操作实验与传输模式清单（R15）
+
+目标：让**官方 agent** 连上**复刻端服务端**，直接观察它的线格式。
+
+做法与结果：
+
+1. 复刻端起 http 监听器（:18601，vkey `INTEROP-VK`），并打开
+   `VSHELL_CAPTURE=<file>` 取证开关（复刻端新增，见 `c2engine/listener.go`）。
+2. 用官方实例 `/download/listen?tp=tcp&host=127.0.0.1&port=18601&vkey=INTEROP-VK`
+   生成真实 agent 载荷（7.8 MB ELF，配置区已写入）。
+3. 运行该 agent：**立即退出**（exit 0，无 stdout/stderr），未向 18601 发起任何连接，
+   也没有监听端口 → 本轮无法采集线格式。
+
+同时确认的确定性事实：
+
+- **官方没有 `http` 传输**：模板清单只有 `tcp/kcp/ws/dns/oss`（+`ebpf_*`）。
+  请求 `tp=http` 时返回 `open stageless/http_<arch>: file does not exist`，
+  所以"面板上的 http 模式"在载荷侧对应的是 `tcp`。
+- 载荷里 `l:true`（listen 独立模式）的 agent 字符串含
+  `server start, the bridge type is %s, the bridge is %s`，说明它可能**先起监听**
+  而非主动连接；`l:false`（stageless）需要监听器真实绑定地址（ListenAddr），
+  而官方 `/listener/add` 不接受 Host/Port，未绑定时刻产物里 `server` 为空串。
+- `/listener/edit` 读**大写** `Id`，缺省返回 `id is null`（复刻端已对齐）。
+
+结论：官方 agent 在本机环境无法启动（疑似反虚拟机/环境检测），互操作取证改走
+"静态字符串 + 产物对比"路线；`VSHELL_CAPTURE` 开关保留，等有可用 agent 时直接用。
+
 

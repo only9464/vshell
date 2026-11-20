@@ -122,7 +122,8 @@ func (c *ListenerController) Edit() {
 		Salt:              firstNonEmpty(c.JsonGetStr("EncryptSalt"), c.JsonGetStr("Salt")),
 	}
 	if l.ID == 0 {
-		c.JsonErr("id error")
+		// 黑盒（R15）：官方 /listener/edit 在缺 Id 时返回 "id is null"。
+		c.JsonErr("id is null")
 		return
 	}
 	if err := engineEditListener(l); err != nil {

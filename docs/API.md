@@ -79,7 +79,7 @@ JWT claims：`{token_type, user_id, role_id, username, exp, iat}`，有效期 24
 |---|---|---|
 | POST | `/listener/list` | `page`,`pageSize`,`status`,`field`,`order`,`search`,`sort` |
 | POST | `/listener/add` | `Mode`,`Vkey`,`OssUrl`,`Remark`,`vip`（**需支持 `Host`/`Port`**，见 B0.10） |
-| POST | `/listener/edit` | `Id`,`Mode`,`Vkey`,`OssUrl`,`Remark`,`vip` |
+| POST | `/listener/edit` | `Id`（**大写**，缺省 → `id is null`）,`Mode`,`Vkey`,`OssUrl`,`Remark`,`vip` |
 | POST | `/listener/editremark` | `id`,`remark` |
 | POST | `/listener/del` | `id` |
 | POST | `/listener/dellist` | `id[]` |
