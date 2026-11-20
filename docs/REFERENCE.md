@@ -62,7 +62,10 @@ go test ./controllers -run TestContract -v
 | R-10 | `/api/client/add` 在原版返回 **HTTP 500（空 body）**——原版的 bug | 我们保留可用实现，登记为偏差 |
 | R-11 | `client/list` 的 `clientCount` 在原版曾出现 `-1`（计数器语义未恢复） | 我们用真实总数，登记为偏差 |
 | R-12 | `db/data.db` 的 4 张表与 `c2engine/storage.go` 的建表语句 **逐列一致** | schema 对齐从"反编译推断"升级为"运行时实dump" |
-| R-13 | Basic Auth 开启时 `GET /` 返回 401 + `WWW-Authenticate: Basic realm="Authorization Required"`，body `401 Unauthorized` | 复刻端尚未实现该中间件（B5.7） |
+| R-13 | Basic Auth 只保护**真实存在的静态文件**与 `/`：401 + `WWW-Authenticate: Basic realm="Authorization Required"` + body `401 Unauthorized\n` | R3 已实现（`router/basicauth_test.go`） |
+| R-14 | 静态服务是精确匹配，**没有 SPA 回退**：`GET /` → 302 `/index.html`；`/login`、`/index6us`、`/dashboard/index` 一律 404；`/index.html` 直接 200 | R3 已对齐（去掉了自造的 fallback） |
+| R-15 | agent 端点族（`/swt`、`/sww`、`/swk`、`/sws`、`/swd`、`/swl`、`/swld`、`/health`、`/ws`）在面板端口上返回 404 且**不触发** Basic 401 | R3 已对齐（`isProtectedStatic` 白名单） |
+| R-16 | 原版 SPA 资产与 `static/assets/*` **逐字节相同**（`app.config.js`、主 chunk 尺寸一致），仅 `index.html` 的 `<title>` 与 modulepreload 列表不同 | 说明仓库里的 SPA 确实是原版构建产物 |
 
 ---
 
@@ -96,5 +99,5 @@ go test ./controllers -run TestContract -v
 |---|---|
 | B1.1/B1.2 协议层 | 建一个临时 tcp 监听器 + 真 agent（若可得）抓 checkin/任务的真实字节；否则用 IDA 定点看 `FUN_016f3e80` 附近 |
 | B2.2 载荷配置块 | 若能拿到官方 `stageless/*_windows_amd64` 模板，直接作为载荷回归样本（当前缺失，需另寻） |
-| B5.7 Basic Auth | 对齐 401 头与 body（R-13） |
+| B5.7 Basic Auth | ✅ R3 完成（R-13/R-15） |
 | U-01/U-02 argv key | IDA 定点：`FUN_018dca00` 的调用方闭包捕获值 |

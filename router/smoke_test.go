@@ -107,17 +107,45 @@ func TestRealAPIEndpoints(t *testing.T) {
 	}
 	t.Logf("client list envelope: %s", b3)
 
-	// 4. SPA static serving
-	resp4, err := http.Get(srv.URL + "/login")
+	// 4. 静态资源：原版 4.9.3 只按文件精确服务，没有 SPA 回退（黑盒：
+	//    GET /login 与 /index6us 都是 404；GET / → 302 /index.html）。
+	client := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse // 不跟随重定向，直接看 302
+	}}
+	rootReq, _ := http.NewRequest(http.MethodGet, srv.URL+"/", nil)
+	// web_basic_auth=true 时静态资源需要 Basic 凭证（原版行为）。
+	rootReq.SetBasicAuth(cfg.WebUsername, cfg.WebPassword)
+	respRoot, err := client.Do(rootReq)
+	if err != nil {
+		t.Fatalf("root: %v", err)
+	}
+	defer respRoot.Body.Close()
+	if respRoot.StatusCode != http.StatusFound || respRoot.Header.Get("Location") != "/index.html" {
+		t.Fatalf("GET / = %d (%q), want 302 → /index.html", respRoot.StatusCode, respRoot.Header.Get("Location"))
+	}
+
+	spaReq, _ := http.NewRequest(http.MethodGet, srv.URL+"/index.html", nil)
+	spaReq.SetBasicAuth(cfg.WebUsername, cfg.WebPassword)
+	respSPA, err := client.Do(spaReq)
 	if err != nil {
 		t.Fatalf("spa: %v", err)
 	}
-	defer resp4.Body.Close()
-	if resp4.StatusCode != http.StatusOK {
-		t.Fatalf("GET /login = %d, want 200", resp4.StatusCode)
+	defer respSPA.Body.Close()
+	if respSPA.StatusCode != http.StatusOK {
+		t.Fatalf("GET /index.html = %d, want 200", respSPA.StatusCode)
 	}
-	b4, _ := io.ReadAll(resp4.Body)
+	b4, _ := io.ReadAll(respSPA.Body)
 	if !strings.Contains(string(b4), "<html") {
-		t.Fatalf("GET /login did not return the SPA index")
+		t.Fatalf("GET /index.html did not return the SPA shell")
+	}
+
+	// 未知路径与原版一致：404（不是 SPA 兜底、也不是 401）。
+	resp404, err := http.Get(srv.URL + "/login")
+	if err != nil {
+		t.Fatalf("unknown path: %v", err)
+	}
+	defer resp404.Body.Close()
+	if resp404.StatusCode != http.StatusNotFound {
+		t.Fatalf("GET /login = %d, want 404 (original has no SPA fallback)", resp404.StatusCode)
 	}
 }

@@ -127,6 +127,15 @@
 | 载荷 | 模板路径改为 `stageless|dll/<tp>_<arch>`、DNS `ebpf_` 前缀；缺失模板报 `open …: file does not exist`；去掉 MinimalPE 外壳 | E-19 |
 | 契约测试 | `controllers/contract_test.go`：16 个端点键集/文案与原版抓包比对 | `testdata/original/` |
 
+### 4.1c R3 修复
+
+| 项 | 内容 | 证据 |
+|---|---|---|
+| WebSocket 通道 | agent 新增 `wsTransport`（ws/wss，JSON 帧协议与 `c2engine.WSMessage` 对齐）；e2e 用 `Mode=websocket` 监听器 + 真 agent 跑通 `id` | `agent/transport_ws.go`、`scripts/e2e.sh` §12 |
+| Basic Auth | 401 + `WWW-Authenticate: Basic realm="Authorization Required"` + body `401 Unauthorized\n`；只保护真实静态文件，`/api/*` 与 agent 路径不受保护 | `router/basicauth_test.go`、REFERENCE R-13/R-15 |
+| 静态服务 | `/` → 302 `/index.html`；未知路径 404（去掉自造的 SPA 回退）；`/index.html` 直接 200（不 301 到 `/`） | `router/router.go`、REFERENCE R-14 |
+| 测试稳定性 | router WS 测试的 SQLite 文件移出 `t.TempDir()`，消除 "directory not empty" 抖动 | `router/stream_ws_test.go` |
+
 ### 4.2 仍存在的断点（M1/M2 处理）
 
 | # | 断点 | 影响 | 计划 |
@@ -134,7 +143,7 @@
 | ⑩ | 面板下发的是文本命令（`ls`/`cat`/`screenshot quality=N`），agent 只认 `terminal_*`/`screen_capture*`/JSON/opcode | 文件管理、截图、安装等功能点下去无反应 | B1.1/B1.3 |
 | ⑪ | 原生 opcode 的结果帧没有上线（`resultFrameSink` 恒 nil） | 面板拿不到结构化结果 | B1.2 |
 | ⑫ | 载荷产物不可执行（无模板、argv key 未恢复、`MinimalPE` 无 stub） | 生成的 exe 跑不起来 | B2.1–B2.5 |
-| ⑬ | DNS 两端各半、agent 无 WS 客户端 | 这两条通道不可用 | B1.4/B1.5 |
+| ⑬ | DNS 两端各半（WS 已在 R3 打通，见下） | DNS 通道不可用 | B1.4 |
 | ⑭ | 隧道数据面缺失（`LinkMsgChan` 只打日志） | 隧道建了不能转发 | B1.6/B4.1 |
 
 ## 5. 占位清单（`PLACEHOLDER` / 编造值，必须逐项替换或删除）

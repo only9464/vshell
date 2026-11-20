@@ -79,7 +79,23 @@ GET  {listener}/health                                → 健康检查
 **当前缺陷**：agent 先 GCM 再写链路帧，服务端按明文 JSON 解析；握手键名 `VerifyKey` vs `verify_key`。
 见 STATUS §4-⑥。
 
-### 2.3 DNS（`c2engine/dns.go`）
+### 2.3 WebSocket（`c2engine/listener.go` + `agent/transport_ws.go`）
+
+服务端 `/ws`（CDN 回源走 `/cdn/ws`），JSON 文本帧，字段与 `c2engine.WSMessage` 一致：
+
+```jsonc
+→ {"type":"checkin","data":{...CheckinRequest(snake_case)...}}
+← {"type":"checkin","client_id":1,"session_id":"sess_...","status":"ok","data":{"interval":5,"timeout":30}}
+→ {"type":"poll","client_id":1}
+← {"type":"poll","data":{"tasks":[{"id":1,"command":"...","timeout":30}],"interval":5}}
+→ {"type":"result","data":{"command_id":1,"result":"...","status":"completed"}}
+→ {"type":"ping"}   ← {"type":"pong"}
+```
+
+> R3 之前 agent 侧没有 WS 客户端（互通矩阵里是 ❌）；现在两端都有，e2e 覆盖。
+> 注意：这是**复刻端自造**的 JSON 帧协议，原版的 WS 与 KCP 共用"链路帧 + 记录"两层，M1 之后收敛。
+
+### 2.4 DNS（`c2engine/dns.go`）
 
 ```
 查询名 = <base32(消息)>.…[.<agentID>].<Domain>
@@ -156,7 +172,7 @@ type: 0 结束 / 1 会话数据1 / 2 会话数据2 / 3 会话命令1 / 4 会话�
 | HTTP/HTTPS | ✅ | ✅ | ✅ | R1 打通（服务端容错解码 + 盐派生） |
 | KCP | ✅ | ✅ | ✅ | R1 打通（握手键名容错 + 主信道帧加解密） |
 | DNS | ⚠️ 单任务、无 ack | ⚠️ 不读响应 | ❌ | M1 处理 |
-| WebSocket | ✅ | ❌ 无客户端 | ❌ | M1 处理 |
+| WebSocket | ✅ | ✅ | ✅ | R3 打通（自造 JSON 帧；待 M1 收敛为记录层） |
 | 裸 TCP | ❌ 无监听器 | ✅ | ❌ | M1 处理（二选一） |
 
 > 目标：M1 结束时 DNS 双向闭环并新增 `cmd/protocol-probe` 交叉验证。

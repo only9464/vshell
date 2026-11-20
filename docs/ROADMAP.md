@@ -71,7 +71,7 @@
 | B1.2 | 结果帧上线：`emitFrames` → 线路（当前 `resultFrameSink` 恒 nil） | `agent/main.go:1120`、`agent/transport_real.go` | 结果帧字节可被服务端 `ParseAgentFrame` 解出 | `[ ]` |
 | B1.3 | 服务端命令词汇收敛：只发 opcode，删掉 `ls/cat/screenshot quality=N` 一类自造文本命令 | `controllers/file.go`、`screenshot.go` | 无 `dispatchCmd("ls …")` 残留 | `[ ]` |
 | B1.4 | DNS 双向闭环：服务端 ack + 多任务；agent 解析 TXT 响应 | `c2engine/dns.go:181-240`、`agent/dns_transport.go` | DNS 模式跑通 e2e | `[ ]` |
-| B1.5 | WebSocket 客户端（或补裸 TCP 监听器） | `agent/`、`c2engine/listener.go` | 任选一条链路 e2e 通过 | `[ ]` |
+| B1.5 | WebSocket 客户端（agent/transport_ws.go） | `agent/transport_ws.go`、`c2engine/listener.go` | e2e 里 ws 监听器 + 真 agent 跑通 `id` | `[x]` |
 | B1.6 | 通道帧接入隧道数据面 | `c2engine/channel_frame.go`（已写但零调用） | 隧道里能传 TCP | `[ ]` |
 
 ---
@@ -166,4 +166,5 @@
 | 日期 | 轮次 | 变更 |
 |---|---|---|
 | 2026-11-20 | R1 | 建立文档体系（docs/）；**M0 完成**：端到端（HTTP+KCP）打通、面板字段/参数契约修正、e2e 脚本落地 |
+| 2026-11-20 | R3 | agent 新增 WebSocket 传输（ws/wss）并进 e2e；Basic Auth 与原版逐字对齐（仅保护真实静态文件，未知路径 404）；静态服务改为精确匹配（/→302 /index.html，无 SPA 回退）；修复 router 测试的 SQLite 清理抖动 |
 | 2026-11-20 | R2 | 接入**活体原版 4.9.3** 做黑盒对照：`scripts/probe-original.sh` + `testdata/original/` + `controllers/contract_test.go`；登录/监听器/隧道/客户端/文件/设置/仪表盘/载荷错误文案逐项对齐；dump 原版 SQLite 确认 schema 逐列一致 |

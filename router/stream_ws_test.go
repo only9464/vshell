@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -46,13 +48,23 @@ func dialTestStream(t *testing.T, path string) (*websocket.Conn, *httptest.Serve
 // engine has a nil *Storage, which panics on the first check-in.
 func initTestEngine(t *testing.T) {
 	t.Helper()
-	if err := c2engine.GetEngine().Init(&c2engine.Config{DBPath: t.TempDir() + "/test.db"}); err != nil {
+	// 注意：DB 文件不能放在 t.TempDir() 里 —— modernc/sqlite 关闭后仍可能有
+	// 后台写把 -wal/-shm 重新落盘，导致测试结束时 t.TempDir 的 RemoveAll 报
+	// "directory not empty"（本仓库历史上出现过该抖动）。改用 /tmp 下的独立文件，
+	// 由 cleanup 显式关闭并删除。
+	dir, err := os.MkdirTemp("", "vshell-router-test")
+	if err != nil {
+		t.Fatalf("mkdtemp: %v", err)
+	}
+	dbPath := filepath.Join(dir, "test.db")
+	if err := c2engine.GetEngine().Init(&c2engine.Config{DBPath: dbPath}); err != nil {
 		t.Fatalf("engine init: %v", err)
 	}
 	t.Cleanup(func() {
 		if err := c2engine.GetEngine().Close(); err != nil {
 			t.Logf("engine close: %v", err)
 		}
+		_ = os.RemoveAll(dir)
 	})
 }
 
