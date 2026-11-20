@@ -265,10 +265,9 @@ func (c *officialConn) handle(plain []byte) error {
 			// 实测（R26）：真实服务端在收到 md5(vkey) 后约 270–370ms 才回 "sucs"。
 			// R27 补充：延迟只对**第一条（conf）连接**需要；conf 完成后的后续连接
 			// 立刻回 sucs，否则 agent 不会声明 main/chan。
-			s.mu.Lock()
-			confDone := s.confDone
-			s.mu.Unlock()
-			if d := s.AuthDelay; d > 0 && !confDone {
+			// R28：真实服务端在**每条连接**上都有 ~300ms 延迟（抓包：conf 连接 366ms、
+			// main 连接 266ms），因此这里统一延迟，不做首连接特判。
+			if d := s.AuthDelay; d > 0 {
 				time.Sleep(d)
 			}
 			if err := c.send([]byte(officialAuthOK)); err != nil {
@@ -456,7 +455,7 @@ func officialSessionID() string {
 			buf[i] = byte(time.Now().UnixNano() >> (uint(i%8) * 8))
 		}
 	}
-	return base64.StdEncoding.EncodeToString(buf)
+	return base64.RawURLEncoding.EncodeToString(buf)
 }
 
 // truncateForLog 截断长文本用于日志。
