@@ -16,6 +16,7 @@ const routes = [
       { path: 'download', name: 'download', component: () => import('../views/DownloadView.vue'), meta: { title: '载荷下载' } },
       { path: 'terminal/:id', name: 'terminal', component: () => import('../views/TerminalView.vue'), meta: { title: '终端' } },
       { path: 'files/:id', name: 'files', component: () => import('../views/FilesView.vue'), meta: { title: '文件管理' } },
+      { path: 'screenshot/:id', name: 'screenshot', component: () => import('../views/ScreenshotView.vue'), meta: { title: '截图' } },
       { path: 'screen/:id', name: 'screen', component: () => import('../views/ScreenView.vue'), meta: { title: '屏幕直播' } },
       { path: 'tunnels', name: 'tunnels', component: () => import('../views/TunnelView.vue'), meta: { title: '隧道' } },
       { path: 'about', name: 'about', component: () => import('../views/AboutView.vue'), meta: { title: '关于' } },

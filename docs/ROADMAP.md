@@ -145,7 +145,7 @@
 | B6.5 | 载荷下载页（stageless/stage/shellcode/dll/listen/listendll + token 导航下载） | `[x]` |
 | B6.6 | 终端（xterm.js + fit + `/api/terminal/ws`，含 resize 帧） | `[x]` |
 | B6.7 | 屏幕直播（`/api/screen/ws`）与截图 | `[ ]` |
-| B6.8 | 文件管理（列表/进入/新建/删除/上传/编辑器 cat+edit）；wget/OSS 待补 | `[~]` |
+| B6.8 | 文件管理（列表/进入/新建/删除/上传/编辑器/wget 按钮） | `[x]` |
 | B6.9 | 插件页、设置页、隧道页（新建/启动/停止/删除）、关于页 | `[x]` |
 
 ---

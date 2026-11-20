@@ -68,6 +68,12 @@ async function saveFile() {
   load(path.value)
 }
 
+async function wget() {
+  const url = prompt('要下载到目标的 URL')
+  if (!url) return
+  await fileApi.wget(id, path.value, url)
+  ElMessage.success('已下发 wget 任务')
+}
 async function upload(ev: Event) {
   const input = ev.target as HTMLInputElement
   const file = input.files?.[0]
@@ -86,6 +92,7 @@ async function upload(ev: Event) {
       <el-input v-model="path" style="width: 380px" @keyup.enter="load(path)" />
       <el-button @click="load(path)">打开</el-button>
       <el-button @click="mkdir">新建目录</el-button>
+      <el-button @click="wget">wget</el-button>
       <label class="upload-btn">
         <input type="file" style="display:none" @change="upload" />
         <el-button>上传</el-button>

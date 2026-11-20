@@ -84,6 +84,9 @@ export const fileApi = {
     post('/file/mkdir', { id, path, target }),
   edit: (id: number, path: string, target: string, content: string) =>
     post('/file/edit', { id, path, target, content }),
+  wget: (id: number, path: string, url: string) => post('/file/wget', { id, path, target: url }),
+  downloadToOSS: (id: number, path: string, target: string) =>
+    post('/file/downloadtooss', { id, path, target }),
   upload: (id: number, path: string, file: File) => {
     const fd = new FormData()
     fd.append('id', String(id))
