@@ -25,7 +25,7 @@
 |---|---|---|---|---|
 | **M0** | 打通端到端 | 一条脚本跑完 `起服务→建监听器→编 agent→上线→回显` | 3–5 人日 | `[x]` |
 | **M1** | 协议层对齐 | 24B 记录帧上下行、DNS/KCP/WS 三通道真闭环 | 10–15 人日 | `[ ]` |
-| **M2** | 载荷链路 | 面板生成的二进制**不改一字**即可上线 | 10–20 人日 | `[ ]` |
+| **M2** | 载荷链路 | 面板生成的二进制**不改一字**即可上线 | 10–20 人日 | `[~]` |
 | **M3** | Agent 能力 | 41 个 opcode 全实现；PTY、屏幕控制、插件执行 | 20–30 人日 | `[ ]` |
 | **M4** | 引擎数据面 | 隧道转发、反连主机、真实监控、结果存储 | 15–25 人日 | `[ ]` |
 | **M5** | 面板闭环 | dashboard/上传/下载/插件/设置/RBAC 全部真数据 | 10–15 人日 | `[ ]` |
@@ -82,10 +82,10 @@
 
 | ID | 任务 | 位置 | 验收 | 状态 |
 |---|---|---|---|---|
-| B2.1 | 预编译模板：**原版内嵌模板已可提取**（`scripts/extract-templates.py`，40+ 个 PE/ELF 镜像），落地为 `c2engine/templates/` 嵌入或磁盘模板 | 新 `c2engine/templates/`、`builder.go:137` | 六种 download 模式都产出可执行文件 | `[~]` |
-| B2.2 | agent 自解析尾部配置块（取代 ldflags） | `agent/main.go`（新 `config_block.go`） | 同一份 agent 换配置即换监听器 | `[ ]` |
+| B2.1 | 模板按原版路径 `stageless|dll/<tp>_<arch>` 从磁盘加载（已实现并 e2e 验证）；原版内嵌模板可用 `scripts/extract-templates.py` 提取备用 | `c2engine/payload_build.go:PoTemplatePath` | 放一个模板即可产出可执行载荷 | `[x]` |
+| B2.2 | agent 自解析尾部配置块（取代 ldflags）：服务端写 `VSCF` 块，agent 从自身文件尾读回并覆盖构建期值 | `c2engine/config_block.go`、`agent/config_block.go` | e2e §14：面板生成的载荷零 ldflags 直接上线 | `[x]` |
 | B2.3 | 恢复 argv entry 2 字节 key 与 per-closure 种子 | `c2engine/payload_assets.go:93`、`payload_build.go:239` | `PoArgvEntryReady()==true` | `[!]` |
-| B2.4 | `MinimalPE` 补真实 stub（当前 entry 指向数据，不可执行） | `c2engine/builder.go:471` | 生成的 PE 能被 Windows 加载 | `[ ]` |
+| B2.4 | ~~`MinimalPE` 补真实 stub~~ → **改为不再生成外壳**：模板缺失时直接报 `open …: file does not exist`（与原版一致），杜绝"看起来能下载其实不可执行"的产物 | `c2engine/payload_build.go:PoBuild` | 模板缺失有明确错误，不再产出假 PE | `[x]` |
 | B2.5 | shellcode/dll/listen/listendll 各自产物 | `c2engine/payload_build.go` | 四种模式产物类型正确 | `[ ]` |
 
 ---
@@ -166,6 +166,7 @@
 | 日期 | 轮次 | 变更 |
 |---|---|---|
 | 2026-11-20 | R1 | 建立文档体系（docs/）；**M0 完成**：端到端（HTTP+KCP）打通、面板字段/参数契约修正、e2e 脚本落地 |
+| 2026-11-20 | R5 | **M2 主线打通**：服务端写自描述配置块 + agent 自解析 → 面板生成的载荷无需 ldflags 直接上线（e2e 第 14 段）；模板缺失改为原版式错误，删除 MinimalPE 假外壳 |
 | 2026-11-20 | R4 | 逆向工具链落地：`.gopclntab` 恢复 38645 个函数符号、控制器 239 个方法地址表、定点反汇编脚本；发现并提取外层二进制内嵌的 40+ agent 模板（M2 素材）；更正"字面量加密"的误判 |
 | 2026-11-20 | R3 | **四条通道全部打通**（HTTP/KCP/WS/DNS）：agent 补 WebSocket 客户端与 DNS 客户端；DNS 信道对齐 8B agentID 布局、标签分块、TXT base32、结果分片；Basic Auth 与静态服务对齐原版 |
 | 2026-11-20 | R3 | agent 新增 WebSocket 传输（ws/wss）并进 e2e；Basic Auth 与原版逐字对齐（仅保护真实静态文件，未知路径 404）；静态服务改为精确匹配（/→302 /index.html，无 SPA 回退）；修复 router 测试的 SQLite 清理抖动 |

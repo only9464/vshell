@@ -119,6 +119,18 @@ GET  {listener}/health                                → 健康检查
 4. `task` 这种无冒号命令以前被解析成 `"unknown"`，导致 DNS 通道永远取不到任务。
 5. 服务端 task 分支改用 `GetAndMarkPendingTasks`（原子领取），剩余任务放回 pending。
 
+### 2.5 载荷尾部配置块（复刻端扩展）
+
+```
+payload = <模板字节> <blob> <blobLen u32 LE> "VSCF"
+blob    = JSON {"server","vkey","salt","mode"[,"dns_server","proxy"]}
+```
+
+- `server` 带 scheme（`http://`/`kcp://`/`ws://`/`https://`/`dns://`），agent 据此选传输；
+- agent 启动时读自身可执行文件末尾 8 字节定位块，覆盖 `-ldflags` 注入值；
+- 与 PE/ELF 结构无关（追加在文件尾，加载器不会执行到）；
+- **有意偏差**：原版配置块与 argv 加密 key 尚未恢复（U-01/U-02），此块仅自研 agent 识别。
+
 ## 3. 20 字节/24 字节记录（原版任务与结果载体）
 
 服务端已有编码器（`c2engine/wire.go`），agent 已有生成器（`agent/main.go:1078-1160`），

