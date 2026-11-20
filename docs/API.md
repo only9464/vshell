@@ -107,21 +107,20 @@ JWT claims：`{token_type, user_id, role_id, username, exp, iat}`，有效期 24
 | 方法 | 路径 | 参数 | 当前 |
 |---|---|---|---|
 | POST | `/file/getdisk` | `id` | ✅ 下发 |
-| POST | `/file/ls` | `id`,`path`,`field`,`order` | ⚠️ 回包解析契约不符（`file.go:379-392` 要求 4 个 tab 字段） |
+| POST | `/file/ls` | `id`,`path`,`field`,`order` | ✅ 走 JSON `filelist`，保留旧文本解析兜底 |
 | POST | `/file/cat` | `id`,`path` | ✅ |
 | POST | `/file/edit` | `id`,`path`,`content` | ✅ |
 | POST | `/file/mv` | `id`,`src`,`dst` | ✅ |
 | POST | `/file/rm` / `rmlist` | `id`,`path` / `paths[]` | ✅ |
 | POST | `/file/touch` | `id`,`path` | ✅ |
 | POST | `/file/mkdir` | `id`,`path` | ✅ |
-| POST | `/file/modifytime` | **注意**：`path`+`target`+`time`，agent 侧用 `filetouch`+`time` 实现（支持 RFC3339 / `YYYY-MM-DD HH:MM:SS`）
-| POST | `/file/modifytime` | `id`,`path`,`time` | ✅ |
+| POST | `/file/modifytime` | `id`,`path`,`target`,`time`（RFC3339 / `YYYY-MM-DD HH:MM:SS`；agent 侧 `filetouch`+`time`） | ✅ |
 | POST | `/file/wget` | `id`,`url`,`path` | ✅ |
 | POST | `/file/upload` | multipart：`file` + `id` + `path` | ✅ 落盘后以 JSON 命令下发给 agent（`{"type":"upload",...}`） |
-| POST | `/file/downloadtoserver` | `id`,`path`,`target` | ⚠️ 无进度 |
-| GET/POST | `/file/downloadtobrowser` | `id`,`target` | ❌ GET 未注册；无附件输出（B0.7/B5.3） |
-| POST | `/file/getdownloadper` | `id` | ⚠️ 恒 0 |
-| POST | `/file/downloadtooss` | `id`,`path`,`target` | ❌ 无 OSS 上传 |
+| POST | `/file/downloadtoserver` | `id`,`path`,`target` | ✅ 分块拉取 + 落盘 `downloads/<id>/` + 进度 |
+| GET/POST | `/file/downloadtobrowser` | `id`,`path`,`target` | ✅ 附件输出（GET/POST 均注册） |
+| POST | `/file/getdownloadper` | `id`,`target`,`size` | ✅ 真实百分比 |
+| POST | `/file/downloadtooss` | `id`,`path`,`target` | ⛔ 取回并暂存后明确报未实现（无第三方凭证，见 GAPS §F） |
 
 ---
 
@@ -149,14 +148,14 @@ JWT claims：`{token_type, user_id, role_id, username, exp, iat}`，有效期 24
 
 | 方法 | 路径 | 参数 | 当前 |
 |---|---|---|---|
-| POST | `/install/install` / `remove` | `id`,`name` | ⚠️ 下发 `install <name>`，agent 无处理器 |
+| POST | `/install/install` / `remove` | `id`,`name` | ✅ 走 `persist`/`cleanup` JSON 命令 |
 | GET | `/runner/list` | — | ✅ 读 `./plugins` |
 | POST | `/runner/upload` | multipart `file` | ✅ 写 `./plugins` |
-| POST | `/runner/runplugin` | `id`,`pluginName`,`procArg` | ❌ 恒 `not aligned` |
+| POST | `/runner/runplugin` | `id`,`pluginName`,`procArg` | ✅ 下发插件字节、agent 执行并回显（动态库/.net 明确未实现） |
 | GET | `/setting/get` | — | ✅ 三键（dingding_access_token / dingding_key_word / wx_key） |
 | POST | `/setting/edit` | 三键任一 | ✅ 写回 `conf/setting.conf` |
-| GET | `/screenshot/get` | `id`,`quality` | ❌ agent 不认该命令 |
-| GET | `/dashboard/info` | — | ❌ 40+ 键硬编码 |
+| GET | `/screenshot/get` | `id`,`quality` | ✅ 裸 base64 PNG；失败时透传 agent 原文 |
+| GET | `/dashboard/info` | — | ✅ 39 键，指标读 /proc |
 
 ---
 

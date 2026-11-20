@@ -34,6 +34,7 @@
 | 客户端备注/删除文件/杀进程 | ✅ 下发通 | `client.go:116-149` → `dispatchCmd`；但受 B0.1 阻塞 |
 | 监听器 CRUD/启停 | ⚠️ 半 | `listener.go` 全实现，但 `Add` 丢弃 Host → 恒绑 443（`engine.go:201`） |
 | 隧道 CRUD/启停 | ✅ | start 起数据面、stop 关闭；增删即落盘 `db/tunnels.json`，重启可恢复 |
+| 进程/持久化 | `delprocess` → `kill` JSON、`install/remove` → `persist/cleanup` JSON（e2e 验证进程真被杀掉） | `controllers/client.go`、`install.go` |
 | 文件管理 11 个接口 | ✅ | `ls`/`cat`/`edit`/`upload`/`download`/`wget`/`touch`/`modifytime`/`mv`/`rm`/`getdisk` 全部走 JSON 命令并 e2e 验证；`downloadtooss` 取回暂存后明确报 OSS 未实现 |
 | 文件上传 | ✅ | 读 multipart → base64 → 下发 `{"type":"upload"}`；e2e 用 `cat` 校验落盘 |
 | 下载到浏览器 | ✅ | JSON 命令取 base64 → 附件输出（e2e 用 /etc/hostname 校验）；进度/OSS 仍为壳 |

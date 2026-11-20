@@ -13,7 +13,7 @@
 package controllers
 
 import (
-	"strconv"
+	"encoding/json"
 	"strings"
 )
 
@@ -167,12 +167,9 @@ func (c *ClientController) DelProcess() {
 		c.JsonErr("id and pid/name required")
 		return
 	}
-	var cmd string
-	if pid > 0 {
-		cmd = "kill -9 " + strconv.Itoa(pid)
-	} else {
-		cmd = "pkill -9 " + name
-	}
+	// JSON 命令（agent 的 CmdKill）：文本 "kill -9 <pid>" 没有解析器，会落进 shell。
+	req, _ := json.Marshal(map[string]interface{}{"type": "kill", "pid": pid, "name": name})
+	cmd := string(req)
 	// 黑盒：delprocess 即使客户端不存在也回 "delete success"（不校验连接）。
 	_, _ = dispatchCmd(id, cmd)
 	c.JsonOkVerb("delete")

