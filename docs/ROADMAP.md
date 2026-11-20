@@ -119,13 +119,13 @@
 
 | ID | 任务 | 位置 | 状态 |
 |---|---|---|---|
-| B5.1 | dashboard 真实数据（现在 40+ 键硬编码） | `controllers/engine.go:296-340` | `[ ]` |
+| B5.1 | dashboard 真实数据（39 键已对齐；cpu/disk/load/io/tcp/udp/icmp 已改真实采集） | `controllers/engine.go:engineGetAppInfo`、`controllers/metrics.go` | `[~]` |
 | B5.2 | `/api/file/upload` 真收 multipart 并下发 | `controllers/file.go:205-228` | `[ ]` |
 | B5.3 | `downloadtobrowser` 输出附件；`getdownloadper` 回填进度 | `controllers/file.go:282-306` | `[ ]` |
 | B5.4 | `runplugin` 真实调用（现在恒 "not aligned"） | `controllers/runner.go:112-126` | `[ ]` |
-| B5.5 | `/api/setting/*` 持久化到 `conf/setting.conf` | `controllers/setting.go` | `[ ]` |
+| B5.5 | `/api/setting/*` 三键已对齐（仍为内存 map） | `controllers/setting.go` | `[~]` |
 | B5.6 | RBAC/权限码落地（`auth.go` 里已有，零调用） | `utils/auth.go:92-151` | `[ ]` |
-| B5.7 | Basic Auth 中间件（配置项存在但无实现） | `router/router.go` | `[ ]` |
+| B5.7 | Basic Auth 中间件（原版 401 头/文案已抓到，见 REFERENCE R-13） | `router/router.go` | `[ ]` |
 | B5.8 | OSS 上传真发请求（`UploadToOSS` 现在只打日志） | `c2engine/protocol.go:538` | `[ ]` |
 
 ---
