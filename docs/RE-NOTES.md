@@ -206,4 +206,21 @@
 结论：官方 agent 在本机环境无法启动（疑似反虚拟机/环境检测），互操作取证改走
 "静态字符串 + 产物对比"路线；`VSHELL_CAPTURE` 开关保留，等有可用 agent 时直接用。
 
+### E-32 DelFile 的 gdb 尝试（R17，未成功）
+
+方法：DB 里预插一条 client 记录（`Status=1`）让 `GetClient(1)` 成功，再 attach gdb
+到第二实例，断在 `ClientController.DelFile`(0x1822d80) 与其调用的
+`0x1820680`（推测是 dispatchCmd 的封装）。
+
+观察：
+
+- `0x1820680` 确实被命中，但返回 `rax=0`（nil）→ 客户端未真实连接，
+  代码走了 `JsonErr("connection error")` 分支，**命令并未真正构造/下发**。
+- 断点处寄存器里看到的"字符串" `0x1b2970d`（len=5）实际是一片 Go **errno 字面量**
+  表（`E2BIG`、`EACCES`…），说明"lea 出来的地址就是命令字符串"这个推断不成立。
+- 结论：`DelFile` 的命令很可能在 `0x1820680` **内部**由 id/paths 拼出来，
+  静态读调用点拿不到；需要：
+  1. 可运行的官方 agent（见 E-31）以获得真实线格式，或
+  2. IDA 反编译 `0x1820680` 与其下层函数。
+
 
