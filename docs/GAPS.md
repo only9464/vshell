@@ -11,6 +11,10 @@
 
 ### A-1 任务记录层（opcode + argv / 结果帧）
 
+- **进展（R31）**：新增可复现探针 `scripts/official-probe.sh`；修掉一个真实 bug——
+  agent 的 `conf` 记录里 "conf" 后面的**分隔字节会变**（0x20/0x29），此前用
+  `HasPrefix("conf ")` 判定导致整条被忽略、conf 无法完成。修复后 conf 稳定，
+  `main` 仍未出现；下一步查该分离字节的语义与应答方式。
 - **进展（R30）**：nonce 无规律（R29 的"新帧被拒"疑为脚本转义 bug）；sucs 延迟在每条
   连接上都有（≈320ms）；会话 ID 必须可 base64 解码（12 字节），否则连 conf 都不上报。
   另确认 agent 对挑战的响应本身不稳定（flaky），排查需考虑重试。

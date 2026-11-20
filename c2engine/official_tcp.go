@@ -312,8 +312,9 @@ func (c *officialConn) handle(plain []byte) error {
 		}
 		return nil
 	case "conf":
-		// "conf \x01\x00\x00{client json}"
-		if strings.HasPrefix(string(plain), "conf ") {
+		// 抓包里是 "conf " + \x01\x00\x00 + JSON，但 R31 实测首字节会变化
+		// （0x20 / 0x29 都出现过），因此只要求前缀是 "conf" 且后面跟 1 个字节。
+		if len(plain) > 4 && string(plain[:4]) == "conf" {
 			jsonPart := plain
 			if i := strings.IndexByte(string(plain), '{'); i >= 0 {
 				jsonPart = plain[i:]
