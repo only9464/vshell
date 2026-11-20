@@ -126,3 +126,7 @@ template-extract/
 
 # --- Agent build artifact ---
 agent/agent
+
+# --- Vue3 前端 ---
+web/node_modules/
+web/dist/

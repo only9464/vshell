@@ -15,6 +15,9 @@
 ## 2. 构建
 
 ```bash
+# 新版 Vue3 面板（可选，产物托管在 /app/）
+cd web && pnpm install && pnpm build && cd ..
+
 # 服务端（Web 面板 + C2 引擎）
 go build -o vshell-server .
 

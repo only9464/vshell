@@ -1,5 +1,23 @@
 # 前端重开发方案（FRONTEND）
 
+## 0. 当前进度（R9）
+
+`web/` 已可用：Vite 6 + Vue 3.5 + TS + Element Plus + Pinia + Vue Router(hash) + xterm。
+页面：登录 / 仪表盘 / 客户端列表 / 监听器 / 载荷下载 / 终端 / 文件管理 / 插件 / 设置。
+构建产物由 Go 服务端托管在 **`/app/`**（与原版 SPA `static/` 并存）。
+
+```bash
+cd web && pnpm install && pnpm build   # 产物 web/dist
+go build -o vshell-server . && ./vshell-server
+# 浏览器打开 http://<host>:<port>/app/
+```
+
+开发模式：`pnpm dev`（Vite :5173，`/api` 与 WebSocket 都代理到 :8082）。
+
+已验证：无头 Chromium 渲染 `/app/#/login` 正常（Element Plus 已挂载、资源 200）；
+接口契约由 e2e §7j 与 `controllers/contract_test.go` 兜住。
+未做：UI 级自动点击（需要 Playwright，环境未装）、屏幕直播页（B6.7）。
+
 > 决策：**不复用原版 SPA**（`static/assets/`，200 个 Vite chunk，字段契约与当前后端不符，
 > 且无源码）。以 [API.md](API.md) 为唯一契约，用 Vue3 重写。
 > 原版 SPA 保留在 `static/` 直到新前端 M6 完成，仅作交互参考。

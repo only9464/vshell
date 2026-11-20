@@ -108,3 +108,46 @@ func TestBasicAuthMatchesOriginal(t *testing.T) {
 		}
 	})
 }
+
+// 新版 Vue3 面板（/app/）也受 basic auth 保护，且未认证时是 401 而不是 404。
+func TestVueAppRequiresBasicAuth(t *testing.T) {
+	cfg := utils.GetFullSettings()
+	prev := cfg.WebBasicAuth
+	cfg.WebBasicAuth = true
+	t.Cleanup(func() { cfg.WebBasicAuth = prev })
+
+	if _, err := os.Stat("web/dist/index.html"); err != nil {
+		if _, err2 := os.Stat("../web/dist/index.html"); err2 == nil {
+			_ = os.Chdir("..")
+		} else {
+			t.Skip("web/dist 未构建（pnpm build），跳过")
+		}
+	}
+
+	srv := httptest.NewServer(InitRouter())
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/app/")
+	if err != nil {
+		t.Fatalf("get /app/: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("/app/ without credentials = %d, want 401", resp.StatusCode)
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, srv.URL+"/app/", nil)
+	req.SetBasicAuth(cfg.WebUsername, cfg.WebPassword)
+	resp2, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("authed get: %v", err)
+	}
+	defer resp2.Body.Close()
+	if resp2.StatusCode != http.StatusOK {
+		t.Fatalf("/app/ with credentials = %d, want 200", resp2.StatusCode)
+	}
+	body, _ := io.ReadAll(resp2.Body)
+	if !strings.Contains(string(body), "<div id=\"app\">") {
+		t.Fatalf("/app/ did not serve the Vue shell: %q", string(body[:min(len(body), 200)]))
+	}
+}

@@ -1,0 +1,4 @@
+# pnpm 12 默认禁止依赖的构建脚本；esbuild 需要它来准备平台二进制。
+onlyBuiltDependencies:
+  - esbuild
+  - vue-demi

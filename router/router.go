@@ -175,6 +175,13 @@ func InitRouter() http.Handler {
 		http.ServeContent(w, r, info.Name(), info.ModTime(), f)
 	})
 
+	// 新版 Vue3 面板（web/dist，构建产物）。与提取的原版 SPA（static/）并存：
+	// /app/ → web/dist；不带结尾斜杠时 301 到 /app/ 以便相对资源解析。
+	mux.HandleFunc("/app", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/app/", http.StatusMovedPermanently)
+	})
+	mux.HandleFunc("/app/", serveVueApp("web/dist"))
+
 	// 用户信息 / 菜单 / 权限码（黑盒验证的原版响应格式）
 	mux.HandleFunc("/api/getUserInfo", handleGetUserInfo)
 	mux.HandleFunc("/api/getMenuList", handleGetMenuList)
@@ -241,7 +248,8 @@ func isProtectedStatic(p string) bool {
 	case "/health", "/ws", "/swt", "/sww", "/swk", "/sws", "/swd", "/swl", "/swld":
 		return false
 	}
-	if p == "/" {
+	if p == "/" || strings.HasPrefix(p, "/app/") || p == "/app" {
+		// 新版面板同样受 web_basic_auth 保护（与原版静态资源一致）。
 		return true
 	}
 	st, err := os.Stat(filepath.Join("static", filepath.Clean("/"+p)))
@@ -251,6 +259,31 @@ func isProtectedStatic(p string) bool {
 // subtleCompare 定时安全比较（避免用 == 泄露口令长度/内容前缀）。
 func subtleCompare(a, b string) bool {
 	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
+}
+
+// serveVueApp 托管新版面板的静态产物（web/dist），带 index.html 回退。
+//
+// 新版前端用 hash 路由（见 web/src/router/index.ts），因此回退只需覆盖直接访问
+// /app/ 的情况；资源文件按精确路径匹配，找不到回退到 index.html（Vite 的 base
+// 是 /app/，产物内部的引用也都是绝对路径）。
+func serveVueApp(root string) http.HandlerFunc {
+	indexPath := filepath.Join(root, "index.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		if _, err := os.Stat(indexPath); err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		rel := strings.TrimPrefix(r.URL.Path, "/app/")
+		if rel == "" {
+			rel = "index.html"
+		}
+		full := filepath.Join(root, filepath.Clean("/"+rel))
+		if st, err := os.Stat(full); err == nil && !st.IsDir() {
+			http.ServeFile(w, r, full)
+			return
+		}
+		http.ServeFile(w, r, indexPath)
+	}
 }
 
 func extractToken(r *http.Request) string {

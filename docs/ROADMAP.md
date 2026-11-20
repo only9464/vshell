@@ -137,15 +137,15 @@
 
 | ID | 任务 | 状态 |
 |---|---|---|
-| B6.1 | 脚手架（Vite + Vue3 + TS + Pinia + Vue Router + Element Plus） | `[ ]` |
-| B6.2 | 登录/鉴权/动态菜单（`/api/login`、`getUserInfo`、`getMenuList`、`getPermCode`） | `[ ]` |
-| B6.3 | 客户端列表/详情/备注/删除文件与进程 | `[ ]` |
-| B6.4 | 监听器管理（增删改启停） | `[ ]` |
-| B6.5 | 载荷下载页（六种模式，流式下载 + token） | `[ ]` |
-| B6.6 | 终端（xterm.js + `/api/terminal/ws`） | `[ ]` |
+| B6.1 | 脚手架（Vite + Vue3 + TS + Pinia + Vue Router + Element Plus） | `[x]` |
+| B6.2 | 登录/鉴权/守卫（token 持久化 + 401 跳登录；菜单为静态表） | `[x]` |
+| B6.3 | 客户端列表（14 字段契约）/备注/删除；详情拆到终端/文件/插件三页 | `[x]` |
+| B6.4 | 监听器管理（新建/启停/删除） | `[x]` |
+| B6.5 | 载荷下载页（stageless/stage/shellcode/dll/listen/listendll + token 导航下载） | `[x]` |
+| B6.6 | 终端（xterm.js + fit + `/api/terminal/ws`，含 resize 帧） | `[x]` |
 | B6.7 | 屏幕直播（`/api/screen/ws`）与截图 | `[ ]` |
-| B6.8 | 文件管理（树、编辑器、上传、下载、wget、OSS） | `[ ]` |
-| B6.9 | 隧道 / 插件 / 设置 / 关于 | `[ ]` |
+| B6.8 | 文件管理（列表/进入目录/新建/删除/上传）；编辑器与 wget/OSS 待补 | `[~]` |
+| B6.9 | 插件页（列表+执行+输出）、设置页（三键+持久化）；隧道/关于待补 | `[~]` |
 
 ---
 
@@ -166,6 +166,7 @@
 | 日期 | 轮次 | 变更 |
 |---|---|---|
 | 2026-11-20 | R1 | 建立文档体系（docs/）；**M0 完成**：端到端（HTTP+KCP）打通、面板字段/参数契约修正、e2e 脚本落地 |
+| 2026-11-20 | R9 | **M6 前端落地**：`web/` 9 个页面，产物托管在 `/app/`；无头 Chromium 验证登录页渲染；e2e §7j 校验 `/app/` 与资源 |
 | 2026-11-20 | R8 | **隧道数据面打通** + `file/ls` 改走 JSON filelist（面板目录列表此前恒空） |
 ：反向端口转发（VST1 握手 + 通道号配对），e2e 用 python http.server 验证公网端口 → agent → 目标的 HTTP 转发；C2 传输解耦（四条通道都能用） |
 | 2026-11-20 | R7 | **插件执行打通**：`/runner/upload` → `plugins/` → `/runner/runplugin` 下发 → agent 执行 `/bin/echo` 插件回显 `plugin-ok`；同时按黑盒修正插件后缀白名单（.elf/.so/.dylib 本就受支持） |
