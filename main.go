@@ -22,6 +22,7 @@ import (
 	"os"
 
 	"vshell/controllers"
+	"vshell/mcp"
 	"vshell/router"
 	"vshell/utils"
 )
@@ -55,6 +56,13 @@ func webBanner(cfg *utils.FullSettings) {
 // services. This is an in-progress reimplementation, so startup behavior may
 // differ from the original binary.
 func main() {
+	// `vshell-server mcp` 走 MCP stdio 模式：不启动 Web 面板，直接把引擎侧
+	// 的能力暴露成 MCP 工具（见 mcp/ 包与 docs/DEV.md）。
+	if len(os.Args) > 1 && os.Args[1] == "mcp" {
+		runMCPServer()
+		return
+	}
+
 	cfg := loadConfig()
 
 	// Keep the configured log level available to the startup path.
@@ -92,4 +100,22 @@ func main() {
 	// remains alive. The empty select has no shutdown path by itself.
 	controllers.AppBackground()
 	select {}
+}
+
+// runMCPServer 以 MCP stdio 模式运行。
+//
+// 与面板共享同一份配置与引擎：MCP 工具通过本机面板 API 调用（需要面板在跑），
+// 因此这里只加载配置、给出启动提示，然后阻塞在 stdin 的 JSON-RPC 循环上。
+func runMCPServer() {
+	cfg := loadConfig()
+	_ = cfg
+	// 关键：把 full settings 同步到鉴权用的 settings 单例，否则 GetJWTSecret()
+	// 会落到惰性默认值（空 → 随机），签出来的 token 与服务端不一致，
+	// 所有工具调用都会被 401 拒绝（响应里 message 为空）。
+	utils.SyncSettingsFromConfig()
+	srv := mcp.NewServer(os.Stdout)
+	if err := srv.Serve(os.Stdin); err != nil {
+		fmt.Fprintf(os.Stderr, "mcp: %v\n", err)
+		os.Exit(1)
+	}
 }

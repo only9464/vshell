@@ -16,6 +16,7 @@
 | [DEV.md](DEV.md) | 构建、运行、调试、测试、端到端联调 | 所有人 |
 | [RE-NOTES.md](RE-NOTES.md) | 逆向结论与证据分级（哪些是硬证据、哪些是推断、哪些未恢复） | 做对齐的人 |
 | [REFERENCE.md](REFERENCE.md) | 本机原版 4.9.3 实例的取证流程、已确认行为（R-01…R-16）、工具链 | 做对齐与逆向的人 |
+| [MCP.md](MCP.md) | 后端原生 MCP 服务：`vshell-server mcp`、13 个工具、鉴权与验证 | 接 AI 客户端的人 |
 | [inventory/](inventory/README.md) | 原版二进制的符号表与控制器方法地址清单（`scripts/go-symbols.py`、`scripts/disas.py`） | 做逆向/定点分析的人 |
 
 ## 三条硬规则

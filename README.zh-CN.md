@@ -14,6 +14,7 @@
 | [docs/API.md](docs/API.md) | 面板 HTTP/WS 契约 + 前端字段契约 |
 | [docs/FRONTEND.md](docs/FRONTEND.md) | Vue3 重写方案 |
 | [docs/DEV.md](docs/DEV.md) | 构建 / 运行 / 调试 / 测试 |
+| [docs/MCP.md](docs/MCP.md) | 原生 MCP：`vshell-server mcp` + 13 个工具 |
 | [docs/RE-NOTES.md](docs/RE-NOTES.md) | 逆向证据登记（硬证据 / 推断 / 未恢复） |
 
 ---
