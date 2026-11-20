@@ -89,21 +89,23 @@ func TestParsePluginCommandShape(t *testing.T) {
 	}
 }
 
-// TestDispatchPluginCommandRefuses 确认形状合法时也是「明确拒绝」，而不是
-// 伪造成功或走别的路径。
-func TestDispatchPluginCommandRefuses(t *testing.T) {
+// TestDispatchPluginCommandBadPayload 确认形状合法但载荷不是可执行文件时，
+// 返回的是"执行失败"而不是伪造成功（R7 起 runplugin 已真正执行，见
+// plugin_exec_test.go；这里专门覆盖坏载荷路径）。
+func TestDispatchPluginCommandBadPayload(t *testing.T) {
 	out, errMsg := dispatchPluginCommand("runplugin deadbeef 1.2.3.4 false")
 	if errMsg == "" {
-		t.Fatal("插件执行未恢复，必须返回错误而不是成功")
+		t.Fatal("不可执行的载荷必须返回错误而不是成功")
 	}
-	if !strings.Contains(errMsg, "not implemented") {
-		t.Fatalf("错误信息应说明未实现，得到 %q", errMsg)
-	}
-	if !strings.Contains(errMsg, "4 bytes") {
-		t.Fatalf("错误信息应报出解析到的载荷长度（4 字节），得到 %q", errMsg)
+	// 0xdeadbeef 不是有效 ELF/PE：要么 exec 失败（exec format error），
+	// 要么因架构被判为不可执行——两者都算"明确失败"。
+	if !strings.Contains(errMsg, "exec format error") &&
+		!strings.Contains(errMsg, "plugin exited") &&
+		!strings.Contains(errMsg, "not implemented") {
+		t.Fatalf("错误信息应说明执行失败，得到 %q", errMsg)
 	}
 	if out != "" {
-		t.Fatalf("拒绝时不应有输出，得到 %q", out)
+		t.Fatalf("失败时不应有输出，得到 %q", out)
 	}
 }
 
