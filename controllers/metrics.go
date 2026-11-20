@@ -28,17 +28,17 @@ import (
 
 // hostMetrics dashboard 需要的宿主机指标。
 type hostMetrics struct {
-	Load        string // {"load1":x,"load5":y,"load15":z}
-	CPU         int
-	Disk        int
-	SwapMem     int
-	VirtualMem  int
-	IORecv      int64
-	IOSend      int64
-	TCP         int
-	UDP         int
-	ICMP        int
-	ICMPMsg     int
+	Load       string // {"load1":x,"load5":y,"load15":z}
+	CPU        int
+	Disk       int
+	SwapMem    int
+	VirtualMem int
+	IORecv     int64
+	IOSend     int64
+	TCP        int
+	UDP        int
+	ICMP       int
+	ICMPMsg    int
 }
 
 // collectHostMetrics 采集指标；任何读取失败都用零值兜底（不影响面板可用性）。
