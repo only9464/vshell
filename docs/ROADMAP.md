@@ -82,7 +82,7 @@
 
 | ID | 任务 | 位置 | 验收 | 状态 |
 |---|---|---|---|---|
-| B2.1 | 预编译模板 `go:embed`（平台×架构×模式矩阵）或服务端交叉编译 | 新 `c2engine/templates/`、`builder.go:137` | 六种 download 模式都产出可执行文件 | `[ ]` |
+| B2.1 | 预编译模板：**原版内嵌模板已可提取**（`scripts/extract-templates.py`，40+ 个 PE/ELF 镜像），落地为 `c2engine/templates/` 嵌入或磁盘模板 | 新 `c2engine/templates/`、`builder.go:137` | 六种 download 模式都产出可执行文件 | `[~]` |
 | B2.2 | agent 自解析尾部配置块（取代 ldflags） | `agent/main.go`（新 `config_block.go`） | 同一份 agent 换配置即换监听器 | `[ ]` |
 | B2.3 | 恢复 argv entry 2 字节 key 与 per-closure 种子 | `c2engine/payload_assets.go:93`、`payload_build.go:239` | `PoArgvEntryReady()==true` | `[!]` |
 | B2.4 | `MinimalPE` 补真实 stub（当前 entry 指向数据，不可执行） | `c2engine/builder.go:471` | 生成的 PE 能被 Windows 加载 | `[ ]` |
@@ -166,6 +166,7 @@
 | 日期 | 轮次 | 变更 |
 |---|---|---|
 | 2026-11-20 | R1 | 建立文档体系（docs/）；**M0 完成**：端到端（HTTP+KCP）打通、面板字段/参数契约修正、e2e 脚本落地 |
+| 2026-11-20 | R4 | 逆向工具链落地：`.gopclntab` 恢复 38645 个函数符号、控制器 239 个方法地址表、定点反汇编脚本；发现并提取外层二进制内嵌的 40+ agent 模板（M2 素材）；更正"字面量加密"的误判 |
 | 2026-11-20 | R3 | **四条通道全部打通**（HTTP/KCP/WS/DNS）：agent 补 WebSocket 客户端与 DNS 客户端；DNS 信道对齐 8B agentID 布局、标签分块、TXT base32、结果分片；Basic Auth 与静态服务对齐原版 |
 | 2026-11-20 | R3 | agent 新增 WebSocket 传输（ws/wss）并进 e2e；Basic Auth 与原版逐字对齐（仅保护真实静态文件，未知路径 404）；静态服务改为精确匹配（/→302 /index.html，无 SPA 回退）；修复 router 测试的 SQLite 清理抖动 |
 | 2026-11-20 | R2 | 接入**活体原版 4.9.3** 做黑盒对照：`scripts/probe-original.sh` + `testdata/original/` + `controllers/contract_test.go`；登录/监听器/隧道/客户端/文件/设置/仪表盘/载荷错误文案逐项对齐；dump 原版 SQLite 确认 schema 逐列一致 |
