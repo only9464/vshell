@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { fileApi } from '../api'
 
+
 const route = useRoute()
 const id = Number(route.params.id)
 const path = ref('/')
@@ -44,6 +45,29 @@ async function remove(row: any) {
   ElMessage.success('已删除')
   load()
 }
+const editor = ref(false)
+const editorPath = ref('')
+const editorContent = ref('')
+
+async function openFile(row: any) {
+  if (row.IsDir) return enter(row)
+  const full = (path.value.endsWith('/') ? path.value : path.value + '/') + row.Name
+  const res: any = await fileApi.cat(id, full)
+  editorPath.value = full
+  editorContent.value = res?.content ?? String(res ?? '')
+  editor.value = true
+}
+
+async function saveFile() {
+  const idx = editorPath.value.lastIndexOf('/')
+  const dir = idx > 0 ? editorPath.value.slice(0, idx) : '/'
+  const name = editorPath.value.slice(idx + 1)
+  await fileApi.edit(id, dir, name, editorContent.value)
+  ElMessage.success('已保存')
+  editor.value = false
+  load(path.value)
+}
+
 async function upload(ev: Event) {
   const input = ev.target as HTMLInputElement
   const file = input.files?.[0]
@@ -68,7 +92,7 @@ async function upload(ev: Event) {
       </label>
       <span class="mono">客户端 #{{ id }}</span>
     </div>
-    <el-table :data="rows" border size="small" @row-dblclick="enter">
+    <el-table :data="rows" border size="small" @row-dblclick="openFile">
       <el-table-column prop="Name" label="名称" min-width="240">
         <template #default="{ row }">
           <span :class="{ dir: row.IsDir }">{{ row.Name }}{{ row.IsDir ? '/' : '' }}</span>
@@ -76,12 +100,20 @@ async function upload(ev: Event) {
       </el-table-column>
       <el-table-column prop="Size" label="大小" width="120" />
       <el-table-column prop="Time" label="修改时间" width="220" />
-      <el-table-column label="操作" width="120">
+      <el-table-column label="操作" width="160">
         <template #default="{ row }">
+          <el-button link type="primary" @click="openFile(row)">{{ row.IsDir ? '进入' : '编辑' }}</el-button>
           <el-button link type="danger" @click="remove(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
+    <el-dialog v-model="editor" :title="editorPath" width="70%">
+      <el-input v-model="editorContent" type="textarea" :rows="18" class="mono" />
+      <template #footer>
+        <el-button @click="editor = false">取消</el-button>
+        <el-button type="primary" @click="saveFile">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 

@@ -12,6 +12,8 @@ const menus = [
   { path: '/clients', label: '客户端', icon: 'Monitor' },
   { path: '/listeners', label: '监听器', icon: 'Connection' },
   { path: '/download', label: '载荷下载', icon: 'Download' },
+  { path: '/tunnels', label: '隧道', icon: 'Share' },
+  { path: '/about', label: '关于', icon: 'InfoFilled' },
   { path: '/settings', label: '设置', icon: 'Setting' },
 ]
 

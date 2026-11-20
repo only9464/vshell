@@ -1,6 +1,8 @@
 // 各模块 API（严格按 docs/API.md 的端点表）。
 import { get, post } from './http'
 
+export { get, post }
+
 export interface LoginResult {
   desc: string
   realName: string

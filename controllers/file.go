@@ -157,10 +157,14 @@ func (c *FileController) Cat() {
 		c.JsonErr("id error")
 		return
 	}
-	if !c.dispatchOrReport(id, "cat "+joinPath(path, target)) {
+	// 走 JSON 命令（agent 的 CmdFileCat）：文本命令 "cat" 没有解析器，会落进 shell。
+	req, _ := json.Marshal(map[string]string{"type": "filecat", "path": joinPath(path, target)})
+	out, errMsg := engineRunCmd(id, string(req), lsCmdTimeout)
+	if errMsg != "" {
+		c.JsonErr(errMsg)
 		return
 	}
-	c.JsonOkMessage("ok")
+	c.JsonOkResult(map[string]interface{}{"content": out})
 }
 
 // Touch 创建文件（POST /file/touch）。参数：id / path / target。
@@ -218,10 +222,16 @@ func (c *FileController) Edit() {
 		c.JsonErr("id error")
 		return
 	}
-	if !c.dispatchOrReport(id, "edit "+joinPath(path, target)) {
+	content := c.JsonGetStr("content")
+	req, _ := json.Marshal(map[string]string{
+		"type":    "fileedit",
+		"path":    joinPath(path, target),
+		"content": content,
+	})
+	if !c.dispatchOrReport(id, string(req)) {
 		return
 	}
-	c.JsonOkMessage("ok")
+	c.JsonOkVerb("save")
 }
 
 // Wget 远程下载到客户端（POST /file/wget）。参数：id / path / target。

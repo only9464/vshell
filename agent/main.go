@@ -624,6 +624,7 @@ const (
 	CmdFileTouch  = "filetouch"
 	CmdFileMkdir  = "filemkdir"
 	CmdFileCat    = "filecat"
+	CmdFileEdit   = "fileedit"
 	CmdDiskInfo   = "diskinfo"
 	CmdPS         = "ps"
 	CmdKill       = "kill"
@@ -2704,6 +2705,17 @@ func executeCommand(taskID int64, cmdStr string, timeout int) (string, string) {
 			return "", err.Error()
 		}
 		return string(data), ""
+
+	case CmdFileEdit:
+		path, _ := payload["path"].(string)
+		content, _ := payload["content"].(string)
+		if path == "" {
+			return "", "path required"
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			return "", err.Error()
+		}
+		return fmt.Sprintf("written: %s (%d bytes)", path, len(content)), ""
 
 	case CmdFileTouch:
 		path, _ := payload["path"].(string)

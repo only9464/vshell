@@ -68,6 +68,7 @@ async function remove(row: ClientItem) {
         <template #default="{ row }">
           <el-button link type="primary" @click="router.push(`/terminal/${row.Id}`)">终端</el-button>
           <el-button link type="primary" @click="router.push(`/files/${row.Id}`)">文件</el-button>
+          <el-button link type="primary" @click="router.push(`/screen/${row.Id}`)">屏幕</el-button>
           <el-button link type="primary" @click="router.push(`/plugins/${row.Id}`)">插件</el-button>
           <el-button link @click="editRemark(row)">备注</el-button>
           <el-button link type="danger" @click="remove(row)">删除</el-button>
