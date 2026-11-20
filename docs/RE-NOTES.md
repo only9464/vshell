@@ -159,4 +159,24 @@
 （20480 字节配置区）+ `config_region_meta.json`（请求参数与明文），
 `c2engine/agentconfig_test.go` 用它做**黄金向量**：复刻端编码器输出与官方逐字节一致。
 
+### E-30 载荷配置区的补充取证（R14）
+
+在同一套"独立实例 + 产物解码"手段上继续做了四组对照：
+
+| 实验 | 结果 |
+|---|---|
+| `/download/stageless?id=1`（tcp 监听器） | `{"server":"","type":"tcp","vkey":"vk2","proxy":"","salt":"","l":false,"e":false,"d":99,"h":7}`；与模板对比**只有配置区变化** → 文件里**没有 argv 条目** |
+| `/download/listen` 带 `proxy=` / `Proxy=` / `proxyUrl=` / `host:port` | `proxy` 恒为空串 → 官方**不把该参数写进配置区** |
+| `/download/stageless` 用 oss 监听器 | `{"server":"https://oss.example.com","type":"oss",...,"d":11,"h":5}` → oss 的 server 取 OssUrl，d/h 取监听器 |
+| dns 载荷（ebpf 模板族） | `type":"dns"`，`e` 仍为 `false` |
+
+结论补充：
+- `server` 的来源：`listen` 用请求里的 host:port；`stageless` 用监听器的 ListenAddr
+  （未配置时为空串）。
+- `proxy` 字段存在但当前版本恒为空（参数被忽略），复刻端已对齐为写空串。
+- `e` 在本轮所有组合（tcp/kcp/ws/dns/oss × listen/stageless）里都是 `false`，
+  语义仍未确定；`l` 只与下载模式相关。
+- **官方载荷文件里没有 argv 条目**：复刻端 `PoArgvEntry` 追加的 2 字节 key 记录
+  属于复刻端构造，已登记为偏差（不再用于官方格式产物）。
+
 

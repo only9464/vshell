@@ -173,6 +173,8 @@ region = [16B IV][AES-128-CBC(JSON + 0x00 填充)]     // key = IV = md5(vkey)
 - 复刻端 `c2engine/agentconfig.go` 的编码器与官方产物**逐字节一致**
   （黄金向量：`testdata/original/payload/config_region_*.bin`）
 - 复刻端仍额外追加 VSCF trailer 供自家 agent 读取（有意偏差，见 API.md §12）
+- `proxy` 官方恒为空（R14 取证：`proxy`/`Proxy`/`proxyUrl` 三种写法都不进配置区）
+- 官方产物里**没有 argv 条目**（R14 取证：stageless 产物与模板只差配置区）
 
 ### 2.6 文件传输命令（复刻端 JSON 词汇）
 
