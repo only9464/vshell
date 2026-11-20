@@ -121,7 +121,7 @@
 |---|---|---|---|
 | B5.1 | dashboard 真实数据（39 键已对齐；cpu/disk/load/io/tcp/udp/icmp 已改真实采集） | `controllers/engine.go:engineGetAppInfo`、`controllers/metrics.go` | `[~]` |
 | B5.2 | `/api/file/upload` 真收 multipart 并下发（base64 + JSON 命令） | `controllers/file.go:Upload` | `[x]` |
-| B5.3 | `downloadtobrowser` 输出附件；`getdownloadper` 回填进度 | `controllers/file.go:282-306` | `[ ]` |
+| B5.3 | `downloadtobrowser` 输出真实附件（agent 回 base64 → 服务器落附件，20s 同步上限）；`getdownloadper` 进度仍待补 | `controllers/file.go:DownloadToBrowser` | `[~]` |
 | B5.4 | `runplugin` 真实调用（现在恒 "not aligned"） | `controllers/runner.go:112-126` | `[ ]` |
 | B5.5 | `/api/setting/*` 三键对齐并持久化到 `conf/setting.conf` | `controllers/setting.go` | `[x]` |
 | B5.6 | RBAC/权限码落地（`auth.go` 里已有，零调用） | `utils/auth.go:92-151` | `[ ]` |

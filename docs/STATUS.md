@@ -36,7 +36,7 @@
 | 隧道 CRUD/启停 | ⚠️ 半 | 只翻转 `RunStatus`，无转发实现（`engine.go:236-292`） |
 | 文件管理 11 个接口 | ⚠️ 半 | 全部走文本命令；`ls` 回包契约不匹配（`file.go:379-392`） |
 | 文件上传 | ✅ | 读 multipart → base64 → 下发 `{"type":"upload"}`；e2e 用 `cat` 校验落盘 |
-| 下载到浏览器/进度/OSS | ❌ 壳 | `file.go:282-306`、`file.go:474-484` |
+| 下载到浏览器 | ✅ | JSON 命令取 base64 → 附件输出（e2e 用 /etc/hostname 校验）；进度/OSS 仍为壳 |
 | 载荷下载 6 接口 | ⚠️ 半 + 方法错配 | 生成逻辑存在，但路由仅 POST（`router.go:85-90`） |
 | 插件列表/上传 | ✅ 真 | `runner.go:37-41,184-198` |
 | 插件执行 | ❌ 桩 | 恒返回 `runplugin payload not aligned`（`runner.go:112-126`） |
