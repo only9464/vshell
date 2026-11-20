@@ -1,0 +1,18 @@
+{
+  "source": "原版 vshell 4.9.3 独立实例 /api/download/listen",
+  "request": {
+    "arch": "linux_amd64",
+    "tp": "tcp",
+    "host": "1.2.3.4",
+    "port": "4444",
+    "vkey": "vk-probe",
+    "salt": "salty",
+    "upx": "false"
+  },
+  "payload_size": 7864320,
+  "region_offset": "0x4c6339",
+  "region_size": 20480,
+  "layout": "[16B IV][AES-128-CBC(JSON + 0x00 填充)]，key = IV = md5(vkey) 原始 16 字节",
+  "plaintext": "{\"server\":\"1.2.3.4:4444\",\"type\":\"tcp\",\"vkey\":\"vk-probe\",\"proxy\":\"\",\"salt\":\"salty\",\"l\":true,\"e\":false,\"d\":30,\"h\":10}",
+  "notes": "同一参数重复请求字节一致；改 salt 只有 JSON 的 salt 字段变化"
+}

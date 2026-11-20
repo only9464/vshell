@@ -123,4 +123,30 @@
 | U-01/U-02 | 对 `FUN_018dca00` 的调用方下断点，读闭包捕获的栈槽（gdb，x64 调参） |
 | U-03 | 运行期发各个 opcode，抓结果帧的 kind/字段，反推名称与语义 |
 | U-04 | 对比同一画面在三个 quality 下的 `screen_frame` 尺寸/字节数/间隔 |
-| U-09 | 抓真实下发瞬间的链路字节（KCP Main 帧内层），确认是 24B 记录还是别的封装 |
+| U-09 | 抓真实下发瞬间的链路字节（KCP Main 帧内层），确认是 24B 记录还是别的封装 |### E-29 官方载荷的配置区（动态取证，R13）
+
+方法：把 `/home/kali/go/bin/vshell` **硬链**到独立目录（同一文件系统、零拷贝），
+让它读自己的 `conf/setting.conf` 起第二实例（:39083），再调用
+`/api/download/listen` 拉真实产物，与二进制里嵌入的模板逐字节对比。
+
+得到的事实：
+
+| 项 | 结论 |
+|---|---|
+| 载体 | 模板里预留 **20480 字节全 `0x19`** 的占位区，下发时**原地覆盖**（不是追加 trailer） |
+| 布局 | `[16B IV][AES-128-CBC 密文]`，共 20480 字节 |
+| 密钥 | `key = IV = md5(vkey)` 的**原始 16 字节**（即 AES-128） |
+| 明文 | JSON + `0x00` 填充到 20464 字节（**无 PKCS#7**） |
+| JSON | `{"server":"host:port","type":"tcp|kcp|ws|dns|oss","vkey":...,"proxy":...,"salt":...,"l":true,"e":false,"d":30,"h":10}` |
+| 确定性 | 同参数多次请求字节完全一致；改 `salt` 只改 JSON 的 salt 字段（IV 只依赖 vkey） |
+
+模板名规律（从二进制字面量枚举）：`stageless/<tp>_<goos>_<goarch>[.exe]`、
+`dll/<tp>_<goos>_<goarch>.dll`，其中 tp ∈ tcp/kcp/ws/dns/oss（**没有 http**），
+另有 `stageless/ebpf_<tp>_linux_<arch>`。Windows 产物带 `.exe`，但服务器拼出的
+相对路径不带后缀（因此 `arch=windows_amd64` 会返回 `open ...: file does not exist`）。
+
+验证产物：`testdata/original/payload/config_region_tcp_linux_amd64.bin`
+（20480 字节配置区）+ `config_region_meta.json`（请求参数与明文），
+`c2engine/agentconfig_test.go` 用它做**黄金向量**：复刻端编码器输出与官方逐字节一致。
+
+

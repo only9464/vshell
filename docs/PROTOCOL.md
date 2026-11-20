@@ -158,6 +158,22 @@ blob    = JSON {"server","vkey","salt","mode"[,"dns_server","proxy"]}
 - 原版是把插件字节按十六进制拼进 `runplugin <hex> <procArg> <bool>` 文本命令，
   复刻端改为 JSON 下发（登记为偏差）。
 
+### 2.5d 官方载荷配置区（R13 动态取证，已复刻）
+
+模板内预留 **20480 字节 `0x19` 占位区**，下发时原地写入：
+
+```
+region = [16B IV][AES-128-CBC(JSON + 0x00 填充)]     // key = IV = md5(vkey)
+明文     = {"server":"host:port","type":<tp>,"vkey":...,"proxy":...,"salt":...,
+            "l":true,"e":false,"d":30,"h":10}
+```
+
+- `type` ∈ `tcp` / `kcp` / `ws` / `dns` / `oss`（**官方无 `http`**）
+- 无 PKCS#7，明文固定 20464 字节，靠 `0x00` 填充
+- 复刻端 `c2engine/agentconfig.go` 的编码器与官方产物**逐字节一致**
+  （黄金向量：`testdata/original/payload/config_region_*.bin`）
+- 复刻端仍额外追加 VSCF trailer 供自家 agent 读取（有意偏差，见 API.md §12）
+
 ### 2.6 文件传输命令（复刻端 JSON 词汇）
 
 | 命令 | 请求 | 响应 |
