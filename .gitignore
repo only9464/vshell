@@ -91,8 +91,11 @@ test_wget.html
 qa_test_dir/
 test_setting.conf
 
-# --- Reverse-engineering tooling (private) ---
-scripts/
+# --- Reverse-engineering tooling ---
+# 注意：scripts/ 曾整体被忽略，导致 e2e 回归脚本与 RE 工具链从未入库（R21 修正）。
+# 只保留真正的大体积/私有产物在忽略列表里，工具脚本本身要跟仓库走。
+scripts/extract-out/
+scripts/**/*.bin
 
 # --- Original binary & license (private / large) ---
 v_windows_amd64/
