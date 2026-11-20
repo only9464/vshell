@@ -63,6 +63,18 @@ type Health struct {
 	failCount     int
 }
 
+// NewHealth 返回一个带默认失败阈值/超时的健康检查状态。
+//
+// 隧道与主机记录可能从未配置健康检查，此前的代码直接解引用 nil *Health，
+// 只要存在一条隧道巡检就会 panic。
+func NewHealth() *Health {
+	return &Health{
+		CheckTimeout:  5 * time.Second,
+		MaxFail:       3,
+		CheckInterval: 30 * time.Second,
+	}
+}
+
 func (h *Health) IsFailing() bool {
 	h.RLock()
 	defer h.RUnlock()

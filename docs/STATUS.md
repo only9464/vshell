@@ -63,7 +63,7 @@
 | 载荷模板 | ❌ | 无 `go:embed`，`agents/` 不存在 → 恒 nil |
 | 载荷修补 | ⚠️ | 仅尾部追加配置块；argv key 未恢复 → `PoArgvEntry` 必失败 |
 | OSS 上传 | ⚠️ | `oss.go` 真发 HTTP；`protocol.go:538` 的 `UploadToOSS` 只打日志（死代码） |
-| 健康检查 | ⚠️ | TCP/HTTP/ICMP 真；`tunnel.Health` 未初始化会 panic（`health.go:125`） |
+| 健康检查 | ⚠️ | TCP/HTTP/ICMP 真；nil Health 已修（回归测试），巡检/维护任务已启动；失败自动重启仍待做 |
 | 监控 | ❌ | 磁盘恒 256GB、TCP/UDP 恒 10/3（`monitor.go`） |
 | 字符串解密/置换链 | ✅ | `po_decode.go`、`string_decrypt.go` 有回归向量，但未接运行时 |
 
@@ -148,6 +148,7 @@
 | 文件上传 | multipart → base64 → agent 落盘；e2e 上传后用 `cat` 校验 | `controllers/file.go:Upload`、`e2e §7b` |
 | 设置持久化 | `/setting/edit` 写回 `conf/setting.conf`；`/setting/get` 读配置 | `controllers/setting.go` |
 | 终端 PTY | Unix 用 creack/pty；`terminal_pty_test.go` 断言 `[ -t 1 ]` 为真且 `stty size` 跟随 resize | `agent/terminal_unix.go`、`terminal_pty_test.go` |
+| 巡检/维护 | `AppBackground` 现在启动健康巡检 + 维护任务（此前是死代码）；`Health` 懒初始化避免 panic | `controllers/engine.go`、`c2engine/health.go` |
 | 分块下载/进度 | agent 支持 `offset/length` 并按块回 `chunk:<total>:<b64>`；面板 1 MiB/块拉取并回填进度；e2e 用 3 MiB 文件校验字节数与 `pre:100` | `agent/main.go`、`controllers/file.go` |
 
 **有意偏差**：配置块格式是复刻端自定义的（原版块与 argv key 未恢复，见 U-01/U-02），

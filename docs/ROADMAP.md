@@ -110,7 +110,7 @@
 | B4.1 | 隧道数据面（`LinkMsgChan` + 通道帧 + 端口转发） | `kcp.go:1082`、`channel_frame.go` | `[ ]` |
 | B4.2 | 反连 Host 会话（`AuthenticateHost` 现在恒 true） | `c2engine/app.go:530` | `[ ]` |
 | B4.3 | tunnels/listeners 持久化补齐（现在 tunnels 重启全丢） | `c2engine/engine.go:909`、`storage.go` | `[ ]` |
-| B4.4 | 健康检查：`tunnel.Health` 未初始化导致 panic；失败要重启 | `c2engine/health.go:125` | `[ ]` |
+| B4.4 | 健康检查：`Health` 未初始化不再 panic（`NewHealth()` 懒初始化 + 回归测试）；健康巡检/维护任务改为随 AppBackground 真正启动 | `c2engine/health.go`、`c2engine/health_nil_test.go` | `[~]` |
 | B4.5 | 真实监控采集（monitor.go 全是常量） | `c2engine/monitor.go` | `[ ]` |
 
 ---

@@ -122,6 +122,11 @@ func (hc *HealthChecker) checkAll() {
 }
 
 func (hc *HealthChecker) checkTunnel(t *Tunnel) {
+	// Health 指针可能从未初始化（NewTunnel 只建隧道字段）。原实现直接解引用，
+	// 只要系统里存在一条隧道，巡检 goroutine 就会 panic 并打挂整个进程。
+	if t.Health == nil {
+		t.Health = NewHealth()
+	}
 	if t.Health.CheckType == "" {
 		return // No health check configured
 	}
@@ -144,6 +149,9 @@ func (hc *HealthChecker) checkTunnel(t *Tunnel) {
 }
 
 func (hc *HealthChecker) checkHost(h *Host) {
+	if h.Health == nil {
+		h.Health = NewHealth()
+	}
 	target := h.TargetStr
 	if h.Health.CheckType == "" {
 		return

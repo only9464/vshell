@@ -42,3 +42,7 @@ func startClientOnlineSweeper() {
 		}()
 	})
 }
+
+// backgroundServicesOnce 保证健康巡检/维护任务只启动一次
+// （AppBackground 在测试里可能被多次调用）。
+var backgroundServicesOnce sync.Once

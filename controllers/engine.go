@@ -766,6 +766,11 @@ func AppBackground() {
 	// 暴露为 backgroundState 供上层读取，不再回写配置文件。
 
 	startClientOnlineSweeper()
+
+	// 健康巡检 + 维护任务（清理僵尸任务/离线隧道）。原版由常驻后台对象承担
+	// （FUN_0194d140）；复刻端此前从未启动它们，等于"面板有字段、后台没动作"。
+	// StartBackgroundServices 内部用单例 + sync.Once，重复调用安全。
+	backgroundServicesOnce.Do(func() { c2engine.StartBackgroundServices() })
 }
 
 // ---- 下载任务（FUN_01906e80 GetDownloadPer 等）----
