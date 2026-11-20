@@ -1,0 +1,217 @@
+{
+  "source": "官方 vshell 4.9.3 tcp 传输的任务记录（MITM 抓包，R21）",
+  "envelope": {
+    "record": "[u32 LE 长度][12B nonce][AES-256-GCM 密文][16B tag]",
+    "plaintext": "[u32 LE 长度][type u8][channel u32 LE][payload]",
+    "server_to_agent_example": "06 01 00 00 00 → 03 01 00 00 00 b7 00 → b3 00 00 00 {task json}"
+  },
+  "task_json": {
+    "ConnType": "\"v\"",
+    "Host": "\"v\"",
+    "LocalProxy": false,
+    "RemoteAddr": "\"v\"",
+    "Req": {
+      "Pass": "\"v\"",
+      "Type": "<类型码>",
+      "File": "base64|null",
+      "Z1..Z5": "参数位"
+    },
+    "Option": {
+      "Timeout": "纳秒（默认 5e9）"
+    }
+  },
+  "type_codes": {
+    "M": "执行命令(Z1=命令)",
+    "B": "列目录(Z1=目录)",
+    "C": "读文件(Z1=完整路径)",
+    "A": "磁盘信息",
+    "D": "touch(Z1=路径)",
+    "J": "mkdir(Z1=目录，末尾/)",
+    "I": "move(Z1=Z2=\"src|<-dst/\")",
+    "DSELF": "删除文件",
+    "Upload": "上传(File=base64内容, Z1=目标路径)"
+  },
+  "result_record": "C→S payload 形如 `->|<输出>|<-`",
+  "samples": [
+    {
+      "ConnType": "v",
+      "Host": "v",
+      "LocalProxy": false,
+      "RemoteAddr": "v",
+      "Req": {
+        "Pass": "v",
+        "Type": "M",
+        "File": null,
+        "Z1": "id",
+        "Z2": "",
+        "Z3": "",
+        "Z4": "",
+        "Z5": ""
+      },
+      "Option": {
+        "Timeout": 5000000000
+      },
+      "_raw": "{\"ConnType\":\"v\",\"Host\":\"v\",\"LocalProxy\":false,\"RemoteAddr\":\"v\",\"Req\":{\"Pass\":\"v\",\"Type\":\"M\",\"File\":null,\"Z1\":\"id\",\"Z2\":\"\",\"Z3\":\"\",\"Z4\":\"\",\"Z5\":\"\"},\"Option\":{\"Timeout\":5000000000}}"
+    },
+    {
+      "ConnType": "v",
+      "Host": "v",
+      "LocalProxy": false,
+      "RemoteAddr": "v",
+      "Req": {
+        "Pass": "v",
+        "Type": "B",
+        "File": null,
+        "Z1": "/tmp",
+        "Z2": "",
+        "Z3": "",
+        "Z4": "",
+        "Z5": ""
+      },
+      "Option": {
+        "Timeout": 5000000000
+      },
+      "_raw": "{\"ConnType\":\"v\",\"Host\":\"v\",\"LocalProxy\":false,\"RemoteAddr\":\"v\",\"Req\":{\"Pass\":\"v\",\"Type\":\"B\",\"File\":null,\"Z1\":\"/tmp\",\"Z2\":\"\",\"Z3\":\"\",\"Z4\":\"\",\"Z5\":\"\"},\"Option\":{\"Timeout\":5000000000}}"
+    },
+    {
+      "ConnType": "v",
+      "Host": "v",
+      "LocalProxy": false,
+      "RemoteAddr": "v",
+      "Req": {
+        "Pass": "v",
+        "Type": "C",
+        "File": null,
+        "Z1": "/etc/hostname",
+        "Z2": "",
+        "Z3": "",
+        "Z4": "",
+        "Z5": ""
+      },
+      "Option": {
+        "Timeout": 5000000000
+      },
+      "_raw": "{\"ConnType\":\"v\",\"Host\":\"v\",\"LocalProxy\":false,\"RemoteAddr\":\"v\",\"Req\":{\"Pass\":\"v\",\"Type\":\"C\",\"File\":null,\"Z1\":\"/etc/hostname\",\"Z2\":\"\",\"Z3\":\"\",\"Z4\":\"\",\"Z5\":\"\"},\"Option\":{\"Timeout\":5000000000}}"
+    },
+    {
+      "ConnType": "v",
+      "Host": "v",
+      "LocalProxy": false,
+      "RemoteAddr": "v",
+      "Req": {
+        "Pass": "v",
+        "Type": "DSELF",
+        "File": null,
+        "Z1": "",
+        "Z2": "",
+        "Z3": "",
+        "Z4": "",
+        "Z5": ""
+      },
+      "Option": {
+        "Timeout": 5000000000
+      },
+      "_raw": "{\"ConnType\":\"v\",\"Host\":\"v\",\"LocalProxy\":false,\"RemoteAddr\":\"v\",\"Req\":{\"Pass\":\"v\",\"Type\":\"DSELF\",\"File\":null,\"Z1\":\"\",\"Z2\":\"\",\"Z3\":\"\",\"Z4\":\"\",\"Z5\":\"\"},\"Option\":{\"Timeout\":5000000000}}"
+    },
+    {
+      "ConnType": "v",
+      "Host": "v",
+      "LocalProxy": false,
+      "RemoteAddr": "v",
+      "Req": {
+        "Pass": "v",
+        "Type": "A",
+        "File": null,
+        "Z1": "",
+        "Z2": "",
+        "Z3": "",
+        "Z4": "",
+        "Z5": ""
+      },
+      "Option": {
+        "Timeout": 5000000000
+      },
+      "_raw": "{\"ConnType\":\"v\",\"Host\":\"v\",\"LocalProxy\":false,\"RemoteAddr\":\"v\",\"Req\":{\"Pass\":\"v\",\"Type\":\"A\",\"File\":null,\"Z1\":\"\",\"Z2\":\"\",\"Z3\":\"\",\"Z4\":\"\",\"Z5\":\"\"},\"Option\":{\"Timeout\":5000000000}}"
+    },
+    {
+      "ConnType": "v",
+      "Host": "v",
+      "LocalProxy": false,
+      "RemoteAddr": "v",
+      "Req": {
+        "Pass": "v",
+        "Type": "Upload",
+        "File": "aGVsbG8tbTEK",
+        "Z1": "/tmp/up_m1.txt",
+        "Z2": "",
+        "Z3": "",
+        "Z4": "",
+        "Z5": ""
+      },
+      "Option": {
+        "Timeout": 5000000000
+      },
+      "_raw": "{\"ConnType\":\"v\",\"Host\":\"v\",\"LocalProxy\":false,\"RemoteAddr\":\"v\",\"Req\":{\"Pass\":\"v\",\"Type\":\"Upload\",\"File\":\"aGVsbG8tbTEK\",\"Z1\":\"/tmp/up_m1.txt\",\"Z2\":\"\",\"Z3\":\"\",\"Z4\":\"\",\"Z5\":\"\"},\"Option\":{\"Timeout\":5000000000}}"
+    },
+    {
+      "ConnType": "v",
+      "Host": "v",
+      "LocalProxy": false,
+      "RemoteAddr": "v",
+      "Req": {
+        "Pass": "v",
+        "Type": "J",
+        "File": null,
+        "Z1": "/tmp/m1dir/",
+        "Z2": "",
+        "Z3": "",
+        "Z4": "",
+        "Z5": ""
+      },
+      "Option": {
+        "Timeout": 5000000000
+      },
+      "_raw": "{\"ConnType\":\"v\",\"Host\":\"v\",\"LocalProxy\":false,\"RemoteAddr\":\"v\",\"Req\":{\"Pass\":\"v\",\"Type\":\"J\",\"File\":null,\"Z1\":\"/tmp/m1dir/\",\"Z2\":\"\",\"Z3\":\"\",\"Z4\":\"\",\"Z5\":\"\"},\"Option\":{\"Timeout\":5000000000}}"
+    },
+    {
+      "ConnType": "v",
+      "Host": "v",
+      "LocalProxy": false,
+      "RemoteAddr": "v",
+      "Req": {
+        "Pass": "v",
+        "Type": "D",
+        "File": null,
+        "Z1": "/tmp/m1touch",
+        "Z2": "",
+        "Z3": "",
+        "Z4": "",
+        "Z5": ""
+      },
+      "Option": {
+        "Timeout": 5000000000
+      },
+      "_raw": "{\"ConnType\":\"v\",\"Host\":\"v\",\"LocalProxy\":false,\"RemoteAddr\":\"v\",\"Req\":{\"Pass\":\"v\",\"Type\":\"D\",\"File\":null,\"Z1\":\"/tmp/m1touch\",\"Z2\":\"\",\"Z3\":\"\",\"Z4\":\"\",\"Z5\":\"\"},\"Option\":{\"Timeout\":5000000000}}"
+    },
+    {
+      "ConnType": "v",
+      "Host": "v",
+      "LocalProxy": false,
+      "RemoteAddr": "v",
+      "Req": {
+        "Pass": "v",
+        "Type": "I",
+        "File": null,
+        "Z1": "/tmp/m1touch|<-/tmp/m1moved/",
+        "Z2": "/tmp/m1touch|<-/tmp/m1moved/",
+        "Z3": "",
+        "Z4": "",
+        "Z5": ""
+      },
+      "Option": {
+        "Timeout": 5000000000
+      },
+      "_raw": "{\"ConnType\":\"v\",\"Host\":\"v\",\"LocalProxy\":false,\"RemoteAddr\":\"v\",\"Req\":{\"Pass\":\"v\",\"Type\":\"I\",\"File\":null,\"Z1\":\"/tmp/m1touch|\\u003c-/tmp/m1moved/\",\"Z2\":\"/tmp/m1touch|\\u003c-/tmp/m1moved/\",\"Z3\":\"\",\"Z4\":\"\",\"Z5\":\"\"},\"Option\":{\"Timeout\":5000000000}}"
+    }
+  ]
+}

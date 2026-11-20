@@ -11,6 +11,12 @@
 
 ### A-1 任务记录层（opcode + argv / 结果帧）
 
+- **进展（R21）**：**任务记录与结果格式已实证并复刻结构**——信封
+  `[u32 len][type][channel][payload]`、任务 JSON（`ConnType/Host/Req{Type,File,Z1..Z5}/Option`）、
+  9 个类型码（M/B/C/A/D/J/I/DSELF/Upload）、结果 `->|<输出>|<-`。
+  `c2engine/official_task.go` + `official_task_test.go`（9 条抓包样本做黄金向量）。
+  剩余：把复刻端的**任务下发路径**改成官方格式（当前自家 agent 用自己的 JSON 词汇，
+  属有意偏差，改则需同步改 agent）。
 - **进展（R20）**：**握手与心跳记录已完全实证**（MITM 代理让官方 agent 成功上线到官方服务端）：
   记录是 `[u32 LE 长度] + 文本`，握手为 `"4.9.3"`→挑战→应答→`"sucs"`→`"conf"`→
   `conf \x01\x00\x00{client json}`→会话 ID→`"main"`；心跳 `00 ff ff ff ff 1e 00`
@@ -36,11 +42,15 @@
   - 在干净物理机/虚拟机上跑官方 agent + 复刻服务端（`VSHELL_CAPTURE` 开关已就绪）；
   - 或用 IDA 打开 12MB 的 agent 模板 ELF，直接看记录解析函数。
 
-### A-2 Windows 实战层（M7）
+### A-2 Windows / macOS 平台功能（M7）——**按操作者要求不在本环境适配**
 
-- **现状**：Windows 相关只有管道回退终端、PE 模板提取，无 UAC/注入/反沙箱。
-- **卡点**：本机没有 Windows 环境，无法验证。
-- **下一步**：交叉编译 + 文档化；功能验证需 Windows 机器。
+> 操作者明确说明：「目前是 linux 环境，可以不对 windows、macos 特有的功能或项做适配工作；
+> 没有的环境可以暂时放弃，并写进文档里」。
+
+- **现状**：Linux 侧功能完整（终端 PTY、文件、屏幕、插件、隧道、MCP 全部在 Linux 验证）；
+  Windows/macOS 只有代码分支（管道回退终端、PE 模板提取），未做 UAC/注入/反沙箱。
+- **处理**：不在本项目当前范围内继续适配；代码保留 `//go:build windows` 分支，
+  避免编译失败即可。若将来需要，按 GAPS 里的清单逐项补。
 
 ---
 

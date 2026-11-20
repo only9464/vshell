@@ -294,4 +294,59 @@ key = hex(md5(salt)) 的 32 字节 ASCII（salt 为空 → d41d8cd98f00b204e9800
 - 证据：[testdata/original/wire/mitm_session_2026-11-20.log](mitm log 全文) 与
   `handshake_summary.json`。
 
+### E-35 任务记录与结果格式实证（R21，MITM）
+
+在 E-34 的 MITM 链路上（官方 agent 通过代理上线成功），从面板下发各种操作，
+抓到了**服务端→agent 的任务记录**与**agent→服务端的结果记录**。
+
+明文信封（解密后）：
+
+```
+[u32 LE 长度][type u8][channel u32 LE][payload]
+type: 0x06 服务端 ACK / 0x03 数据 / 0x05 进度 / 0x07 结束 / 0x01 客户端 ACK
+```
+
+服务端下发一例（shell `id`）：
+
+```
+S→C  06 01 00 00 00                        ACK chan=1
+C→S  01 01 00 00 00                        客户端 ACK
+S→C  03 01 00 00 00 b7 00                  数据：chan=1，长度 183
+S→C  b3 00 00 00 {task json}               183 字节 JSON
+```
+
+任务 JSON（字段顺序固定）：
+
+```jsonc
+{"ConnType":"v","Host":"v","LocalProxy":false,"RemoteAddr":"v",
+ "Req":{"Pass":"v","Type":"M","File":null,"Z1":"id","Z2":"","Z3":"","Z4":"","Z5":""},
+ "Option":{"Timeout":5000000000}}   // 纳秒
+```
+
+**Req.Type 类型码（全部实测）**：
+
+| 码 | 操作 | 参数 |
+|---|---|---|
+| `M` | 执行命令 | Z1 = 命令行 |
+| `B` | 列目录 | Z1 = 目录 |
+| `C` | 读文件 | Z1 = 完整路径 |
+| `A` | 磁盘信息 | — |
+| `D` | touch/新建 | Z1 = 路径 |
+| `J` | mkdir | Z1 = 目录（末尾带 `/`） |
+| `I` | 移动/重命名 | Z1 = Z2 = `"src\|<-dst/"` |
+| `DSELF` | 删除文件 | — |
+| `Upload` | 上传 | `File` = base64 内容，Z1 = 目标路径 |
+
+结果回传（agent→服务端，type=0x03 数据）：payload 形如 `->|<输出>|<-`
+（例：`->|uid=1000(kali) …|<-`）。
+
+> 附带解答了 R17 的疑问：gdb 里 `0x1b2970d` 处看到的 `"DSELF"` 确实是删除任务的类型码，
+> 当时把它当成 errno 字面量是误判。
+
+**复刻端成果**：`c2engine/official_task.go` 定义同名结构并能**逐字节**重现抓包 JSON；
+`official_task_test.go` 用 9 条真实样本做黄金向量（解码→重编码后与原串完全一致）。
+
+证据：[testdata/original/wire/task_records.json](抓包解析)、
+`mitm_task_session_2026-11-20.log`（原始记录）。
+
 

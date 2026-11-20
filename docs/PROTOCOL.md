@@ -199,6 +199,25 @@ region = [16B IV][AES-128-CBC(JSON + 0x00 填充)]     // key = IV = md5(vkey)
 16 字节会话 ID → `"main"`。心跳：`00 ff ff ff ff 1e 00` + RFC3339 时间戳，
 服务端回 `08 ff ff ff ff 1e 00`。详见 `docs/RE-NOTES.md` E-34。
 
+## 2.8 官方面板命令 → agent 任务记录（R21 实证）
+
+信封：`[u32 LE 长度][type u8][channel u32 LE][payload]`，
+type = `0x06` 服务端 ACK / `0x03` 数据 / `0x05` 进度 / `0x07` 结束 / `0x01` 客户端 ACK。
+
+任务 JSON：
+
+```jsonc
+{"ConnType":"v","Host":"v","LocalProxy":false,"RemoteAddr":"v",
+ "Req":{"Pass":"v","Type":"M","File":null,"Z1":"id","Z2":"","Z3":"","Z4":"","Z5":""},
+ "Option":{"Timeout":5000000000}}
+```
+
+类型码：`M` 执行命令、`B` 列目录、`C` 读文件、`A` 磁盘、`D` touch、`J` mkdir、
+`I` 移动（`src|<-dst/`）、`DSELF` 删除、`Upload`（`File`=base64，Z1=路径）。
+结果：`->|<输出>|<-`。
+
+复刻端结构见 `c2engine/official_task.go`（字段顺序与抓包一致，黄金向量测试）。
+
 ## 3. 20 字节/24 字节记录（原版任务与结果载体）
 
 服务端已有编码器（`c2engine/wire.go`），agent 已有生成器（`agent/main.go:1078-1160`），
