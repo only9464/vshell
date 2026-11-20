@@ -107,7 +107,7 @@
 
 | ID | 任务 | 位置 | 状态 |
 |---|---|---|---|
-| B4.1 | 隧道数据面（`LinkMsgChan` + 通道帧 + 端口转发） | `kcp.go:1082`、`channel_frame.go` | `[ ]` |
+| B4.1 | 隧道数据面：反向端口转发（服务器端口监听 → 下发 tunnel_open → agent 拨回配对 → 双向转发） | `c2engine/tunnel_server.go`、`agent/tunnel.go` | `[x]` |
 | B4.2 | 反连 Host 会话（`AuthenticateHost` 现在恒 true） | `c2engine/app.go:530` | `[ ]` |
 | B4.3 | tunnels/listeners 持久化补齐（现在 tunnels 重启全丢） | `c2engine/engine.go:909`、`storage.go` | `[ ]` |
 | B4.4 | 健康检查：`Health` 未初始化不再 panic（`NewHealth()` 懒初始化 + 回归测试）；健康巡检/维护任务改为随 AppBackground 真正启动 | `c2engine/health.go`、`c2engine/health_nil_test.go` | `[~]` |
@@ -166,6 +166,7 @@
 | 日期 | 轮次 | 变更 |
 |---|---|---|
 | 2026-11-20 | R1 | 建立文档体系（docs/）；**M0 完成**：端到端（HTTP+KCP）打通、面板字段/参数契约修正、e2e 脚本落地 |
+| 2026-11-20 | R8 | **隧道数据面打通**：反向端口转发（VST1 握手 + 通道号配对），e2e 用 python http.server 验证公网端口 → agent → 目标的 HTTP 转发；C2 传输解耦（四条通道都能用） |
 | 2026-11-20 | R7 | **插件执行打通**：`/runner/upload` → `plugins/` → `/runner/runplugin` 下发 → agent 执行 `/bin/echo` 插件回显 `plugin-ok`；同时按黑盒修正插件后缀白名单（.elf/.so/.dylib 本就受支持） |
 | 2026-11-20 | R7 | **屏幕远控可用**：`screen_input` 事件解析 + xdotool 注入（含单测）、截图工具覆盖 Wayland/X11 并把真实错误透传给面板；e2e 增加路由与截图断言（无桌面工具时自动 SKIP） |
 | 2026-11-20 | R6 | **M3 终端升级为真 PTY**（`stty size` 验证 resize 生效）+ **文件传输分块/进度**（3 MiB 文件 4 块下载、进度到 100）；B5.3 下载链路补完 |

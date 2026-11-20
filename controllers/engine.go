@@ -7,6 +7,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 	"strconv"
@@ -362,6 +363,57 @@ func engineStartTunnel(id int64) {
 		return
 	}
 	t.RunStatus = true
+}
+
+// engineStartTunnelWithDataPlane 启动隧道数据面：服务器在隧道端口监听，
+// 公网连接到达时把 tunnel_open 任务下发给所属客户端，由 agent 拨回来配对。
+//
+// serverAddr 是 agent 拨号用的地址（面板未提供时用 "127.0.0.1:<port>"，
+// 仅适用于本机联调；生产应填服务器的可达地址）。
+func engineStartTunnelWithDataPlane(id int64, serverAddr string) error {
+	t := c2engine.GetEngine().GetTunnel(id)
+	if t == nil {
+		return errors.New("tunnel not found")
+	}
+	if t.Port <= 0 {
+		return errors.New("tunnel port is not set")
+	}
+
+	ts, err := c2engine.StartTunnelServer(id, t.Port)
+	if err != nil {
+		return err
+	}
+	dial := serverAddr
+	if dial == "" {
+		dial = "127.0.0.1:" + strconv.Itoa(t.Port)
+	}
+	clientID := t.ClientID
+	target := t.Target
+	if target == "" {
+		target = t.TargetAddr
+	}
+
+	// 每条公网连接分配一个通道号；OnOpen 负责把 tunnel_open 任务投递给 agent。
+	ts.OnOpen = func(chanID uint32) error {
+		payload, _ := json.Marshal(map[string]interface{}{
+			"type":   "tunnel_open",
+			"id":     chanID,
+			"addr":   dial,
+			"target": target,
+		})
+		if _, derr := dispatchCmd(clientID, string(payload)); derr != nil {
+			return derr
+		}
+		return nil
+	}
+	t.RunStatus = true
+	return nil
+}
+
+// engineStopTunnelWithDataPlane 停止隧道数据面。
+func engineStopTunnelWithDataPlane(id int64) {
+	c2engine.StopTunnelServer(id)
+	engineStopTunnel(id)
 }
 
 // engineStopTunnel 停止隧道（原版 FUN_01717ce0）。

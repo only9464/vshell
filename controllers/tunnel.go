@@ -154,7 +154,10 @@ func (c *TunnelController) Start() {
 		c.JsonErr("start error")
 		return
 	}
-	engineStartTunnel(id)
+	if err := engineStartTunnelWithDataPlane(id, c.JsonGetStr("serverAddr")); err != nil {
+		c.JsonErr("start error: " + err.Error())
+		return
+	}
 	c.JsonOkVerb("start")
 }
 
@@ -169,6 +172,6 @@ func (c *TunnelController) Stop() {
 		c.JsonErr("stop error")
 		return
 	}
-	engineStopTunnel(id)
+	engineStopTunnelWithDataPlane(id)
 	c.JsonOkVerb("stop")
 }

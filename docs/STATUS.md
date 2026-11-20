@@ -33,12 +33,13 @@
 | 客户端列表 | ⚠️ 字段契约不符 | 后端出 `id/ip/os/arch`（`client.go:70-81`），SPA 读 `Id/OsName/UserName/...` |
 | 客户端备注/删除文件/杀进程 | ✅ 下发通 | `client.go:116-149` → `dispatchCmd`；但受 B0.1 阻塞 |
 | 监听器 CRUD/启停 | ⚠️ 半 | `listener.go` 全实现，但 `Add` 丢弃 Host → 恒绑 443（`engine.go:201`） |
-| 隧道 CRUD/启停 | ⚠️ 半 | 只翻转 `RunStatus`，无转发实现（`engine.go:236-292`） |
+| 隧道 CRUD/启停 | ✅ | start 真正起数据面（端口监听 + 通道配对 + 双向转发）；stop 关闭 |
 | 文件管理 11 个接口 | ⚠️ 半 | 全部走文本命令；`ls` 回包契约不匹配（`file.go:379-392`） |
 | 文件上传 | ✅ | 读 multipart → base64 → 下发 `{"type":"upload"}`；e2e 用 `cat` 校验落盘 |
 | 下载到浏览器 | ✅ | JSON 命令取 base64 → 附件输出（e2e 用 /etc/hostname 校验）；进度/OSS 仍为壳 |
 | 载荷下载 6 接口 | ⚠️ 半 + 方法错配 | 生成逻辑存在，但路由仅 POST（`router.go:85-90`） |
 | 插件列表/上传 | ✅ 真 | `runner.go:37-41,184-198` |
+| 隧道数据面 | 服务器在隧道端口监听；公网连接到达→分配 chanID→下发 `tunnel_open`→agent 拨回（`VST1` + chanID + target）→配对后裸 TCP 双向转发；未配对 15s 超时关闭 | `c2engine/tunnel_server.go`、`agent/tunnel.go`、`c2engine/tunnel_server_test.go` |
 | 插件执行 | ❌ 桩 | 恒返回 `runplugin payload not aligned`（`runner.go:112-126`） |
 | 终端 shell / WS | ✅ 真 | `terminal.go`；受 B0.1 阻塞 |
 | 屏幕 WS | ⚠️ 半 | 流中转真，quality 参数是编造值（`screen.go:95-105`） |
@@ -58,7 +59,7 @@
 | KCP 监听 | ⚠️ | 链路层真（FEC 10/3、`[1B type][2B BE len]`），上层协议两端不一致 |
 | DNS 监听 | ⚠️ | 绑 `:53` 忽略 ListenAddr；只回一条任务；无 ack（`dns.go:181-240`） |
 | WS/CDN-WS | ⚠️ | 服务端有，agent 无 WS 客户端 |
-| 隧道数据面 | ❌ | `LinkMsgChan` 只打日志（`kcp.go:1082`） |
+| 隧道数据面 | ✅ | 反向端口转发（`tunnel_server.go` + `agent/tunnel.go`），与 C2 传输解耦 |
 | 通道帧 | ⚠️ | 已实现 + 6 测试，但零调用（`channel_frame.go`） |
 | 载荷模板 | ❌ | 无 `go:embed`，`agents/` 不存在 → 恒 nil |
 | 载荷修补 | ⚠️ | 仅尾部追加配置块；argv key 未恢复 → `PoArgvEntry` 必失败 |
@@ -77,6 +78,7 @@
 | 文件操作 | ✅ | 分块下载（1 MiB/块）+ 进度回填 + 上传落盘 |
 | 进程/服务/网络枚举 | ⚠️ | 有枚举，但 opcode 分支只回计数文本 |
 | 持久化安装/卸载 | ✅ | 注册表 Run + schtasks / crontab（`main.go:2846-2900`） |
+| 隧道数据面 | 服务器在隧道端口监听；公网连接到达→分配 chanID→下发 `tunnel_open`→agent 拨回（`VST1` + chanID + target）→配对后裸 TCP 双向转发；未配对 15s 超时关闭 | `c2engine/tunnel_server.go`、`agent/tunnel.go`、`c2engine/tunnel_server_test.go` |
 | 插件执行 | ✅ | 可执行插件（.exe/.elf）落盘执行并回显；动态库与 .net 明确未实现 |
 | 41 opcode | ⚠️ | 真 22 / 部分 9 / 桩 10（见 §3） |
 | 结果帧 | ❌ | sink 恒 nil，只发文本 |
@@ -148,6 +150,7 @@
 | 文件上传 | multipart → base64 → agent 落盘；e2e 上传后用 `cat` 校验 | `controllers/file.go:Upload`、`e2e §7b` |
 | 设置持久化 | `/setting/edit` 写回 `conf/setting.conf`；`/setting/get` 读配置 | `controllers/setting.go` |
 | 终端 PTY | Unix 用 creack/pty；`terminal_pty_test.go` 断言 `[ -t 1 ]` 为真且 `stty size` 跟随 resize | `agent/terminal_unix.go`、`terminal_pty_test.go` |
+| 隧道数据面 | 服务器在隧道端口监听；公网连接到达→分配 chanID→下发 `tunnel_open`→agent 拨回（`VST1` + chanID + target）→配对后裸 TCP 双向转发；未配对 15s 超时关闭 | `c2engine/tunnel_server.go`、`agent/tunnel.go`、`c2engine/tunnel_server_test.go` |
 | 插件执行 | 面板读文件下发；agent 落盘（0700）执行、60s 超时、清理临时目录；非法名/坏 base64/非零退出都有测试 | `agent/plugin_exec_test.go` |
 | 屏幕输入 | `screen_input move/click/scroll/key` → 解析 → xdotool argv（`screen_input_test.go` 覆盖 4 类事件与非法输入）；e2e 断言命令确实路由到 agent | `agent/screen_input.go` |
 | 巡检/维护 | `AppBackground` 现在启动健康巡检 + 维护任务（此前是死代码）；`Health` 懒初始化避免 panic | `controllers/engine.go`、`c2engine/health.go` |

@@ -188,6 +188,25 @@ blob    = JSON {"server","vkey","salt","mode"[,"dns_server","proxy"]}
 
 任务记录（下发方向）：`[opcode u8][argv…]`，数值参数为 4 字节**大端** int32（`FUN_00fc1620`）。
 
+## 3.5 隧道数据面（反向端口转发）
+
+```
+公网客户端 ──TCP──▶ 服务器 :Port ──(下发 tunnel_open)──▶ agent ──TCP──▶ 目标
+                    ▲                                      │
+                    └────────── agent 拨回 :Port ──────────┘
+握手 = "VST1" | chanID u32 LE | targetLen u16 LE | target
+```
+
+1. 服务器在隧道端口监听，公网连接到达 → 分配 chanID → 把它挂到 pending；
+2. 通过任务队列给 agent 下发 `{"type":"tunnel_open","id":chanID,"addr":"<服务器:端口>","target":"<目标>"}`；
+3. agent 带 `VST1` 握手拨回同一端口，服务器据 magic 区分 agent 与公网连接；
+4. 配对后双向 `io.Copy`；15s 内未配对则关闭公网连接。
+
+> 为什么不用 `LinkMsgChan`：原版隧道走 C2 长连接的通道帧，而本复刻端四条传输都是
+> 请求/响应式，搬过去会变成"每条数据等一个轮询周期"。反向转发与 C2 传输解耦，
+> 延迟接近裸 TCP，且 HTTP/KCP/WS/DNS 四种 agent 都能用（只要能出网到隧道端口）。
+> `channel_frame.go` 的编解码保留作对齐参考（当前无调用）。
+
 ## 4. 通道帧（隧道，`c2engine/channel_frame.go`）
 
 ```
