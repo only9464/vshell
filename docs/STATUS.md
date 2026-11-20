@@ -72,9 +72,9 @@
 | 能力 | 状态 | 说明 |
 |---|---|---|
 | shell 执行 | ✅ | 管道，非 PTY（`main.go:2731`） |
-| 终端会话 | ⚠️ | `terminal_start/input/close/resize`，resize 无效 |
+| 终端会话 | ✅ | Unix 走 PTY（真 TTY、resize 生效）；Windows 为管道回退 |
 | 屏幕截图/直播 | ⚠️ | 调外部工具（`import/scrot/...`），每帧拉一次子进程 |
-| 文件操作 | ⚠️ | ls/cat/upload/download/rm/mv/mkdir/touch/wget 都有，无分块与进度 |
+| 文件操作 | ✅ | 分块下载（1 MiB/块）+ 进度回填 + 上传落盘 |
 | 进程/服务/网络枚举 | ⚠️ | 有枚举，但 opcode 分支只回计数文本 |
 | 持久化安装/卸载 | ✅ | 注册表 Run + schtasks / crontab（`main.go:2846-2900`） |
 | 插件执行 | ❌ | 只做形状校验后拒绝（`main.go:699-760`） |
@@ -147,6 +147,8 @@
 | 单测 | 配置块写入/读回/缺失/长度非法四个用例 | `c2engine/config_block_test.go` |
 | 文件上传 | multipart → base64 → agent 落盘；e2e 上传后用 `cat` 校验 | `controllers/file.go:Upload`、`e2e §7b` |
 | 设置持久化 | `/setting/edit` 写回 `conf/setting.conf`；`/setting/get` 读配置 | `controllers/setting.go` |
+| 终端 PTY | Unix 用 creack/pty；`terminal_pty_test.go` 断言 `[ -t 1 ]` 为真且 `stty size` 跟随 resize | `agent/terminal_unix.go`、`terminal_pty_test.go` |
+| 分块下载/进度 | agent 支持 `offset/length` 并按块回 `chunk:<total>:<b64>`；面板 1 MiB/块拉取并回填进度；e2e 用 3 MiB 文件校验字节数与 `pre:100` | `agent/main.go`、`controllers/file.go` |
 
 **有意偏差**：配置块格式是复刻端自定义的（原版块与 argv key 未恢复，见 U-01/U-02），
 原版 agent 不认这个块；等逆向补齐后应改为原版格式。

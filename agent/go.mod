@@ -3,6 +3,7 @@ module vshell/agent
 go 1.25.7
 
 require (
+	github.com/creack/pty v1.1.24
 	github.com/gorilla/websocket v1.5.3
 	github.com/miekg/dns v1.1.73
 	github.com/xtaci/kcp-go/v5 v5.6.72

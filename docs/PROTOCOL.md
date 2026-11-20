@@ -131,6 +131,16 @@ blob    = JSON {"server","vkey","salt","mode"[,"dns_server","proxy"]}
 - 与 PE/ELF 结构无关（追加在文件尾，加载器不会执行到）；
 - **有意偏差**：原版配置块与 argv 加密 key 尚未恢复（U-01/U-02），此块仅自研 agent 识别。
 
+### 2.6 文件传输命令（复刻端 JSON 词汇）
+
+| 命令 | 请求 | 响应 |
+|---|---|---|
+| 上传 | `{"type":"upload","path":"<dir>/<name>","data":"<b64>"}` | `uploaded: <path> (<n> bytes)` |
+| 下载（整文件） | `{"type":"download","path":...}` | 裸 base64 |
+| 下载（分块） | `{"type":"download","path":...,"offset":N,"length":M}` | `chunk:<total>:<b64>` |
+
+面板按 1 MiB 分块拉取，逐块回填 `downloadTasks` 进度，供 `/file/getdownloadper` 计算百分比。
+
 ## 3. 20 字节/24 字节记录（原版任务与结果载体）
 
 服务端已有编码器（`c2engine/wire.go`），agent 已有生成器（`agent/main.go:1078-1160`），

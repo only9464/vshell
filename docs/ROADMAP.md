@@ -96,10 +96,10 @@
 |---|---|---|---|
 | B3.1 | 10 个桩 opcode：0x02/0x09/0x0a/0x0c/0x10/0x15/0x16/0x1d/0x20/0x2b | 前置：恢复原版运行期连接池/代理表/端口映射表布局 | `[ ]` |
 | B3.2 | 9 个半实现收口：0x0f/0x13/0x14/0x17/0x1a/0x1c/0x22/0x25/0x26 | 现在只回计数文本，要发真记录帧 | `[ ]` |
-| B3.3 | PTY / ConPTY | 交互、resize、echo | `[ ]` |
+| B3.3 | PTY（Linux/macOS 用 creack/pty，真 TTY + resize 生效）；Windows 暂为管道回退（ConPTY 待做） | `agent/terminal_unix.go`/`terminal_windows.go`、`terminal_pty_test.go` | `[~]` |
 | B3.4 | 屏幕流 quality→参数映射 + 鼠标键盘控制帧 | 服务端已在发 `{"type":"1".."10"}`，agent 无处理器 | `[ ]` |
 | B3.5 | 插件执行：落盘 → `.exe/.dll/.net` 分派 → 加载 | 两端当前都拒绝 | `[ ]` |
-| B3.6 | 文件传输分块 + 进度回填 | 面板进度条现在是 0 | `[ ]` |
+| B3.6 | 文件传输分块（1 MiB/块，agent 侧 `chunk:<total>:<b64>`）+ 进度回填到 `getdownloadper` | `agent/main.go CmdDownload`、`controllers/file.go engineDownloadFile` | `[x]` |
 
 ---
 
@@ -121,7 +121,7 @@
 |---|---|---|---|
 | B5.1 | dashboard 真实数据（39 键已对齐；cpu/disk/load/io/tcp/udp/icmp 已改真实采集） | `controllers/engine.go:engineGetAppInfo`、`controllers/metrics.go` | `[~]` |
 | B5.2 | `/api/file/upload` 真收 multipart 并下发（base64 + JSON 命令） | `controllers/file.go:Upload` | `[x]` |
-| B5.3 | `downloadtobrowser` 输出真实附件（agent 回 base64 → 服务器落附件，20s 同步上限）；`getdownloadper` 进度仍待补 | `controllers/file.go:DownloadToBrowser` | `[~]` |
+| B5.3 | `downloadtobrowser` 附件输出 + `downloadtoserver` 落盘到 `downloads/` + `getdownloadper` 真实百分比 | `controllers/file.go` | `[x]` |
 | B5.4 | `runplugin` 真实调用（现在恒 "not aligned"） | `controllers/runner.go:112-126` | `[ ]` |
 | B5.5 | `/api/setting/*` 三键对齐并持久化到 `conf/setting.conf` | `controllers/setting.go` | `[x]` |
 | B5.6 | RBAC/权限码落地（`auth.go` 里已有，零调用） | `utils/auth.go:92-151` | `[ ]` |
@@ -166,6 +166,7 @@
 | 日期 | 轮次 | 变更 |
 |---|---|---|
 | 2026-11-20 | R1 | 建立文档体系（docs/）；**M0 完成**：端到端（HTTP+KCP）打通、面板字段/参数契约修正、e2e 脚本落地 |
+| 2026-11-20 | R6 | **M3 终端升级为真 PTY**（`stty size` 验证 resize 生效）+ **文件传输分块/进度**（3 MiB 文件 4 块下载、进度到 100）；B5.3 下载链路补完 |
 | 2026-11-20 | R5 | **M2 主线打通**（面板生成载荷零 ldflags 上线）；另外补完 B5.2 文件上传（multipart→agent）与 B5.5 设置持久化 |
 | 2026-11-20 | R5 | **M2 主线打通**：服务端写自描述配置块 + agent 自解析 → 面板生成的载荷无需 ldflags 直接上线（e2e 第 14 段）；模板缺失改为原版式错误，删除 MinimalPE 假外壳 |
 | 2026-11-20 | R4 | 逆向工具链落地：`.gopclntab` 恢复 38645 个函数符号、控制器 239 个方法地址表、定点反汇编脚本；发现并提取外层二进制内嵌的 40+ agent 模板（M2 素材）；更正"字面量加密"的误判 |

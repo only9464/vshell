@@ -778,8 +778,37 @@ type DownloadTask struct {
 	Current  int64
 }
 
-var downloadTasks = map[int64]*DownloadTask{}
+var (
+	downloadTasks   = map[int64]*DownloadTask{}
+	downloadTaskMu  sync.Mutex
+	downloadTaskSeq int64
+)
 
-func engineGetDownloadPer(id int64) *DownloadTask {
-	return downloadTasks[id]
+// engineGetDownloadPer 返回某客户端最近一条（可按路径过滤）下载任务。
+//
+// 面板的 /file/getdownloadper 只传客户端 id 与 target，没有任务号，
+// 因此按"该客户端最新登记的任务"返回；给了 path 后缀时再按路径过滤。
+func engineGetDownloadPer(clientID int64) *DownloadTask {
+	downloadTaskMu.Lock()
+	defer downloadTaskMu.Unlock()
+	var latest *DownloadTask
+	for _, t := range downloadTasks {
+		if t.ClientID != clientID {
+			continue
+		}
+		if latest == nil || t.ID > latest.ID {
+			latest = t
+		}
+	}
+	return latest
+}
+
+// updateDownloadProgress 回填某条下载任务的进度（total/current 字节数）。
+func updateDownloadProgress(taskID, total, current int64) {
+	downloadTaskMu.Lock()
+	defer downloadTaskMu.Unlock()
+	if t, ok := downloadTasks[taskID]; ok {
+		t.Total = total
+		t.Current = current
+	}
 }

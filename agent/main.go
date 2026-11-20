@@ -1213,17 +1213,17 @@ done:
 // ============================================================================
 
 // agentTermSession 保存交互式终端会话状态。
-// agentTermSession holds interactive terminal session state.
+//
+// 会话持有一个 shellProc（Unix 下是 PTY，Windows 下是管道回退），
+// 换会话时先关旧进程再启动新的，waitOnce 保证 Wait 只调用一次。
 type agentTermSession struct {
 	mu     sync.Mutex
-	cmd    *exec.Cmd
-	stdin  io.WriteCloser
+	proc   shellProc
 	taskID int64
 	active bool
-	// waitOnce ensures cmd.Wait() is called exactly once per session (shell-exit
-	// goroutine OR terminalClose). It is replaced on every startTerminal: a
-	// sync.Once value would fire only once for the agent's whole lifetime and
-	// break every terminal session after the first.
+	// waitOnce 保证每个会话的 Wait() 恰好调用一次（自退出 goroutine 或
+	// terminalClose 二者之一）。每次 startTerminal 换新的 once，避免
+	// agent 生命周期内只能 Wait 一次。
 	waitOnce *sync.Once
 }
 
@@ -1243,20 +1243,17 @@ func submitTerminalOutput(taskID int64, data []byte) {
 
 func startTerminal(termType string, rows, cols int, taskID int64) (string, string) {
 	termSess.mu.Lock()
-	defer termSess.mu.Unlock()
 
 	if termSess.active {
-		// Replace any existing session: kill it, then reap it through the old
-		// session's own once so we never double-Wait with the previous session's
-		// exit goroutine (exec.Cmd.Wait must not be called concurrently).
-		oldCmd := termSess.cmd
+		// 替换已有会话：先关旧进程，避免同一时刻有两个 shell 抢输出。
+		oldProc := termSess.proc
 		oldOnce := termSess.waitOnce
-		if oldCmd != nil && oldCmd.Process != nil {
-			oldCmd.Process.Kill()
-		}
 		termSess.mu.Unlock()
-		if oldOnce != nil {
-			oldOnce.Do(func() { oldCmd.Wait() })
+		if oldProc != nil {
+			_ = oldProc.Close()
+		}
+		if oldOnce != nil && oldProc != nil {
+			oldOnce.Do(func() { _ = oldProc.Wait() })
 		}
 		termSess.mu.Lock()
 		termSess.active = false
@@ -1274,88 +1271,64 @@ func startTerminal(termType string, rows, cols int, taskID int64) (string, strin
 		}
 	}
 
-	cmd := exec.Command(shell)
-	hideCmdWindow(cmd)
-	stdin, err := cmd.StdinPipe()
+	proc, err := newShellProc(shell, rows, cols)
 	if err != nil {
-		return "", err.Error()
-	}
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return "", err.Error()
-	}
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return "", err.Error()
-	}
-	if err := cmd.Start(); err != nil {
+		termSess.mu.Unlock()
 		return "", err.Error()
 	}
 
-	termSess.cmd = cmd
-	termSess.stdin = stdin
+	termSess.proc = proc
 	termSess.taskID = taskID
 	termSess.active = true
-	// Fresh once per session: the shell-exit goroutine and terminalClose share
-	// this pointer only, so a later session's once is never consumed here.
 	once := &sync.Once{}
 	termSess.waitOnce = once
+	termSess.mu.Unlock()
 
-	readLoop := func(r io.Reader) {
+	// 单路输出循环：PTY 把 stdout/stderr 合并成一路。
+	go func() {
 		buf := make([]byte, 4096)
 		for {
-			n, err := r.Read(buf)
+			n, rerr := proc.Read(buf)
 			if n > 0 {
-				// submitTerminalOutput base64-encodes synchronously before the
-				// next Read reuses buf, so passing buf[:n] directly is safe.
+				// submitTerminalOutput 会先 base64 编码再返回，因此这里复用 buf 是安全的。
 				submitTerminalOutput(taskID, buf[:n])
 			}
-			if err != nil {
+			if rerr != nil {
 				return
 			}
 		}
-	}
-	go readLoop(stdout)
-	go readLoop(stderr)
+	}()
 
-	// Detect shell self-exit (e.g. the user typed `exit`): mark the session
-	// inactive so terminal_input stops writing to a dead pipe, and let the
-	// readLoop goroutines wind down on EOF. waitOnce guards cmd.Wait() so this
-	// never races terminalClose's own Wait.
+	// shell 自行退出（用户输入 exit）时把会话标记为非活动，输入不再写死进程。
 	go func() {
-		once.Do(func() { cmd.Wait() })
+		once.Do(func() { _ = proc.Wait() })
 		termSess.mu.Lock()
-		// Only tear down our own session; a stale exit goroutine must not kill
-		// a replacement session that started after we exited.
-		if termSess.cmd == cmd {
+		if termSess.proc == proc {
 			termSess.active = false
 		}
 		termSess.mu.Unlock()
 		log.Printf("Terminal (task %d) exited", taskID)
 	}()
 
-	log.Printf("Terminal started (%s), task %d", shell, taskID)
+	log.Printf("Terminal started (%s, %dx%d), task %d", shell, rows, cols, taskID)
 	return "terminal started", ""
 }
 
 func terminalInput(encoded string) (string, string) {
-	// Copy the stdin reference under the lock, then write WITHOUT holding it:
-	// a pipe write blocks once the shell's stdin buffer fills and the shell
-	// isn't draining it, which would otherwise stall the whole agent (the task
-	// loop is single-threaded).
+	// 在锁内取到 proc 引用，写出时不持锁：写满缓冲会阻塞，不能卡住整个 agent。
 	termSess.mu.Lock()
-	if !termSess.active || termSess.stdin == nil {
+	if !termSess.active || termSess.proc == nil {
 		termSess.mu.Unlock()
 		return "", "no active terminal"
 	}
-	stdin := termSess.stdin
+	proc := termSess.proc
 	termSess.mu.Unlock()
 
 	data, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
 		return "", err.Error()
 	}
-	if _, err := stdin.Write(data); err != nil {
+	if _, err := proc.Write(data); err != nil {
 		return "", err.Error()
 	}
 	return "ok", ""
@@ -1363,20 +1336,34 @@ func terminalInput(encoded string) (string, string) {
 
 func terminalClose() (string, string) {
 	termSess.mu.Lock()
-	cmd := termSess.cmd
+	proc := termSess.proc
 	once := termSess.waitOnce
-	if termSess.active && cmd != nil && cmd.Process != nil {
-		cmd.Process.Kill()
-	}
+	active := termSess.active
 	termSess.active = false
 	termSess.mu.Unlock()
 
-	// Reap the process outside the lock; the session's once prevents a race
-	// with the shell-exit goroutine's own Wait.
-	if cmd != nil && once != nil {
-		once.Do(func() { cmd.Wait() })
+	if active && proc != nil {
+		_ = proc.Close()
+	}
+	if proc != nil && once != nil {
+		once.Do(func() { _ = proc.Wait() })
 	}
 	return "terminal closed", ""
+}
+
+// terminalResize 调整终端窗口（PTY 生效；管道实现为空操作）。
+func terminalResize(rows, cols int) (string, string) {
+	termSess.mu.Lock()
+	proc := termSess.proc
+	active := termSess.active
+	termSess.mu.Unlock()
+	if !active || proc == nil {
+		return "", "no active terminal"
+	}
+	if err := proc.Resize(rows, cols); err != nil {
+		return "", err.Error()
+	}
+	return "ok", ""
 }
 
 // ============================================================================
@@ -1519,8 +1506,16 @@ func dispatchTerminalCommand(taskID int64, cmdStr string) (string, string) {
 	case strings.HasPrefix(cmdStr, "terminal_input:"):
 		return terminalInput(strings.TrimPrefix(cmdStr, "terminal_input:"))
 	case strings.HasPrefix(cmdStr, "terminal_resize"):
-		// Size hint only; pipe-backed shell ignores it.
-		return "ok", ""
+		rows, cols := 0, 0
+		parseKV(strings.TrimSpace(strings.TrimPrefix(cmdStr, "terminal_resize")), func(k, v string) {
+			switch k {
+			case "rows":
+				rows, _ = parseCommandIntArg(v)
+			case "cols":
+				cols, _ = parseCommandIntArg(v)
+			}
+		})
+		return terminalResize(rows, cols)
 	case strings.HasPrefix(cmdStr, "terminal_close"):
 		return terminalClose()
 	}
@@ -2658,8 +2653,50 @@ func executeCommand(taskID int64, cmdStr string, timeout int) (string, string) {
 		return fmt.Sprintf("uploaded: %s (%d bytes)", path, len(data)), ""
 
 	case CmdDownload:
+		// 两种形态：
+		//   整文件：{"type":"download","path":...}            → 返回裸 base64（兼容旧面板）
+		//   分块：  {"type":"download","path":...,"offset":N,"length":M}
+		//            → 返回 "chunk:<total>:<b64>"，避免大文件把内存打爆，
+		//              也让面板能按块回填进度（B3.6/B5.3）。
 		path, _ := payload["path"].(string)
-		data, err := os.ReadFile(path)
+		if path == "" {
+			return "", "path required"
+		}
+		f, err := os.Open(path)
+		if err != nil {
+			return "", err.Error()
+		}
+		defer f.Close()
+		st, err := f.Stat()
+		if err != nil {
+			return "", err.Error()
+		}
+		total := st.Size()
+
+		offF, hasOff := payload["offset"].(float64)
+		lenF, hasLen := payload["length"].(float64)
+		if hasOff || hasLen {
+			offset := int64(offF)
+			length := int64(lenF)
+			if offset < 0 {
+				offset = 0
+			}
+			if offset > total {
+				offset = total
+			}
+			if length <= 0 || offset+length > total {
+				length = total - offset
+			}
+			buf := make([]byte, length)
+			n, rerr := f.ReadAt(buf, offset)
+			if rerr != nil && rerr != io.EOF {
+				return "", rerr.Error()
+			}
+			return fmt.Sprintf("chunk:%d:%s", total,
+				base64.StdEncoding.EncodeToString(buf[:n])), ""
+		}
+
+		data, err := io.ReadAll(f)
 		if err != nil {
 			return "", err.Error()
 		}
