@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 // TestProtocolCompressionRoundTrip verifies gzip compress/decompress.
@@ -59,8 +60,10 @@ func TestProtocolHTTPCheckinFlow(t *testing.T) {
 	e := GetEngine()
 	e.Init(cfg)
 
+	// 用唯一 ID：99 可能与其他测试或 db 里残留的监听器冲突（曾导致偶发 400，
+	// 因为 handlePostResult 按 cl.ID 反查监听器拿 salt，冲突时 key 不匹配）。
 	listener := &Listener{
-		ID:          99,
+		ID:          int64(900000 + time.Now().UnixNano()%100000),
 		Status:      true,
 		ListenAddr:  "127.0.0.1:0",
 		Mode:        "http",
@@ -68,7 +71,7 @@ func TestProtocolHTTPCheckinFlow(t *testing.T) {
 		EncryptSalt: "e2e-salt",
 	}
 	// The checkin handler resolves the listener via the engine registry.
-	e.listeners[99] = listener
+	e.listeners[listener.ID] = listener
 	cl := NewC2Listener(listener)
 
 	// 1. Encrypted checkin — agent transport frame:
@@ -87,6 +90,8 @@ func TestProtocolHTTPCheckinFlow(t *testing.T) {
 		t.Fatalf("FrameEncrypt: %v", err)
 	}
 
+	// 全局引擎单例可能被其它测试的 Init 重新加载：调用前再登记一次
+	e.listeners[listener.ID] = listener
 	req := httptest.NewRequest(http.MethodPost, "/api/checkin", bytes.NewReader(body))
 	req.RemoteAddr = "192.168.1.10:5555"
 	w := httptest.NewRecorder()
@@ -131,6 +136,8 @@ func TestProtocolHTTPCheckinFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FrameEncrypt result: %v", err)
 	}
+	// 结果处理同样按 cl.ID 反查监听器：这里再登记一次，避免并发测试把它挤掉
+	e.listeners[listener.ID] = listener
 	req3 := httptest.NewRequest(http.MethodPost, "/api/result", bytes.NewReader(encResult))
 	w3 := httptest.NewRecorder()
 	cl.handlePostResult(w3, req3)
