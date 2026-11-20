@@ -467,17 +467,48 @@ func engineListDir(id int64, path, field, order string) ([]listEntry, int64) {
 	if path == "" {
 		path = engineDefaultDir(id)
 	}
-	cmd := "ls"
-	if path != "" {
-		cmd = "ls " + path
-	}
-	out, errMsg := engineRunCmd(id, cmd, lsCmdTimeout)
+	// 优先用 JSON 命令（agent 的 CmdFileList，返回 [{name,size,is_dir,mod_time}]）。
+	// 早期只发文本 `ls <path>`，而 agent 没有文本 ls 解析器，命令会落进 shell，
+	// 输出也不是 4 个 TAB 字段 → 面板目录永远为空。
+	req, _ := json.Marshal(map[string]string{"type": "filelist", "path": path})
+	out, errMsg := engineRunCmd(id, string(req), lsCmdTimeout)
 	if errMsg != "" {
 		return []listEntry{}, 0
 	}
-	entries := parseLsReply(out)
+	entries := parseFileListJSON(out)
+	if len(entries) == 0 {
+		// 兼容旧 agent / 原版文本协议（4 个 TAB 字段）。
+		entries = parseLsReply(out)
+	}
 	sortListEntries(entries, field, order)
 	return entries, int64(len(entries))
+}
+
+// parseFileListJSON 解析 agent 的 JSON 目录列表：
+//
+//	[{"name":"a.txt","size":12,"is_dir":false,"mod_time":"2026-11-20T21:00:00Z"}, ...]
+//
+// 与 CmdFileList 的返回格式对应（agent/main.go listDir）。解析失败返回空切片，
+// 调用方回落到 parseLsReply。
+func parseFileListJSON(reply string) []listEntry {
+	reply = strings.TrimSpace(reply)
+	if !strings.HasPrefix(reply, "[") {
+		return nil
+	}
+	var raw []struct {
+		Name    string `json:"name"`
+		Size    int64  `json:"size"`
+		IsDir   bool   `json:"is_dir"`
+		ModTime string `json:"mod_time"`
+	}
+	if err := json.Unmarshal([]byte(reply), &raw); err != nil {
+		return nil
+	}
+	out := make([]listEntry, 0, len(raw))
+	for _, e := range raw {
+		out = append(out, listEntry{Name: e.Name, Size: e.Size, IsDir: e.IsDir, Time: e.ModTime})
+	}
+	return out
 }
 
 // parseLsReply 把 agent 的 `ls` 回包解析成面板条目。
