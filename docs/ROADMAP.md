@@ -98,7 +98,7 @@
 | B3.2 | 9 个半实现收口：0x0f/0x13/0x14/0x17/0x1a/0x1c/0x22/0x25/0x26 | 现在只回计数文本，要发真记录帧 | `[ ]` |
 | B3.3 | PTY（Linux/macOS 用 creack/pty，真 TTY + resize 生效）；Windows 暂为管道回退（ConPTY 待做） | `agent/terminal_unix.go`/`terminal_windows.go`、`terminal_pty_test.go` | `[~]` |
 | B3.4 | 屏幕输入注入（`screen_input move/click/scroll/key` → xdotool）+ 截图工具覆盖（grim/import/scrot/gnome-screenshot/spectacle）+ 错误透传 | `agent/screen_input.go`、`agent/main.go:linuxScreenshot` | `[~]` |
-| B3.5 | 插件执行：落盘 → `.exe/.dll/.net` 分派 → 加载 | 两端当前都拒绝 | `[ ]` |
+| B3.5 | 插件执行：面板读 `plugins/<name>` → base64 下发 → agent 落盘执行可执行插件（.exe/.elf）并回显输出；动态库/.net 明确未实现 | `controllers/runner.go`、`agent/main.go:runPlugin` | `[~]` |
 | B3.6 | 文件传输分块（1 MiB/块，agent 侧 `chunk:<total>:<b64>`）+ 进度回填到 `getdownloadper` | `agent/main.go CmdDownload`、`controllers/file.go engineDownloadFile` | `[x]` |
 
 ---
@@ -166,6 +166,7 @@
 | 日期 | 轮次 | 变更 |
 |---|---|---|
 | 2026-11-20 | R1 | 建立文档体系（docs/）；**M0 完成**：端到端（HTTP+KCP）打通、面板字段/参数契约修正、e2e 脚本落地 |
+| 2026-11-20 | R7 | **插件执行打通**：`/runner/upload` → `plugins/` → `/runner/runplugin` 下发 → agent 执行 `/bin/echo` 插件回显 `plugin-ok`；同时按黑盒修正插件后缀白名单（.elf/.so/.dylib 本就受支持） |
 | 2026-11-20 | R7 | **屏幕远控可用**：`screen_input` 事件解析 + xdotool 注入（含单测）、截图工具覆盖 Wayland/X11 并把真实错误透传给面板；e2e 增加路由与截图断言（无桌面工具时自动 SKIP） |
 | 2026-11-20 | R6 | **M3 终端升级为真 PTY**（`stty size` 验证 resize 生效）+ **文件传输分块/进度**（3 MiB 文件 4 块下载、进度到 100）；B5.3 下载链路补完 |
 | 2026-11-20 | R5 | **M2 主线打通**（面板生成载荷零 ldflags 上线）；另外补完 B5.2 文件上传（multipart→agent）与 B5.5 设置持久化 |

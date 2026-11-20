@@ -145,6 +145,19 @@ blob    = JSON {"server","vkey","salt","mode"[,"dns_server","proxy"]}
 > 注意：`screen_input` 与 `screen_capture*` 一样，必须在 `executeCommand` 里先于
 > shell 分支被路由，否则会落进 `/bin/sh` 执行（历史 bug，R7 修复）。
 
+### 2.5c 插件命令（复刻端 JSON 词汇）
+
+```jsonc
+→ {"type":"plugin","name":"fscan.x64.elf","arg":"-h 10.0.0.0/24","data":"<base64 插件字节>"}
+← "<插件 stdout+stderr>"        // 失败时同时给出 "plugin exited: ..." / 超时
+```
+
+- 面板从 `plugins/<name>` 读字节（`/runner/upload` 会落到该目录）；
+- agent 把字节写到临时目录（0700）后 exec，60s 超时，结束清理；
+- 动态库（`.dll/.so/.dylib`）与 `.net` 托管程序集**明确返回未实现**，不静默降级；
+- 原版是把插件字节按十六进制拼进 `runplugin <hex> <procArg> <bool>` 文本命令，
+  复刻端改为 JSON 下发（登记为偏差）。
+
 ### 2.6 文件传输命令（复刻端 JSON 词汇）
 
 | 命令 | 请求 | 响应 |

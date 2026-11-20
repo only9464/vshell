@@ -77,7 +77,7 @@
 | 文件操作 | ✅ | 分块下载（1 MiB/块）+ 进度回填 + 上传落盘 |
 | 进程/服务/网络枚举 | ⚠️ | 有枚举，但 opcode 分支只回计数文本 |
 | 持久化安装/卸载 | ✅ | 注册表 Run + schtasks / crontab（`main.go:2846-2900`） |
-| 插件执行 | ❌ | 只做形状校验后拒绝（`main.go:699-760`） |
+| 插件执行 | ✅ | 可执行插件（.exe/.elf）落盘执行并回显；动态库与 .net 明确未实现 |
 | 41 opcode | ⚠️ | 真 22 / 部分 9 / 桩 10（见 §3） |
 | 结果帧 | ❌ | sink 恒 nil，只发文本 |
 | 传输 | ⚠️ | http(坏)/kcp(半)/tcp(无对端)/dns(不解析)/ws(无客户端) |
@@ -148,6 +148,7 @@
 | 文件上传 | multipart → base64 → agent 落盘；e2e 上传后用 `cat` 校验 | `controllers/file.go:Upload`、`e2e §7b` |
 | 设置持久化 | `/setting/edit` 写回 `conf/setting.conf`；`/setting/get` 读配置 | `controllers/setting.go` |
 | 终端 PTY | Unix 用 creack/pty；`terminal_pty_test.go` 断言 `[ -t 1 ]` 为真且 `stty size` 跟随 resize | `agent/terminal_unix.go`、`terminal_pty_test.go` |
+| 插件执行 | 面板读文件下发；agent 落盘（0700）执行、60s 超时、清理临时目录；非法名/坏 base64/非零退出都有测试 | `agent/plugin_exec_test.go` |
 | 屏幕输入 | `screen_input move/click/scroll/key` → 解析 → xdotool argv（`screen_input_test.go` 覆盖 4 类事件与非法输入）；e2e 断言命令确实路由到 agent | `agent/screen_input.go` |
 | 巡检/维护 | `AppBackground` 现在启动健康巡检 + 维护任务（此前是死代码）；`Health` 懒初始化避免 panic | `controllers/engine.go`、`c2engine/health.go` |
 | 分块下载/进度 | agent 支持 `offset/length` 并按块回 `chunk:<total>:<b64>`；面板 1 MiB/块拉取并回填进度；e2e 用 3 MiB 文件校验字节数与 `pre:100` | `agent/main.go`、`controllers/file.go` |

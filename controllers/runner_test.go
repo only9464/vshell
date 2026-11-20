@@ -80,9 +80,12 @@ func TestPluginKindByName(t *testing.T) {
 		{"Mimikatz.x64.exe", pluginExe, true},
 		{"loader.net", pluginNet, true},
 		{"loader.NET", pluginNet, true},
-		{"libpayload.so", 0, false},
-		{"payload.elf", 0, false},
-		{"payload.dylib", 0, false},
+		// 黑盒：原版 /runner/list 里就有 fscan.x64.elf 与 gost.x64.so，
+		// 且拒绝文案写的是 "support .elf,.so,.dylib executable, extensions"，
+		// 说明这三类是受支持的（此前测试写成不支持，是错的）。
+		{"libpayload.so", pluginDll, true},
+		{"payload.elf", pluginExe, true},
+		{"payload.dylib", pluginDll, true},
 		{"noextension", 0, false},
 		{"", 0, false},
 	}

