@@ -420,4 +420,25 @@ official-tcp: client registered: host=kali os=linux_amd64 user=kali
 服务端记录（或会话确认）驱动它进入主通道；下一步用 IDA 看 agent 里 `main`
 字符串附近的读取逻辑。
 
+### E-39 main 通道仍未触发的排查（R25）
+
+对照实验与结论：
+
+| 实验 | 结果 |
+|---|---|
+| 回挑战前加 30ms 延迟 | ✅ 稳定通过认证并收到 `conf` |
+| 回 `sucs` 前加 20ms 延迟 | ❌ agent 连 `conf` 都不发（说明 sucs 要立刻发） |
+| 认证后再补 `\x01` + 会话 ID | ❌ 不触发 main |
+| 挑战复用 nonce / 计数器 nonce | ❌ agent 无响应 |
+
+用抓取到的**服务端真实帧**做对照（R25 新增非ces 级抓包）：服务端每帧 nonce 都是随机，
+plaintext 序列与我们完全一致（`md5("4.9.3")` → `sucs` → `\x01` → 16 字节会话）。
+
+现象：conf 通道完整走通（client 记录已解析），但 agent 后续连接**认证后不再发
+`main`/`chan`**；而在真实服务端上，agent 会在第二条连接认证后立刻发 `main`。
+
+剩余可能：真实服务端在 conf 完成后还发了一条我们没抓到的记录（例如面板侧的
+"start"指令），或 agent 依据会话 ID 的某些位决定通道用途。下一步：用 MITM 长时间
+挂住真实链路，观察 conf 之后是否还有服务端→agent 记录。
+
 

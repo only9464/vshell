@@ -66,10 +66,12 @@ type OfficialTCPServer struct {
 	main     *officialConn // 已注册 main 通道的连接
 	// ReadTimeout 是单条记录的读超时（默认 60s；测试可调小）。
 	ReadTimeout time.Duration
-	client      map[string]interface{}
-	results     chan string
-	closed      bool
-	Logf        func(format string, args ...interface{})
+	// AuthExtras 为 true 时在认证通过后追加 ack + 会话 ID（实验开关）。
+	AuthExtras bool
+	client     map[string]interface{}
+	results    chan string
+	closed     bool
+	Logf       func(format string, args ...interface{})
 }
 
 // officialConn 是一条连接的状态机。
@@ -253,11 +255,17 @@ func (c *officialConn) handle(plain []byte) error {
 		// 期望 md5(vkey)
 		want := OfficialAuthResponse(s.vkey)
 		if strings.EqualFold(string(plain), want) {
+			// 注意：实测在 sucs 前加延迟会让 agent 连 conf 都不发，因此这里**不加**延迟。
 			if err := c.send([]byte(officialAuthOK)); err != nil {
 				s.Logf("official-tcp: send sucs failed: %v", err)
 				return err
 			}
 			s.Logf("official-tcp: %s authenticated", c.conn.RemoteAddr())
+			// 实验：认证后再补一条 ack + 会话 ID，观察是否能驱动 agent 注册 main
+			if s.AuthExtras {
+				_ = c.send([]byte{0x01})
+				_ = c.send([]byte(officialSessionID()))
+			}
 			c.state = "auth"
 			return nil
 		}

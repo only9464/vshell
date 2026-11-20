@@ -11,6 +11,9 @@
 
 ### A-1 任务记录层（opcode + argv / 结果帧）
 
+- **进展（R25）**：排除多种假设（sucs 延迟、认证后补 ack、nonce 复用/计数器），
+  用非ces 级抓包确认服务端每帧 nonce 随机、明文序列与我们一致；`conf` 通道完整走通，
+  但 agent 后续连接认证后**不发 main**（真实服务端上会发）。见 RE-NOTES E-39。
 - **进展（R24）**：复刻端实现了官方协议的 tcp 服务端（`c2engine/official_tcp.go` +
   `vshell-server official-tcp`），**官方 agent 已能通过认证并上报 client 记录**
   （host/os/user 全部解析成功）。关键细节：回挑战要延迟 ~30ms，否则 agent 不理睬。

@@ -142,6 +142,7 @@ func runOfficialTCP(args []string) {
 	_ = flagSet.Parse(args)
 
 	srv := c2engine.NewOfficialTCPServer(*addr, *vkey, *salt)
+	srv.AuthExtras = os.Getenv("VSHELL_AUTH_EXTRAS") == "1"
 	if err := srv.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "official-tcp: %v\n", err)
 		os.Exit(1)
