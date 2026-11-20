@@ -16,6 +16,10 @@
 | 插件 | `plugins/`：AddUser.dll、fscan.x64.elf、gost.x64.{exe,so}、mimikatz.x64.exe |
 | 载荷模板 | 期望在 `<cwd>/stageless/`、`<cwd>/dll/`，当前**不存在**（下载会报 `file does not exist`） |
 
+> **起第二份实例的坑**：该二进制按**自身所在目录**找配置（`/home/kali/go/bin/conf/setting.conf`），
+> 换 cwd 或传 `-config` 到别处都仍会读那份，结果报 `bind: address already in use`（端口 39082）。
+> 需要独立实例时要连二进制一起复制到新目录（500 MB），或者直接用 gdb attach 现有进程。
+>
 > 该实例属于操作者本人，用于黑盒对照。**取证时只做只读探测**：除 `login` 外不发写操作；
 > 需要验证写接口时用临时对象并立刻删掉（见 §4 的清理要求）。
 
