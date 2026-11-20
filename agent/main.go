@@ -2719,8 +2719,22 @@ func executeCommand(taskID int64, cmdStr string, timeout int) (string, string) {
 
 	case CmdFileTouch:
 		path, _ := payload["path"].(string)
-		f, _ := os.Create(path)
-		f.Close()
+		if path == "" {
+			return "", "path required"
+		}
+		f, err := os.Create(path)
+		if err != nil {
+			return "", err.Error()
+		}
+		_ = f.Close()
+		// 可选：同时改修改时间（面板的 /file/modifytime）
+		if tstr, _ := payload["time"].(string); tstr != "" {
+			if ts, perr := parseFileTime(tstr); perr == nil {
+				_ = os.Chtimes(path, ts, ts)
+			} else {
+				return fmt.Sprintf("touched: %s (bad time %q: %v)", path, tstr, perr), ""
+			}
+		}
 		return fmt.Sprintf("touched: %s", path), ""
 
 	case CmdDiskInfo:
@@ -3390,4 +3404,14 @@ func foldByte(b byte) byte {
 		return b + ('a' - 'A')
 	}
 	return b
+}
+
+// parseFileTime 解析面板传来的时间字符串（RFC3339 或 "YYYY-MM-DD HH:MM:SS"）。
+func parseFileTime(s string) (time.Time, error) {
+	for _, layout := range []string{time.RFC3339, "2006-01-02 15:04:05", "2006-01-02T15:04:05", "2006-01-02"} {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("unsupported time format")
 }

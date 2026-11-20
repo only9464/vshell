@@ -114,6 +114,7 @@ JWT claims：`{token_type, user_id, role_id, username, exp, iat}`，有效期 24
 | POST | `/file/rm` / `rmlist` | `id`,`path` / `paths[]` | ✅ |
 | POST | `/file/touch` | `id`,`path` | ✅ |
 | POST | `/file/mkdir` | `id`,`path` | ✅ |
+| POST | `/file/modifytime` | **注意**：`path`+`target`+`time`，agent 侧用 `filetouch`+`time` 实现（支持 RFC3339 / `YYYY-MM-DD HH:MM:SS`）
 | POST | `/file/modifytime` | `id`,`path`,`time` | ✅ |
 | POST | `/file/wget` | `id`,`url`,`path` | ✅ |
 | POST | `/file/upload` | multipart：`file` + `id` + `path` | ✅ 落盘后以 JSON 命令下发给 agent（`{"type":"upload",...}`） |

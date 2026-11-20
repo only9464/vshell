@@ -34,7 +34,7 @@
 | 客户端备注/删除文件/杀进程 | ✅ 下发通 | `client.go:116-149` → `dispatchCmd`；但受 B0.1 阻塞 |
 | 监听器 CRUD/启停 | ⚠️ 半 | `listener.go` 全实现，但 `Add` 丢弃 Host → 恒绑 443（`engine.go:201`） |
 | 隧道 CRUD/启停 | ✅ | start 起数据面、stop 关闭；增删即落盘 `db/tunnels.json`，重启可恢复 |
-| 文件管理 11 个接口 | ✅ | `ls`/`cat`/`edit`/`upload`/`download`/`wget` 走 JSON 命令并 e2e 验证；`downloadtooss` 取回文件后明确报 OSS 未实现 |
+| 文件管理 11 个接口 | ✅ | `ls`/`cat`/`edit`/`upload`/`download`/`wget`/`touch`/`modifytime`/`mv`/`rm`/`getdisk` 全部走 JSON 命令并 e2e 验证；`downloadtooss` 取回暂存后明确报 OSS 未实现 |
 | 文件上传 | ✅ | 读 multipart → base64 → 下发 `{"type":"upload"}`；e2e 用 `cat` 校验落盘 |
 | 下载到浏览器 | ✅ | JSON 命令取 base64 → 附件输出（e2e 用 /etc/hostname 校验）；进度/OSS 仍为壳 |
 | 载荷下载 6 接口 | ⚠️ 半 + 方法错配 | 生成逻辑存在，但路由仅 POST（`router.go:85-90`） |
@@ -153,6 +153,7 @@
 | 隧道数据面 | 服务器在隧道端口监听；公网连接到达→分配 chanID→下发 `tunnel_open`→agent 拨回（`VST1` + chanID + target）→配对后裸 TCP 双向转发；未配对 15s 超时关闭 | `c2engine/tunnel_server.go`、`agent/tunnel.go`、`c2engine/tunnel_server_test.go` |
 | 插件执行 | 面板读文件下发；agent 落盘（0700）执行、60s 超时、清理临时目录；非法名/坏 base64/非零退出都有测试 | `agent/plugin_exec_test.go` |
 | 屏幕输入 | `screen_input move/click/scroll/key` → 解析 → xdotool argv（`screen_input_test.go` 覆盖 4 类事件与非法输入）；e2e 断言命令确实路由到 agent | `agent/screen_input.go` |
+| 通知 / OSS | 需要第三方凭证，按操作者要求**暂不实现**（字段保留、上传明确报未实现），见 `docs/GAPS.md` §F |
 | 原生 MCP | `vshell-server mcp`：13 个工具覆盖客户端/命令/文件/隧道/截图/概览；stdio JSON-RPC；登录取 JWT 规避跨进程密钥不一致 | `mcp/`、`docs/MCP.md` |
 | 巡检/维护 | `AppBackground` 现在启动健康巡检 + 维护任务（此前是死代码）；`Health` 懒初始化避免 panic | `controllers/engine.go`、`c2engine/health.go` |
 | 分块下载/进度 | agent 支持 `offset/length` 并按块回 `chunk:<total>:<b64>`；面板 1 MiB/块拉取并回填进度；e2e 用 3 MiB 文件校验字节数与 `pre:100` | `agent/main.go`、`controllers/file.go` |

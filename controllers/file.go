@@ -67,10 +67,13 @@ func (c *FileController) Getdisk() {
 		c.JsonErr("id error")
 		return
 	}
-	if !c.dispatchOrReport(id, "getdisk") {
+	req := `{"type":"diskinfo"}`
+	out, errMsg := engineRunCmd(id, req, lsCmdTimeout)
+	if errMsg != "" {
+		c.JsonErr(errMsg)
 		return
 	}
-	c.JsonOkMessage("ok")
+	c.JsonOkResult(map[string]interface{}{"data": out})
 }
 
 // Ls 列出目录（POST /file/ls）。参数：id / path / field / order；
@@ -106,7 +109,17 @@ func (c *FileController) Mv() {
 		c.JsonErr("id error")
 		return
 	}
-	if !c.dispatchOrReport(id, "mv "+path) {
+	// 前端约定：path 里用 "|<-" 分隔源与目标（与删除多选同一分隔符）。
+	src, dst := path, ""
+	if i := strings.Index(path, "|<-"); i >= 0 {
+		src, dst = strings.TrimSpace(path[:i]), strings.TrimSpace(path[i+3:])
+	}
+	if dst == "" {
+		c.JsonErr("dst required")
+		return
+	}
+	req, _ := json.Marshal(map[string]string{"type": "filemove", "src": src, "dst": dst})
+	if !c.dispatchOrReport(id, string(req)) {
 		return
 	}
 	c.JsonOkMessage("ok")
@@ -120,7 +133,9 @@ func (c *FileController) Rm() {
 		c.JsonErr("id error")
 		return
 	}
-	if !c.dispatchOrReport(id, "rm "+path) {
+	// JSON 命令（agent 的 CmdFileDelete）：文本 "rm <path>" 没有解析器会落进 shell。
+	req, _ := json.Marshal(map[string]string{"type": "filedelete", "path": path})
+	if !c.dispatchOrReport(id, string(req)) {
 		return
 	}
 	c.JsonOkMessage("ok")
@@ -142,8 +157,9 @@ func (c *FileController) RmList() {
 			cmds = append(cmds, path+"/"+p)
 		}
 	}
-	if len(cmds) > 0 {
-		dispatchCmd(id, "rm "+strings.Join(cmds, " "))
+	for _, p := range cmds {
+		req, _ := json.Marshal(map[string]string{"type": "filedelete", "path": p})
+		dispatchCmd(id, string(req))
 	}
 	c.JsonOkMessage("ok")
 }
@@ -176,7 +192,8 @@ func (c *FileController) Touch() {
 		c.JsonErr("id error")
 		return
 	}
-	if !c.dispatchOrReport(id, "touch "+joinPath(path, target)) {
+	req, _ := json.Marshal(map[string]string{"type": "filetouch", "path": joinPath(path, target)})
+	if !c.dispatchOrReport(id, string(req)) {
 		return
 	}
 	c.JsonOkMessage("ok")
@@ -192,7 +209,12 @@ func (c *FileController) Modifytime() {
 		c.JsonErr("id error")
 		return
 	}
-	if !c.dispatchOrReport(id, "touch -d "+t+" "+joinPath(path, target)) {
+	req, _ := json.Marshal(map[string]string{
+		"type": "filetouch",
+		"path": joinPath(path, target),
+		"time": t, // RFC3339 或 "YYYY-MM-DD HH:MM:SS"
+	})
+	if !c.dispatchOrReport(id, string(req)) {
 		return
 	}
 	c.JsonOkMessage("ok")

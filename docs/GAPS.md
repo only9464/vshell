@@ -40,7 +40,7 @@
 | 动态库插件（`.so`/`.dll`/`.dylib`） | agent 明确返回未实现 | 需 cgo + dlopen，或引入 purego；会破坏 `CGO_ENABLED=0` 交叉编译，需评估 |
 | `.net` 托管插件 | 明确未实现 | 需要 CLR 宿主，暂不做 |
 | Windows ConPTY | 只有管道回退 | 需 Windows 环境 |
-| OSS 上传 | 文件已能取回服务器并暂存，上传明确报未实现 | 需要 OSS 凭据/桶配置与 SDK |
+| ~~OSS 上传~~ | 文件已能取回服务器并暂存，上传明确报未实现 | **用户明确不实现**（无第三方凭证），见 §F |
 | 屏幕流式抓屏 | 每帧起一次子进程（`grim`/`import`/`spectacle`） | 可改为 ffmpeg/x11grab 长连接 |
 
 ---
@@ -66,6 +66,16 @@
 | `PoArgvSeed`（argv 2 字节 key） | 官方产物**无 argv 条目**（R14） | 已不再是阻塞项；保留代码作参考 |
 
 ---
+
+## F. 明确不实现（用户无第三方凭证）
+
+> 依据：操作者明确说明"通知以及 OSS 这种需要第三方凭证的功能可以暂时不实现，这些我都没有"。
+
+| 功能 | 现状 | 处理方式 |
+|---|---|---|
+| OSS 上传（`/file/downloadtooss`） | 文件取回服务器暂存后返回 `oss upload not implemented` | 保持"取回 + 明确报未实现"，不引入 SDK/凭据 |
+| OSS 模式监听器（`mode=oss`） | 监听器可建，但没有 OSS 客户端 | 载荷配置区仍按官方写 `type=oss`、`server=OssUrl`（取证已对齐） |
+| 企业微信 / 钉钉通知 | `/setting/get|edit` 三个键可读写并持久化到 `conf/setting.conf` | 开关与字段保留（供将来配置），不做实际推送 |
 
 ## E. 测试与工程债
 

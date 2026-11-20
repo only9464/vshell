@@ -73,3 +73,15 @@ func TestRunPluginCleansTempDir(t *testing.T) {
 		t.Fatalf("temp dir leaked: before=%d after=%d", count(before), count(after))
 	}
 }
+
+// filetouch 的时间解析（面板 /file/modifytime 用）。
+func TestParseFileTime(t *testing.T) {
+	for _, in := range []string{"2026-11-20T22:00:00Z", "2026-11-20 22:00:00", "2026-11-20"} {
+		if _, err := parseFileTime(in); err != nil {
+			t.Fatalf("%q: %v", in, err)
+		}
+	}
+	if _, err := parseFileTime("not-a-time"); err == nil {
+		t.Fatalf("bad input should fail")
+	}
+}
