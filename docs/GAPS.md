@@ -11,6 +11,10 @@
 
 ### A-1 任务记录层（opcode + argv / 结果帧）
 
+- **进展（R24）**：复刻端实现了官方协议的 tcp 服务端（`c2engine/official_tcp.go` +
+  `vshell-server official-tcp`），**官方 agent 已能通过认证并上报 client 记录**
+  （host/os/user 全部解析成功）。关键细节：回挑战要延迟 ~30ms，否则 agent 不理睬。
+  剩余：agent 只注册 `conf` 通道、不发 `main`，任务下发仍报 "no main channel"。
 - **进展（R23）**：假服务器按"版本→挑战→md5(vkey)→sucs→通道名→conf JSON"的完整
   状态机**跑通了认证**（日志出现 `C->S 'conf'`）；agent 会同时开 3 条连接，
   部分连接存在"收到挑战不回应、5s 后重连"的竞态，重连后可通过。

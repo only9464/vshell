@@ -392,4 +392,32 @@ S→C  b3 00 00 00 {task json}               183 字节 JSON
   属于**竞态**而非协议错误。下一步做 Go 版服务端时用"每条连接独立状态机 + 容忍重连"
   的写法，并对照抓包确认是否需要额外记录。
 
+### E-38 官方 agent 成功连上复刻端（R24）
+
+把 E-33…E-37 的协议实现成 Go 服务端（`c2engine/official_tcp.go`，CLI：
+`vshell-server official-tcp -listen 127.0.0.1:18650 -vkey VKGO`），再用官方载荷连它。
+
+**跑通的部分**（日志实证）：
+
+```
+conn from 127.0.0.1:...
+<- "\x05\x00\x00\x004.9.3"   ×2
+-> 挑战 md5("4.9.3")
+<- "5652f1ea25d4661b1da0ab502d3a194d"   = md5(vkey)
+-> "sucs"
+<- "conf"
+<- "conf \x01\x00\x00{client json}"
+official-tcp: client registered: host=kali os=linux_amd64 user=kali
+```
+
+即**官方 agent 通过了复刻端的认证并上线**，复刻端解析出它上报的整条 client 记录。
+
+**一个关键时序**：回挑战必须**稍等 30ms**。立刻回挑战时官方 agent 常常不理睬、
+5 秒后重连（Python 原型里表现为"前两条连接不回应"）。加上延迟后稳定通过。
+
+**尚未打通**：agent 一直只发 `conf`，从不发 `main`/`chan`，因此任务下发仍报
+"no main channel"。抓包里 `main` 出现在**第二条连接**上，说明 conf 之后还有一条
+服务端记录（或会话确认）驱动它进入主通道；下一步用 IDA 看 agent 里 `main`
+字符串附近的读取逻辑。
+
 
