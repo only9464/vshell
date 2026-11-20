@@ -39,6 +39,29 @@
 
 ---
 
+## 原版 4.9.3 Linux 构建（本机活体）的静态恢复
+
+| 编号 | 结论 | 证据 | 用途 |
+|---|---|---|---|
+| E-23 | `.gopclntab` 完好，但头部魔数被 garble 改为非标准值 `0x840c4ea6`；按字段宽度解析可恢复 **38645 个函数**（11699 个有名字） | `scripts/go-symbols.py`，产物 `docs/inventory/vshell-4.9.3-linux-syms.txt` | 所有"按地址定位函数"的工作 |
+| E-24 | **类型名与方法名保留**（包名被随机化）：13 个业务控制器共 239 个方法可枚举到地址与字节数 | `docs/inventory/controllers.md` | 契约核对、定点反汇编 |
+| E-25 | 字符串字面量被 garble `-literals` 加密：`.rodata` 里是密文（例：`DelFile` 里长度 2 与 5 的两个字面量分别是 `idifinipki…`、`DSELFDScy…`） | `scripts/disas.py` 反汇编 + 直接读 `.rodata` | 静态读不到文案，需动态取 |
+| E-26 | 控制器参数名可按"字面量长度"辅助判断（如 `DelFile` 先用长度 2 再长度 5 → `id`/`paths`），与我们的实现一致 | `ClientController.DelFile` @`0x1822d80` | 参数契约核对 |
+
+### 常用地址（Linux 4.9.3）
+
+| 函数 | 地址 | 字节数 |
+|---|---|---|
+| `ClientController.List` | `0x1820e00` | 6912 |
+| `ClientController.DelFile` | `0x1822d80` | 448 |
+| `ListenerController.Add` | `0x1833920` | — |
+| `ListenerController.List` | `0x18310a0` | — |
+| `DownloadController.Stage` | `0x1823960` | 3552 |
+| `DownloadController.Listen` | `0x18259a0` | 4576 |
+| `DownloadController.Dll` | `0x1829400` | 4544 |
+
+> 完整清单见 `docs/inventory/controllers.md`。
+
 ## 推断（写明收敛方式，可被推翻）
 
 | 编号 | 结论 | 收敛方式 | 风险 |

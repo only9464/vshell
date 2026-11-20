@@ -85,7 +85,9 @@ go test ./controllers -run TestContract -v
 | IDA Pro 9.5 | `/home/kali/ida-pro-9.5/`（`ida`、`idat`、`idalib`） | 已在本机；502 MB Go 二进制分析吃内存（本机 7 GB），建议 `idalib` headless + 专项问题 |
 | IDA MCP | dsh 已配置 `mcp__ida__*`（open_database / execute_python / reference …） | 适合"按地址取反编译/交叉引用"的定点提问 |
 | 黑盒面板 | `scripts/probe-original.sh` | 契约层最便宜的取证方式 |
-| pclntab | 待建：解析 ELF 里的 Go pclntab（`runtime.*` 名字仍可读，用户函数名可能被 garble） | 可批量恢复"名字 ↔ 地址"，比 IDA 逐个找快 |
+| pclntab | ✅ 已建：`scripts/go-symbols.py`（38645 个函数，见 `docs/inventory/`） | 不依赖魔数；控制器方法名保留，可直接按名字定位 |
+| 定点反汇编 | ✅ 已建：`scripts/disas.py <bin> <addr> <len>` | 自动给 call/rip 目标标上函数名与字符串 |
+| 动态分析（下一步） | `gdb -p` + 断点读寄存器 | 字符串被 garble 加密，静态读不到，只能动态取 |
 
 **注意**：仓库里的 `FUN_01xxxxxx` 地址来自 Windows 版 `v_windows_amd64.exe` 的 Ghidra 工程；
 本机这份是 **Linux 4.9.3 构建**，地址与 Windows 版不同。跨版本对齐时以"函数名/字符串/常量"
