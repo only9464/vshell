@@ -42,7 +42,7 @@
 | 插件执行 | ❌ 桩 | 恒返回 `runplugin payload not aligned`（`runner.go:112-126`） |
 | 终端 shell / WS | ✅ 真 | `terminal.go`；受 B0.1 阻塞 |
 | 屏幕 WS | ⚠️ 半 | 流中转真，quality 参数是编造值（`screen.go:95-105`） |
-| 截图 | ❌ 实质桩 | agent 不认 `screenshot quality=N` 文本命令 |
+| 截图 | ✅ | 面板改发 `{"type":"screenshot"}` JSON；失败时把 agent 原文回给前端 |
 | dashboard | ❌ 假数据 | `engine.go:296-340` 全硬编码 |
 | 设置 | ✅ | 写回 `conf/setting.conf`（`utils.UpdateConfig`） |
 | 鉴权 | ⚠️ 弱 | `getMenuList/getPermCode` 只判非空；RBAC 零调用；无 Basic Auth |
@@ -73,7 +73,7 @@
 |---|---|---|
 | shell 执行 | ✅ | 管道，非 PTY（`main.go:2731`） |
 | 终端会话 | ✅ | Unix 走 PTY（真 TTY、resize 生效）；Windows 为管道回退 |
-| 屏幕截图/直播 | ⚠️ | 调外部工具（`import/scrot/...`），每帧拉一次子进程 |
+| 屏幕截图/直播 | ⚠️ | 截图覆盖 grim/import/scrot/gnome-screenshot/spectacle，失败信息透传；每帧仍拉一次子进程（待改流式抓屏） |
 | 文件操作 | ✅ | 分块下载（1 MiB/块）+ 进度回填 + 上传落盘 |
 | 进程/服务/网络枚举 | ⚠️ | 有枚举，但 opcode 分支只回计数文本 |
 | 持久化安装/卸载 | ✅ | 注册表 Run + schtasks / crontab（`main.go:2846-2900`） |
@@ -148,6 +148,7 @@
 | 文件上传 | multipart → base64 → agent 落盘；e2e 上传后用 `cat` 校验 | `controllers/file.go:Upload`、`e2e §7b` |
 | 设置持久化 | `/setting/edit` 写回 `conf/setting.conf`；`/setting/get` 读配置 | `controllers/setting.go` |
 | 终端 PTY | Unix 用 creack/pty；`terminal_pty_test.go` 断言 `[ -t 1 ]` 为真且 `stty size` 跟随 resize | `agent/terminal_unix.go`、`terminal_pty_test.go` |
+| 屏幕输入 | `screen_input move/click/scroll/key` → 解析 → xdotool argv（`screen_input_test.go` 覆盖 4 类事件与非法输入）；e2e 断言命令确实路由到 agent | `agent/screen_input.go` |
 | 巡检/维护 | `AppBackground` 现在启动健康巡检 + 维护任务（此前是死代码）；`Health` 懒初始化避免 panic | `controllers/engine.go`、`c2engine/health.go` |
 | 分块下载/进度 | agent 支持 `offset/length` 并按块回 `chunk:<total>:<b64>`；面板 1 MiB/块拉取并回填进度；e2e 用 3 MiB 文件校验字节数与 `pre:100` | `agent/main.go`、`controllers/file.go` |
 

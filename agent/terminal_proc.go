@@ -20,8 +20,8 @@ import (
 
 // shellProc 是一段可交互的 shell 进程。
 type shellProc interface {
-	io.Reader              // 合并后的输出（TTY 只有一路）
-	io.Writer              // 键盘输入
+	io.Reader // 合并后的输出（TTY 只有一路）
+	io.Writer // 键盘输入
 	Resize(rows, cols int) error
 	Close() error
 	Wait() error

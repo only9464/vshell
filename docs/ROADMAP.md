@@ -97,7 +97,7 @@
 | B3.1 | 10 个桩 opcode：0x02/0x09/0x0a/0x0c/0x10/0x15/0x16/0x1d/0x20/0x2b | 前置：恢复原版运行期连接池/代理表/端口映射表布局 | `[ ]` |
 | B3.2 | 9 个半实现收口：0x0f/0x13/0x14/0x17/0x1a/0x1c/0x22/0x25/0x26 | 现在只回计数文本，要发真记录帧 | `[ ]` |
 | B3.3 | PTY（Linux/macOS 用 creack/pty，真 TTY + resize 生效）；Windows 暂为管道回退（ConPTY 待做） | `agent/terminal_unix.go`/`terminal_windows.go`、`terminal_pty_test.go` | `[~]` |
-| B3.4 | 屏幕流 quality→参数映射 + 鼠标键盘控制帧 | 服务端已在发 `{"type":"1".."10"}`，agent 无处理器 | `[ ]` |
+| B3.4 | 屏幕输入注入（`screen_input move/click/scroll/key` → xdotool）+ 截图工具覆盖（grim/import/scrot/gnome-screenshot/spectacle）+ 错误透传 | `agent/screen_input.go`、`agent/main.go:linuxScreenshot` | `[~]` |
 | B3.5 | 插件执行：落盘 → `.exe/.dll/.net` 分派 → 加载 | 两端当前都拒绝 | `[ ]` |
 | B3.6 | 文件传输分块（1 MiB/块，agent 侧 `chunk:<total>:<b64>`）+ 进度回填到 `getdownloadper` | `agent/main.go CmdDownload`、`controllers/file.go engineDownloadFile` | `[x]` |
 
@@ -166,6 +166,7 @@
 | 日期 | 轮次 | 变更 |
 |---|---|---|
 | 2026-11-20 | R1 | 建立文档体系（docs/）；**M0 完成**：端到端（HTTP+KCP）打通、面板字段/参数契约修正、e2e 脚本落地 |
+| 2026-11-20 | R7 | **屏幕远控可用**：`screen_input` 事件解析 + xdotool 注入（含单测）、截图工具覆盖 Wayland/X11 并把真实错误透传给面板；e2e 增加路由与截图断言（无桌面工具时自动 SKIP） |
 | 2026-11-20 | R6 | **M3 终端升级为真 PTY**（`stty size` 验证 resize 生效）+ **文件传输分块/进度**（3 MiB 文件 4 块下载、进度到 100）；B5.3 下载链路补完 |
 | 2026-11-20 | R5 | **M2 主线打通**（面板生成载荷零 ldflags 上线）；另外补完 B5.2 文件上传（multipart→agent）与 B5.5 设置持久化 |
 | 2026-11-20 | R5 | **M2 主线打通**：服务端写自描述配置块 + agent 自解析 → 面板生成的载荷无需 ldflags 直接上线（e2e 第 14 段）；模板缺失改为原版式错误，删除 MinimalPE 假外壳 |

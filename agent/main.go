@@ -1546,6 +1546,8 @@ func dispatchScreenCommand(taskID int64, cmdStr string) (string, string) {
 		var f int
 		fmt.Sscanf(strings.TrimPrefix(cmdStr, "screen_capture_fps="), "%d", &f)
 		return setScreenCaptureParam("fps", f)
+	case strings.HasPrefix(cmdStr, "screen_input"):
+		return injectScreenInput(cmdStr)
 	}
 	return "unknown screen capture command", ""
 }
@@ -2519,7 +2521,7 @@ func executeCommand(taskID int64, cmdStr string, timeout int) (string, string) {
 	if strings.HasPrefix(cmdStr, "terminal_") {
 		return dispatchTerminalCommand(taskID, cmdStr)
 	}
-	if strings.HasPrefix(cmdStr, "screen_capture") {
+	if strings.HasPrefix(cmdStr, "screen_capture") || strings.HasPrefix(cmdStr, "screen_input") {
 		return dispatchScreenCommand(taskID, cmdStr)
 	}
 
@@ -2971,33 +2973,47 @@ $ms.Dispose()
 }
 
 func linuxScreenshot() (string, string) {
-	// Try various screenshot tools
-	for _, tool := range []string{"import", "scrot", "gnome-screenshot", "spectacle"} {
-		tmpFile := fmt.Sprintf("/tmp/.ss_%d.png", pid)
-		cmd := exec.Command(tool, tmpFile)
-		if tool == "import" {
-			cmd = exec.Command("import", "-window", "root", tmpFile)
-		}
-		if tool == "spectacle" {
-			cmd = exec.Command("spectacle", "-b", "-n", "-o", tmpFile)
-		}
-		cmd.Run()
-		if data, err := os.ReadFile(tmpFile); err == nil {
-			os.Remove(tmpFile)
-			return base64.StdEncoding.EncodeToString(data), ""
-		}
+	// 覆盖 X11 与 Wayland：两个环境可用的工具不同，按顺序尝试并保留最后一个错误，
+	// 以便面板能把"缺工具"如实回给用户（而不是笼统的 screenshot failed）。
+	tmpFile := fmt.Sprintf("/tmp/.ss_%d.png", pid)
+	defer os.Remove(tmpFile)
+
+	type attempt struct {
+		name string
+		args []string
 	}
-	return "", "no screenshot tool available (install imagemagick, scrot, or spectacle)"
+	attempts := []attempt{
+		{"grim", []string{tmpFile}},                              // Wayland（wlroots/KDE）
+		{"import", []string{"-window", "root", tmpFile}},         // X11 (ImageMagick)
+		{"scrot", []string{"-o", tmpFile}},                       // X11
+		{"gnome-screenshot", []string{"-f", tmpFile}},            // GNOME
+		{"spectacle", []string{"-f", "-b", "-n", "-o", tmpFile}}, // KDE（-f 全屏）
+	}
+
+	var lastErr string
+	for _, a := range attempts {
+		if _, err := exec.LookPath(a.name); err != nil {
+			continue
+		}
+		_ = os.Remove(tmpFile)
+		out, err := exec.Command(a.name, a.args...).CombinedOutput()
+		if err != nil {
+			lastErr = fmt.Sprintf("%s: %v (%s)", a.name, err, strings.TrimSpace(string(out)))
+			continue
+		}
+		data, rerr := os.ReadFile(tmpFile)
+		if rerr != nil || len(data) == 0 {
+			lastErr = fmt.Sprintf("%s produced no file", a.name)
+			continue
+		}
+		return base64.StdEncoding.EncodeToString(data), ""
+	}
+	if lastErr == "" {
+		lastErr = "no screenshot tool available (install grim / imagemagick / scrot / spectacle)"
+	}
+	return "", "screenshot failed: " + lastErr
 }
 
-// ============================================================================
-// Main loop
-// 主循环
-// ============================================================================
-
-// main 是 Agent 的入口：加载配置、启动传输、进入签到/任务循环。
-// main is the agent entry point: loads config, starts transport, and runs the
-// check-in/task loop.
 func main() {
 	log.Printf("VShell Agent v%s starting (%s/%s)", agentVersion, runtime.GOOS, runtime.GOARCH)
 	log.Printf("Host: %s, User: %s, PID: %d", hostname, username, pid)

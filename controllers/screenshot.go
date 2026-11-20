@@ -48,7 +48,13 @@ func (c *ScreenshotController) Get() {
 		return
 	}
 
-	task, err := engineExecShellAsync(id, "screenshot quality="+quality)
+	// agent 侧截图是 JSON 命令（CmdScreenshot），不是文本 "screenshot quality=N"：
+	// 后者会落进 shell 报错，面板永远拿不到图。
+	cmd := `{"type":"screenshot"}`
+	if quality != "" {
+		cmd = `{"type":"screenshot","quality":"` + quality + `"}`
+	}
+	task, err := engineExecShellAsync(id, cmd)
 	if err != nil {
 		c.JsonErr(err.Error())
 		return
@@ -59,10 +65,14 @@ func (c *ScreenshotController) Get() {
 		return
 	}
 
-	// The agent answers with a base64 image; anything else (an error string from
-	// the capture tool) is surfaced as an error rather than a broken data URL.
-	if result == "" || strings.ContainsAny(result, " \r\n") {
-		c.JsonErr("screenshot failed")
+	// agent 回的是裸 base64 图片；带空格/换行说明是错误文本（例如目标机没装
+	// 截图工具）。这里把 agent 的真实文案透传出去，避免"失败但不知道为什么"。
+	if result == "" {
+		c.JsonErr("screenshot failed: empty result")
+		return
+	}
+	if strings.ContainsAny(result, " \r\n") {
+		c.JsonErr(result)
 		return
 	}
 	c.Ctx.Output.Header("Content-Type", "text/plain; charset=utf-8")

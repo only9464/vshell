@@ -131,6 +131,20 @@ blob    = JSON {"server","vkey","salt","mode"[,"dns_server","proxy"]}
 - 与 PE/ELF 结构无关（追加在文件尾，加载器不会执行到）；
 - **有意偏差**：原版配置块与 argv 加密 key 尚未恢复（U-01/U-02），此块仅自研 agent 识别。
 
+### 2.5b 屏幕控制命令（复刻端文本词汇）
+
+| 命令 | 语义 | agent 实现 |
+|---|---|---|
+| `screen_capture_start quality=N fps=M` | 开始推流 | 定时抓屏 → `screen_frame:<fmt>:<idx>:<q>:<b64>` |
+| `screen_capture_stop` / `_quality=N` / `_fps=N` | 停止/调参 | — |
+| `screen_input move x=.. y=..` | 鼠标移动 | xdotool mousemove |
+| `screen_input click button=1..3` | 点击 | xdotool click |
+| `screen_input scroll dir=up|down amount=N` | 滚轮 | xdotool click --repeat N 4/5 |
+| `screen_input key=<KEYSYM>` | 按键/组合键 | xdotool key --clearmodifiers |
+
+> 注意：`screen_input` 与 `screen_capture*` 一样，必须在 `executeCommand` 里先于
+> shell 分支被路由，否则会落进 `/bin/sh` 执行（历史 bug，R7 修复）。
+
 ### 2.6 文件传输命令（复刻端 JSON 词汇）
 
 | 命令 | 请求 | 响应 |
