@@ -515,4 +515,28 @@ sim done: registered=true tasks=1 results=1
 （例如 GCM tag 位置或长度前缀的写法），需要抓取真实服务端 `sucs` 帧的**完整十六进制**
 逐字节比对（R26 的抓包只记了明文）。
 
+### E-43 回放实验：用真实服务端的帧能让 agent 注册 main/chan（R29）
+
+把真实服务端的帧（挑战/sucs/ack/会话）**原样十六进制回放**给官方 agent：
+
+```
+[1] conn → challenge(replay) → C>S 'conf' → C>S 'conf \x01\x00\x00{json}' → EOF
+[2] conn → challenge(replay) → C>S 'main'      ← *** MAIN ***
+[3] conn → challenge(replay) → C>S 'chan'      ← *** CHAN ***
+```
+
+**结论：agent 完全可以从我们这边被驱动到 main/chan** —— 之前的僵局不是"缺少某条记录"，
+而是"我们生成的帧与真实帧存在尚未定位的差异"。
+
+同一脚本改用**新生成的**帧（随机 nonce，同样密钥、同样明文）时，agent 连挑战都不回应，
+说明差异落在**帧的字节层面**（不只是明文内容）。
+
+候选差异（下一步逐项排除）：
+1. GCM nonce 的取值/派生方式（是否与上一帧关联、是否有固定前缀）；
+2. 4 字节长度前缀与实际帧长的关系（我们按 12+ct+16 计算）；
+3. 密钥是否真的就是 `hex(md5(salt))` 的 32 字节 ASCII（能解密成功说明大概率对，
+   但也可能 agent 对**加密方向**用了另一个密钥/IV）。
+
+证据：`/tmp/m8.log` 抓到的服务端帧十六进制（挑战 64B / sucs 36B / ack 33B / 会话 48B）。
+
 
