@@ -2,6 +2,7 @@ package c2engine
 
 import (
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -86,6 +87,9 @@ func (e *Engine) Init(config *Config) error {
 	}
 	if err := e.storage.LoadTasks(e.tasks, &e.taskSeq); err != nil {
 		Logf("Warning: failed to load tasks: %v", err)
+	}
+	if err := e.storage.LoadTunnels(e.tunnels, &e.tunnelSeq, tunnelsPath(e.config)); err != nil {
+		Logf("Warning: failed to load tunnels: %v", err)
 	}
 
 	// Rebuild vkey index
@@ -657,6 +661,7 @@ func (e *Engine) NewTunnel(clientID int64, port int, mode, targetAddr string) (*
 		c.AddTunnel(t.ID)
 	}
 
+	e.storage.StoreTunnels(e.tunnels, tunnelsPath(e.config))
 	Logf("New tunnel %d: port %d (%s) → client %d", t.ID, port, mode, clientID)
 	return t, nil
 }
@@ -699,6 +704,7 @@ func (e *Engine) DelTunnel(id int64) error {
 
 	delete(e.tunnels, id)
 	e.storage.DelTunnel(id)
+	e.storage.StoreTunnels(e.tunnels, tunnelsPath(e.config))
 	return nil
 }
 
@@ -1021,5 +1027,25 @@ func (e *Engine) Save() {
 	e.storage.StoreClients(e.clients)
 	e.storage.StoreListeners(e.listeners)
 	e.storage.StoreTasks(e.tasks)
+	if err := e.storage.StoreTunnels(e.tunnels, tunnelsPath(e.config)); err != nil {
+		Logf("Warning: failed to store tunnels: %v", err)
+	}
+}
+
+// tunnelsPath 返回隧道侧车文件路径（与 data.db 同目录）。
+func tunnelsPath(cfg *Config) string {
+	if cfg == nil || cfg.DBPath == "" {
+		return "db/tunnels.json"
+	}
+	return filepath.Join(filepath.Dir(cfg.DBPath), "tunnels.json")
+}
+
+// SaveTunnels 立刻把隧道落盘（增删改后调用，避免依赖整体 Save 的时机）。
+func (e *Engine) SaveTunnels() {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	if err := e.storage.StoreTunnels(e.tunnels, tunnelsPath(e.config)); err != nil {
+		Logf("Warning: failed to store tunnels: %v", err)
+	}
 }
 

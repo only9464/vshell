@@ -33,7 +33,7 @@
 | 客户端列表 | ⚠️ 字段契约不符 | 后端出 `id/ip/os/arch`（`client.go:70-81`），SPA 读 `Id/OsName/UserName/...` |
 | 客户端备注/删除文件/杀进程 | ✅ 下发通 | `client.go:116-149` → `dispatchCmd`；但受 B0.1 阻塞 |
 | 监听器 CRUD/启停 | ⚠️ 半 | `listener.go` 全实现，但 `Add` 丢弃 Host → 恒绑 443（`engine.go:201`） |
-| 隧道 CRUD/启停 | ✅ | start 真正起数据面（端口监听 + 通道配对 + 双向转发）；stop 关闭 |
+| 隧道 CRUD/启停 | ✅ | start 起数据面、stop 关闭；增删即落盘 `db/tunnels.json`，重启可恢复 |
 | 文件管理 11 个接口 | ✅ | `ls`/`cat`/`edit`/`upload`/`download` 全部走 JSON 命令并 e2e 验证（读→改→校验落盘） |
 | 文件上传 | ✅ | 读 multipart → base64 → 下发 `{"type":"upload"}`；e2e 用 `cat` 校验落盘 |
 | 下载到浏览器 | ✅ | JSON 命令取 base64 → 附件输出（e2e 用 /etc/hostname 校验）；进度/OSS 仍为壳 |
@@ -64,8 +64,8 @@
 | 载荷模板 | ❌ | 无 `go:embed`，`agents/` 不存在 → 恒 nil |
 | 载荷修补 | ⚠️ | 仅尾部追加配置块；argv key 未恢复 → `PoArgvEntry` 必失败 |
 | OSS 上传 | ⚠️ | `oss.go` 真发 HTTP；`protocol.go:538` 的 `UploadToOSS` 只打日志（死代码） |
-| 健康检查 | ⚠️ | TCP/HTTP/ICMP 真；nil Health 已修（回归测试），巡检/维护任务已启动；失败自动重启仍待做 |
-| 监控 | ❌ | 磁盘恒 256GB、TCP/UDP 恒 10/3（`monitor.go`） |
+| 健康检查 | ✅ | TCP/HTTP/ICMP 真；连续失败自动重启数据面（保留 OnOpen）；未配置目标不计成功/失败 |
+| 监控 | ✅ | 删除了 `c2engine/monitor.go` 的假数据；面板指标统一由 `controllers/metrics.go` 读 /proc 采集 |
 | 字符串解密/置换链 | ✅ | `po_decode.go`、`string_decrypt.go` 有回归向量，但未接运行时 |
 
 ### 2.3 Agent

@@ -16,6 +16,7 @@ package c2engine
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -502,4 +503,90 @@ func (s *Storage) LoadHostFromSqlFile(hosts map[int64]*Host, seq *int64) error {
 // LoadTaskFromSqlFile is the original binary's method name.
 func (s *Storage) LoadTaskFromSqlFile(tasks map[int64]*Task, seq *int64) error {
 	return s.LoadTasks(tasks, seq)
+}
+
+// ---------------------------------------------------------------------------
+// 隧道持久化（JSON 侧车）
+// ---------------------------------------------------------------------------
+//
+// 为什么不写 tunnels 表：原版把**任务记录**也存在 tunnels 表里（LoadTaskFromSqlFile
+// 就是 select * from tunnels），复刻端沿用这一做法后，无法区分"任务行"与"隧道行"。
+// 为避免把两种记录写进同一张表导致重启后解析错乱，隧道单独存成
+// db/tunnels.json（与 SQLite 同目录），并在文档里登记为**有意偏差**。
+
+// StoreTunnels 把隧道列表写成 JSON 侧车文件。
+func (s *Storage) StoreTunnels(tunnels map[int64]*Tunnel, basePath string) error {
+	if s == nil {
+		return nil
+	}
+	out := make([]map[string]interface{}, 0, len(tunnels))
+	for _, t := range tunnels {
+		out = append(out, map[string]interface{}{
+			"id":         t.ID,
+			"client_id":  t.ClientID,
+			"port":       t.Port,
+			"mode":       t.Mode,
+			"target":     t.Target,
+			"targetAddr": t.TargetAddr,
+			"remark":     t.Remark,
+			"runStatus":  t.RunStatus,
+		})
+	}
+	data, err := json.MarshalIndent(out, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(basePath), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(basePath, data, 0o644)
+}
+
+// LoadTunnels 从 JSON 侧车读回隧道（文件不存在视为空）。
+func (s *Storage) LoadTunnels(tunnels map[int64]*Tunnel, seq *int64, basePath string) error {
+	data, err := os.ReadFile(basePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	var rows []map[string]interface{}
+	if err := json.Unmarshal(data, &rows); err != nil {
+		return err
+	}
+	for _, r := range rows {
+		t := &Tunnel{}
+		t.ID = int64(numOf(r["id"]))
+		t.ClientID = int64(numOf(r["client_id"]))
+		t.Port = int(numOf(r["port"]))
+		t.Mode, _ = r["mode"].(string)
+		t.Target, _ = r["target"].(string)
+		t.TargetAddr, _ = r["targetAddr"].(string)
+		if t.TargetAddr == "" {
+			// NewTunnel 只填 Target；侧车里两者都写，读回时按需回落。
+			t.TargetAddr = t.Target
+		}
+		t.Remark, _ = r["remark"].(string)
+		t.RunStatus, _ = r["runStatus"].(bool)
+		tunnels[t.ID] = t
+		if t.ID > *seq {
+			*seq = t.ID
+		}
+	}
+	return nil
+}
+
+// numOf 把 JSON 数字转成 int64。
+func numOf(v interface{}) int64 {
+	switch n := v.(type) {
+	case float64:
+		return int64(n)
+	case int64:
+		return n
+	case json.Number:
+		i, _ := n.Int64()
+		return i
+	}
+	return 0
 }

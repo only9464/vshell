@@ -145,6 +145,7 @@ func (hc *HealthChecker) checkTunnel(t *Tunnel) {
 	if t.Health.IsFailing() {
 		Logf("Tunnel %d health check failed (%d/%d), marking for restart",
 			t.ID, t.Health.failCount, t.Health.MaxFail)
+		restartTunnel(t)
 	}
 }
 
@@ -175,7 +176,8 @@ func (hc *HealthChecker) checkHost(h *Host) {
 
 func (hc *HealthChecker) checkTCP(addr string, health *Health) {
 	if addr == "" {
-		health.RecordSuccess()
+		// 目标未配置：既不算成功也不算失败（此前记成功会把失败计数清零，
+		// 导致"连续失败自动重启"永远触发不了）。
 		return
 	}
 
@@ -696,3 +698,25 @@ func icmpCheck(ctx context.Context, target string) error {
 	return fmt.Errorf("no ping response from %s", host)
 }
 
+// restartTunnel 在健康检查连续失败后重启隧道数据面。
+//
+// 做法：停掉旧的监听与挂起连接，按原配置重新 StartTunnelServer。OnOpen 回调
+// 由控制器注入，重启后需要重新绑定——这里通过回调注册表拿回它。
+func restartTunnel(t *Tunnel) {
+	if ts := GetTunnelServer(t.ID); ts != nil {
+		cb := ts.OnOpen
+		StopTunnelServer(t.ID)
+		newTS, err := StartTunnelServer(t.ID, t.Port)
+		if err != nil {
+			Logf("Tunnel %d restart failed: %v", t.ID, err)
+			t.RunStatus = false
+			return
+		}
+		newTS.OnOpen = cb
+		t.RunStatus = true
+		Logf("Tunnel %d restarted on :%d", t.ID, t.Port)
+		return
+	}
+	// 数据面未启动过：只把状态置为未运行，等面板再次 start。
+	t.RunStatus = false
+}

@@ -141,7 +141,8 @@ M1 的做法是把这条路径改成 opcode 记录（B1.1/B1.3）。
 - 表：`clients` / `tunnels` / `hosts` / `listeners`（schema 见 `storage.go:28-122`）。
 - **tasks 复用 tunnels 表**：`Id/ClientId/Status/Ports(=Command)/Remark(=Result)`。
   依据：原版 `LoadTaskFromSqlFile` 就是 `select * from tunnels`。改动前先确认这条依据仍成立。
-- **tunnels 不持久化**：`Engine.Save()` 只写 clients，重启后隧道全丢（B4.3）。
+- **tunnels 持久化在 JSON 侧车**（`db/tunnels.json`）：tasks 与 tunnels 共用 SQLite 的
+  tunnels 表（沿用原版做法），无法区分两类行，因此隧道单独存 JSON（有意偏差）。
 
 ---
 

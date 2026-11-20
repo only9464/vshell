@@ -110,9 +110,9 @@
 |---|---|---|---|
 | B4.1 | 隧道数据面：反向端口转发（服务器端口监听 → 下发 tunnel_open → agent 拨回配对 → 双向转发） | `c2engine/tunnel_server.go`、`agent/tunnel.go` | `[x]` |
 | B4.2 | 反连 Host 会话（`AuthenticateHost` 现在恒 true） | `c2engine/app.go:530` | `[ ]` |
-| B4.3 | tunnels/listeners 持久化补齐（现在 tunnels 重启全丢） | `c2engine/engine.go:909`、`storage.go` | `[ ]` |
-| B4.4 | 健康检查：`Health` 未初始化不再 panic（`NewHealth()` 懒初始化 + 回归测试）；健康巡检/维护任务改为随 AppBackground 真正启动 | `c2engine/health.go`、`c2engine/health_nil_test.go` | `[~]` |
-| B4.5 | 真实监控采集（monitor.go 全是常量） | `c2engine/monitor.go` | `[ ]` |
+| B4.3 | 隧道持久化：`db/tunnels.json` JSON 侧车（与 tasks 共用的 tunnels 表解耦）+ 增删即落盘 | `c2engine/storage.go`、`engine.go` | `[x]` |
+| B4.4 | 健康检查：nil Health 不再 panic；巡检/维护随 AppBackground 启动；**连续失败自动重启数据面**（保留 OnOpen 回调），未配置目标不再清零失败计数 | `c2engine/health.go`、`health_restart_test.go` | `[x]` |
+| B4.5 | 删除 `c2engine/monitor.go` 的假数据；指标统一由 `controllers/metrics.go` 读 /proc（CPU/磁盘/load/IO/套接字/ICMP） | `controllers/metrics.go` | `[x]` |
 
 ---
 
@@ -177,6 +177,7 @@
 | 日期 | 轮次 | 变更 |
 |---|---|---|
 | 2026-11-20 | R1 | 建立文档体系（docs/）；**M0 完成**：端到端（HTTP+KCP）打通、面板字段/参数契约修正、e2e 脚本落地 |
+| 2026-11-20 | R12 | **M4 收尾**：隧道持久化（JSON 侧车）、健康失败自动重启数据面、删除假监控实现；顺带修掉"未配置健康目标会把失败计数清零"导致重启永不触发的 bug |
 | 2026-11-20 | R11 | **原生 MCP 落地**：`vshell-server mcp`（stdio JSON-RPC）+ 13 个工具 + 登录取 token；单测 5 组、e2e §7l 真实 agent 验证；新增 docs/MCP.md |
 | 2026-11-20 | R10 | **M6 收尾**：屏幕直播页（zlib 解码 + 输入事件）、文件编辑器、隧道页、关于页；修复 `file/cat`、`file/edit` 文本命令 → JSON 命令（此前读/写文件都落进 shell） |
 | 2026-11-20 | R9 | **M6 前端落地**：`web/` 9 个页面，产物托管在 `/app/`；无头 Chromium 验证登录页渲染；e2e §7j 校验 `/app/` 与资源 |
