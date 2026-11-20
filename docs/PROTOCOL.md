@@ -194,6 +194,9 @@ region = [16B IV][AES-128-CBC(JSON + 0x00 填充)]     // key = IV = md5(vkey)
 记录  ：[u32 LE 长度] + 文本/JSON
 ```
 
+认证：挑战 `md5("4.9.3")` → agent 应答 `md5(vkey)` → 服务端 `sucs`；
+通道注册名 `conf` / `main` / `chan`。
+
 握手（明文）：`"4.9.3"` ×2 → 服务端 32 字节十六进制挑战 → agent 32 字节应答 →
 `"sucs"` → `"conf"` → `\x01` → `"conf \x01\x00\x00{client json}"` → `\x01` →
 16 字节会话 ID → `"main"`。心跳：`00 ff ff ff ff 1e 00` + RFC3339 时间戳，

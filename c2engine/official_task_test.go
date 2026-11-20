@@ -78,3 +78,18 @@ func TestOfficialTaskUploadFile(t *testing.T) {
 		t.Fatalf("Z1 = %q", task2.Req.Z1)
 	}
 }
+
+// 官方认证算法（R22 实证）：挑战 = md5(版本号)，应答 = md5(vkey)。
+func TestOfficialAuthChallengeAndResponse(t *testing.T) {
+	// md5("4.9.3") —— 抓包里服务端反复下发的常量
+	if got := OfficialAuthChallenge("4.9.3"); got != "a89a6dc509abfd63bcbed973e249120e" {
+		t.Fatalf("challenge = %s", got)
+	}
+	// 两次不同实例的应答（vkey 不同）
+	if got := OfficialAuthResponse("VK-P"); got != "9e09b0be529f6a4206198ad9dc340124" {
+		t.Fatalf("response(VK-P) = %s", got)
+	}
+	if got := OfficialAuthResponse("VK9"); got != "224edc5281ea0aaeece8382983dce811" {
+		t.Fatalf("response(VK9) = %s", got)
+	}
+}

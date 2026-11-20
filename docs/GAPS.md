@@ -11,6 +11,9 @@
 
 ### A-1 任务记录层（opcode + argv / 结果帧）
 
+- **进展（R22）**：**认证算法已逆出**——挑战 = `md5("4.9.3")`（= `a89a6dc5…`），
+  应答 = `md5(vkey)` 十六进制；通道注册名 `conf` / `main` / `chan`。
+  假服务器能通过认证但 agent 认证后不发通道名（5s 后重连），还差一条未知校验。
 - **进展（R21）**：**任务记录与结果格式已实证并复刻结构**——信封
   `[u32 len][type][channel][payload]`、任务 JSON（`ConnType/Host/Req{Type,File,Z1..Z5}/Option`）、
   9 个类型码（M/B/C/A/D/J/I/DSELF/Upload）、结果 `->|<输出>|<-`。

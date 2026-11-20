@@ -20,7 +20,9 @@ package c2engine
 // 复刻端自身的 agent 协议保持不变（见 docs/GAPS.md C 类偏差）。
 
 import (
+	"crypto/md5"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 )
@@ -37,6 +39,23 @@ const (
 	OfficialTaskDelete  = "DSELF"  // 删除文件：无参数
 	OfficialTaskUpload  = "Upload" // 上传：File = base64 内容，Z1 = 目标路径
 )
+
+// OfficialAuthChallenge 返回官方服务端的认证挑战：md5(版本号) 的十六进制。
+//
+// R22 实证：抓包里服务端反复下发常量 a89a6dc509abfd63bcbed973e249120e，
+// 而 md5("4.9.3") 正是该值；随机挑战会被 agent 忽略（5 秒后重连）。
+func OfficialAuthChallenge(version string) string {
+	sum := md5.Sum([]byte(version))
+	return hex.EncodeToString(sum[:])
+}
+
+// OfficialAuthResponse 返回 agent 侧的认证应答：md5(vkey) 的十六进制。
+//
+// R22 实证：md5("VK-P") / md5("VK9") 与两次抓包的应答完全一致。
+func OfficialAuthResponse(vkey string) string {
+	sum := md5.Sum([]byte(vkey))
+	return hex.EncodeToString(sum[:])
+}
 
 // OfficialTaskReq 是任务记录的 Req 段。
 type OfficialTaskReq struct {
