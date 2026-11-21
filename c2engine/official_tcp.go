@@ -277,6 +277,16 @@ func (c *officialConn) handle(plain []byte) error {
 				s.Logf("official-tcp: send sucs failed: %v", err)
 				return err
 			}
+			// 实验开关（R57）：抓包里 conf 连接上，服务端在 sucs 之后、agent 发
+			// 首条 "conf" 之前还有一条独立的 \x01。开启 preack 后我们的握手序列
+			// 与抓包**逐条一致**（agent 会先发裸 "conf"），但 main 仍未出现，
+			// 且后续连接不再应答挑战；因此默认关闭，仅作对照实验用。
+			if s.ConfMode == "preack" {
+				if err := c.send([]byte{0x01}); err != nil {
+					return err
+				}
+				s.Logf("official-tcp: preack \\x01 sent to %s", c.conn.RemoteAddr())
+			}
 			s.Logf("official-tcp: %s authenticated", c.conn.RemoteAddr())
 			// 实验：认证后再补一条 ack + 会话 ID，观察是否能驱动 agent 注册 main
 			if s.AuthExtras {
