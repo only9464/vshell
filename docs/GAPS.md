@@ -11,6 +11,10 @@
 
 ### A-1 任务记录层（opcode + argv / 结果帧）
 
+- **进展（R35）**：新增 `scripts/find-string-ref.py`（字符串→xref→函数）；
+  在 agent 模板里定位到 conf/main/chan 三个连号处理函数（0x643600/0x644860/0x644aa0），
+  并发现 **agent 里根本没有 "sucs" 字面量** → 认证应答内容不参与判定。
+  下一步用 IDA 反编译这三个函数。
 - **进展（R33）**：确认 flaky 双向存在（真实服务端上也会出现 agent 不发 conf）；
   复刻端 100s 浸泡：29 连接 / 13 认证 / 39 次 conf / **0 次 main**。四个对齐实验
   （ack+session 单次写、回显分隔字节、会话绑定 vkey、固定会话）均无效。
