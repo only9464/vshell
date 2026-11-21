@@ -106,10 +106,10 @@ func TestKCPListenerEndToEnd(t *testing.T) {
 
 	// 1. Handshake: bare JSON (no length prefix, no type byte).
 	hs, _ := json.Marshal(map[string]interface{}{
-		"VerifyKey":  vkey,
-		"HostName":   "e2e-host",
-		"UserName":   "e2e-user",
-		"OsName":     "linux",
+		"VerifyKey":   vkey,
+		"HostName":    "e2e-host",
+		"UserName":    "e2e-user",
+		"OsName":      "linux",
 		"ProcessName": "agent",
 	})
 	client.sess.SetWriteDeadline(time.Now().Add(10 * time.Second))
@@ -135,7 +135,7 @@ func TestKCPListenerEndToEnd(t *testing.T) {
 	// 2. Task poll (empty first).
 	poll := func() TaskResponse {
 		req, _ := json.Marshal(map[string]interface{}{
-			"type":       "task_poll",
+			"type":      "task_poll",
 			"ClientID":  cr.ClientID,
 			"VerifyKey": vkey,
 		})
@@ -192,7 +192,7 @@ func TestKCPListenerEndToEnd(t *testing.T) {
 
 	// 5. Wrong verify key on task poll must be rejected (no task disclosure).
 	req, _ := json.Marshal(map[string]interface{}{
-		"type":       "task_poll",
+		"type":      "task_poll",
 		"ClientID":  cr.ClientID,
 		"VerifyKey": "wrong-key",
 	})
@@ -254,8 +254,8 @@ func TestKCPFragmentReassembly(t *testing.T) {
 		VerifyKey: "frag-key",
 	})
 	// 原版帧长上限 0x8000（32KB，GetShortLenContent 校验）；分片须 ≤ 上限
-// （减去 _frag/_total/_data JSON 开销）。
-// 帧长须 ≤ 原版 0x8000（32KB）上限：chunk 为原始字节，base64 展开 4/3
+	// （减去 _frag/_total/_data JSON 开销）。
+	// 帧长须 ≤ 原版 0x8000（32KB）上限：chunk 为原始字节，base64 展开 4/3
 	// （含 2B 长度 + 1B flag + JSON 开销）。
 	const chunk = (0x8000 - 192) * 3 / 4
 	var chunks [][]byte

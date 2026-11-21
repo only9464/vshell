@@ -780,4 +780,29 @@ e2e §7q 增加 status/search/排序三项断言。
 | `listener/del` | `delete success`（幂等） |
 | `tunnel/start` / `stop` | `start error` / `stop error` |
 
+### E-54 竞态检测（R41）
+
+用 `go test -race` 跑全量测试，发现三处数据竞争，其中两处是**生产代码**问题：
+
+1. **`Engine.GetTask` 返回内部指针**
+   调用方在锁外读 `task.Status/Result`，而 `UpdateTask` 在锁内并发写 → 竞争。
+   修复：在 RLock 内做浅拷贝返回（注意拷贝本身也必须在锁内，第一次改法把拷贝放到
+   解锁后，-race 仍然报竞争）。
+
+2. **`TunnelServer.OnOpen` 无保护**
+   `engineStartTunnelWithDataPlane` 在 `Start()` 之后才赋值，而为公网连接服务的
+   goroutine 会并发读这个字段 → 生产环境的数据竞争。
+   修复：改为 `SetOnOpen()` / `getOnOpen()` + 互斥锁；`restartTunnel` 也改用 getter/setter。
+
+   > 改动过程中引入过一个**重入死锁**（在已持有 `ts.mu` 的临界区里再次 Lock），
+   > 被 `TestTunnelServerRelaysBytes` 立刻抓出来（OnOpen 不再被调用），已修正为
+   > "在既有临界区内直接读字段"。
+
+3. **WS 测试的拆除顺序**（仅测试代码）
+   `httptest.Server.Close()` 不等待被 hijack 的 WebSocket 连接，处理器的 defer 里还会
+   向 agent 投递 `terminal_close`，于是与下一个测试的 `Engine.Init()` 竞争。
+   修复：新增 `closeWS()` 测试助手——先关连接，轮询等待 viewer 注销，再关服务器。
+
+结果：`go test -race ./c2engine ./router` 全绿；`go test ./...` 全绿。
+
 

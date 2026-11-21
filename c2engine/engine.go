@@ -835,10 +835,20 @@ func (e *Engine) NewTask(clientID int64, command string, timeout int) (*Task, er
 // GetTask 按 ID 获取任务。
 // GetTask retrieves a task by ID.
 // Original binary: eSxbx2zKVifD.(*C7cMcwDVYi_).GetTask.
+// GetTask 返回任务快照（副本）。
+//
+// 直接返回内部指针会让调用方在锁外读到 UpdateTask 正在写的字段（-race 实测到
+// 数据竞争），因此这里返回浅拷贝。
 func (e *Engine) GetTask(id int64) *Task {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	return e.tasks[id]
+	task := e.tasks[id]
+	if task == nil {
+		return nil
+	}
+	// 必须在锁内做浅拷贝：UpdateTask 会在同一把锁下写这些字段。
+	cp := *task
+	return &cp
 }
 
 // DelTask 按 ID 删除任务。

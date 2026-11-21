@@ -45,10 +45,10 @@ func TestTunnelServerRelaysBytes(t *testing.T) {
 	defer StopTunnelServer(9001)
 
 	opened := make(chan uint32, 1)
-	ts.OnOpen = func(chanID uint32) error {
+	ts.SetOnOpen(func(chanID uint32) error {
 		opened <- chanID
 		return nil
-	}
+	})
 
 	// 公网客户端连进来。
 	pub, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", port), 2*time.Second)
@@ -116,7 +116,7 @@ func TestTunnelServerClosesUnpairedPublicConn(t *testing.T) {
 		t.Fatalf("start: %v", err)
 	}
 	defer StopTunnelServer(9002)
-	ts.OnOpen = func(uint32) error { return nil } // 不派发，模拟 agent 不来
+	ts.SetOnOpen(func(uint32) error { return nil }) // 不派发，模拟 agent 不来
 
 	pub, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", port), 2*time.Second)
 	if err != nil {
@@ -131,4 +131,3 @@ func TestTunnelServerClosesUnpairedPublicConn(t *testing.T) {
 		t.Fatalf("unpaired public connection should be closed by the server")
 	}
 }
-

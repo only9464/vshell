@@ -32,16 +32,16 @@ import (
 // DNSListener 实现隐蔽 DNS C2 信道。
 // DNSListener implements a covert DNS C2 channel.
 type DNSListener struct {
-	mu          sync.RWMutex
-	ID          int64
-	Domain      string   // e.g., "c2.example.com"
-	PublicDNS   string   // Public DNS server to use for resolution
-	MaxSize     int      // Max DNS message size
-	ListenAddr  string   // UDP 监听地址（空则 :53 → :5353 回退）
-	VerifyKey   string
-	listener    net.PacketConn
-	isRunning   bool
-	stopCh      chan struct{}
+	mu         sync.RWMutex
+	ID         int64
+	Domain     string // e.g., "c2.example.com"
+	PublicDNS  string // Public DNS server to use for resolution
+	MaxSize    int    // Max DNS message size
+	ListenAddr string // UDP 监听地址（空则 :53 → :5353 回退）
+	VerifyKey  string
+	listener   net.PacketConn
+	isRunning  bool
+	stopCh     chan struct{}
 
 	// Pending messages for agents (agentID -> message queue)
 	pendingOut map[string][]string
@@ -60,12 +60,12 @@ func NewDNSListener(id int64, domain, publicDNS, verifyKey string, maxSize int, 
 		maxSize = 512
 	}
 	return &DNSListener{
-		ID:         id,
-		Domain:     strings.TrimSuffix(strings.TrimPrefix(domain, "."), "."),
-		PublicDNS:  publicDNS,
-		MaxSize:    maxSize,
-		ListenAddr: listenAddr,
-		VerifyKey:  verifyKey,
+		ID:          id,
+		Domain:      strings.TrimSuffix(strings.TrimPrefix(domain, "."), "."),
+		PublicDNS:   publicDNS,
+		MaxSize:     maxSize,
+		ListenAddr:  listenAddr,
+		VerifyKey:   verifyKey,
 		pendingOut:  make(map[string][]string),
 		resultParts: make(map[string][][]byte),
 		stopCh:      make(chan struct{}),
@@ -421,5 +421,3 @@ func (dl *DNSListener) IsRunning() bool {
 	defer dl.mu.RUnlock()
 	return dl.isRunning
 }
-
-

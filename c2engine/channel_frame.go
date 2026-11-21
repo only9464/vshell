@@ -36,15 +36,15 @@ const ChannelHeaderLen = 5
 type ChannelType uint8
 
 const (
-	ChannelEnd      ChannelType = 0x00 // 结束帧
-	ChannelSessData ChannelType = 0x01 // 会话数据缓冲一
+	ChannelEnd       ChannelType = 0x00 // 结束帧
+	ChannelSessData  ChannelType = 0x01 // 会话数据缓冲一
 	ChannelSessData2 ChannelType = 0x02 // 会话数据缓冲二
-	ChannelSessCmd  ChannelType = 0x03 // 会话命令一
-	ChannelSessCmd2 ChannelType = 0x04 // 会话命令二
-	ChannelSess     ChannelType = 0x05 // 会话（8 字节数据字段）
-	ChannelAck      ChannelType = 0x06 // ACK
-	ChannelClose    ChannelType = 0x07 // 关闭
-	ChannelData     ChannelType = 0x08 // 通道数据
+	ChannelSessCmd   ChannelType = 0x03 // 会话命令一
+	ChannelSessCmd2  ChannelType = 0x04 // 会话命令二
+	ChannelSess      ChannelType = 0x05 // 会话（8 字节数据字段）
+	ChannelAck       ChannelType = 0x06 // ACK
+	ChannelClose     ChannelType = 0x07 // 关闭
+	ChannelData      ChannelType = 0x08 // 通道数据
 )
 
 // ChannelFrame 一条通道帧（对齐 FUN_011b7020 解析产物）。

@@ -144,11 +144,11 @@ func NewStringTable() *StringTable {
 	st.entries["download_path"] = "/api/download"
 
 	// Agent download paths
-	st.entries["agent_win_stage"] = "/swt"     // TCP staged agent for Windows
-	st.entries["agent_win_stageless"] = "/sww"  // WebSocket agent for Windows
-	st.entries["agent_win_kcp"] = "/swk"        // KCP agent for Windows
-	st.entries["agent_win_shellcode"] = "/sws"  // Shellcode agent for Windows
-	st.entries["agent_win_dll"] = "/swd"        // DLL agent for Windows
+	st.entries["agent_win_stage"] = "/swt"       // TCP staged agent for Windows
+	st.entries["agent_win_stageless"] = "/sww"   // WebSocket agent for Windows
+	st.entries["agent_win_kcp"] = "/swk"         // KCP agent for Windows
+	st.entries["agent_win_shellcode"] = "/sws"   // Shellcode agent for Windows
+	st.entries["agent_win_dll"] = "/swd"         // DLL agent for Windows
 	st.entries["agent_linux_stageless"] = "/swl" // Linux agent
 
 	// Cookie/session

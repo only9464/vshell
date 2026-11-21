@@ -19,7 +19,7 @@ func TestHealthFailureRestartsTunnel(t *testing.T) {
 	}
 	defer StopTunnelServer(7001)
 	opened := 0
-	ts.OnOpen = func(uint32) error { opened++; return nil }
+	ts.SetOnOpen(func(uint32) error { opened++; return nil })
 
 	tunnel := &Tunnel{ID: 7001, Port: port, RunStatus: true, Health: NewHealth()}
 	tunnel.Health.CheckType = "tcp"
@@ -36,7 +36,7 @@ func TestHealthFailureRestartsTunnel(t *testing.T) {
 	if newTS == nil || newTS == ts {
 		t.Fatalf("tunnel data plane was not restarted")
 	}
-	if newTS.OnOpen == nil {
+	if !newTS.hasOnOpen() {
 		t.Fatalf("OnOpen callback lost after restart")
 	}
 	// 重启后端口仍然可连

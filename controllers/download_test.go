@@ -43,7 +43,6 @@ func newTestListener(t *testing.T, listenAddr, connectAddr, mode, vkey, salt str
 	return id
 }
 
-
 // withTemplateDir 切到临时目录并按原版路径写入模板文件。
 //
 // 模板路径规则取自原版黑盒（docs/PROTOCOL.md / PoTemplatePath）：

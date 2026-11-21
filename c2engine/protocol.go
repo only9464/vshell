@@ -21,7 +21,7 @@ import (
 // Protocol constants and layouts are based on the current reverse-engineering
 // notes. Treat exact compatibility as unverified unless supported by fixtures
 // or tests against known reference inputs and outputs.
-// 
+//
 // 命令包构建器（FUN_01918400 / FUN_01918740，由控制器 DelFile/DelProcess 等
 // 调用）写入固定字节序列作为协议标记：
 //   FUN_01918400: 8f 97 93 8e 90 9c 47 8c 9e 94   （命令下发标记）

@@ -38,13 +38,13 @@ import (
 // AgentTemplate 表示预编译的 Agent 二进制模板。
 // AgentTemplate represents a pre-compiled agent binary template.
 type AgentTemplate struct {
-	Platform   string `json:"platform"`
-	Arch       string `json:"arch"`
-	Mode       string `json:"mode"` // stage/stageless/shellcode/dll/listen/listen_dll
-	Format     string `json:"format"`
-	Size       int64  `json:"size"`
-	SHA256     string `json:"sha256"`
-	Path       string `json:"path"`
+	Platform string `json:"platform"`
+	Arch     string `json:"arch"`
+	Mode     string `json:"mode"` // stage/stageless/shellcode/dll/listen/listen_dll
+	Format   string `json:"format"`
+	Size     int64  `json:"size"`
+	SHA256   string `json:"sha256"`
+	Path     string `json:"path"`
 }
 
 // TemplateRepository 管理 Agent 二进制模板。
@@ -338,10 +338,10 @@ func buildMinimalDLL(payload []byte) []byte {
 
 	// COFF Header
 	coff := make([]byte, 20)
-	binary.LittleEndian.PutUint16(coff[0:2], 0x8664)   // AMD64
-	binary.LittleEndian.PutUint16(coff[2:4], 1)          // 1 section
+	binary.LittleEndian.PutUint16(coff[0:2], 0x8664) // AMD64
+	binary.LittleEndian.PutUint16(coff[2:4], 1)      // 1 section
 	binary.LittleEndian.PutUint32(coff[4:8], uint32(time.Now().Unix()))
-	binary.LittleEndian.PutUint16(coff[16:18], 0xE0)     // OptionalHeader size
+	binary.LittleEndian.PutUint16(coff[16:18], 0xE0) // OptionalHeader size
 	// DLL characteristics
 	binary.LittleEndian.PutUint16(coff[18:20], 0x2000|0x0020|0x0002)
 	buf.Write(coff)
@@ -350,14 +350,14 @@ func buildMinimalDLL(payload []byte) []byte {
 	opt := make([]byte, 0xE0)
 	opt[0] = 0x0B // PE32+
 	opt[1] = 0x02
-	binary.LittleEndian.PutUint32(opt[16:20], 0x1000)    // EntryPoint
-	binary.LittleEndian.PutUint32(opt[32:36], 0x1000)    // SectionAlignment
-	binary.LittleEndian.PutUint32(opt[36:40], 0x200)     // FileAlignment
+	binary.LittleEndian.PutUint32(opt[16:20], 0x1000)      // EntryPoint
+	binary.LittleEndian.PutUint32(opt[32:36], 0x1000)      // SectionAlignment
+	binary.LittleEndian.PutUint32(opt[36:40], 0x200)       // FileAlignment
 	binary.LittleEndian.PutUint64(opt[24:32], 0x180000000) // ImageBase
-	binary.LittleEndian.PutUint32(opt[56:60], 0x5000)    // SizeOfImage
-	binary.LittleEndian.PutUint32(opt[60:64], 0x400)     // SizeOfHeaders
-	binary.LittleEndian.PutUint16(opt[68:70], 3)          // Subsystem: CONSOLE
-	binary.LittleEndian.PutUint16(opt[70:72], 0x8140)     // DLLCharacteristics
+	binary.LittleEndian.PutUint32(opt[56:60], 0x5000)      // SizeOfImage
+	binary.LittleEndian.PutUint32(opt[60:64], 0x400)       // SizeOfHeaders
+	binary.LittleEndian.PutUint16(opt[68:70], 3)           // Subsystem: CONSOLE
+	binary.LittleEndian.PutUint16(opt[70:72], 0x8140)      // DLLCharacteristics
 	buf.Write(opt)
 
 	// .text section
@@ -366,7 +366,7 @@ func buildMinimalDLL(payload []byte) []byte {
 	binary.LittleEndian.PutUint32(sec[8:12], uint32(len(payload)))
 	binary.LittleEndian.PutUint32(sec[12:16], 0x1000) // RVA
 	binary.LittleEndian.PutUint32(sec[16:20], alignToFile(uint32(len(payload)), 0x200))
-	binary.LittleEndian.PutUint32(sec[20:24], 0x400)  // PointerToRawData
+	binary.LittleEndian.PutUint32(sec[20:24], 0x400)      // PointerToRawData
 	binary.LittleEndian.PutUint32(sec[36:40], 0x60000020) // CODE|EXECUTE|READ
 	buf.Write(sec)
 
@@ -506,4 +506,3 @@ func ExportAgent(data []byte, info *AgentBuildInfo, listenerID int64) (string, e
 	Logf("Exported agent: %s (%d bytes)", filename, len(data))
 	return filename, nil
 }
-

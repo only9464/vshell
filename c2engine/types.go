@@ -3,12 +3,12 @@
 // 对齐依据（funcnametab 可验证的类型与方法，地址见 .re/REAL_ENGINE_INVENTORY）：
 //   - 类型：Client / Listener / Task / Host / Tunnel / Flow / Health / Target / PairList
 //   - 客户端连接管理（反编译 0x119ccc0-0x119cfe0）：
-//       Client.AddConn   0x119cce0  connCount++（加锁）
-//       Client.GetConn   0x119cd00  maxConn 限制：已达上限返回 0；否则 connCount++ 返回 1
-//       Client.CutConn   0x119ccc0  connCount--
-//       Client.HasTunnel 0x119cd40  查询引擎隧道表
-//       Client.GetTunnelNum 0x119cea0 统计客户端隧道数
-//       Client.HasHost   0x119cfe0  查询引擎主机表（store+0x20）
+//     Client.AddConn   0x119cce0  connCount++（加锁）
+//     Client.GetConn   0x119cd00  maxConn 限制：已达上限返回 0；否则 connCount++ 返回 1
+//     Client.CutConn   0x119ccc0  connCount--
+//     Client.HasTunnel 0x119cd40  查询引擎隧道表
+//     Client.GetTunnelNum 0x119cea0 统计客户端隧道数
+//     Client.HasHost   0x119cfe0  查询引擎主机表（store+0x20）
 //   - 字段偏移：+0xe0 = MaxConn（int），+0xe8 = ConnCount（int）
 package c2engine
 
@@ -53,14 +53,14 @@ func (f *Flow) IsOverLimit() bool {
 // Health 健康检查状态（含锁方法 0x11afa00-0x11afc60）。
 type Health struct {
 	sync.RWMutex
-	CheckTimeout  time.Duration `json:"CheckTimeout"`
-	MaxFail       int           `json:"MaxFail"`
-	CheckInterval time.Duration `json:"CheckInterval"`
-	NextCheckTime time.Time     `json:"NextCheckTime"`
-	HealthCheckURL string      `json:"HealthCheckURL"`
-	CheckType     string        `json:"CheckType"`  // tcp/http/icmp
-	CheckTarget   string        `json:"CheckTarget"` // Host:Port
-	failCount     int
+	CheckTimeout   time.Duration `json:"CheckTimeout"`
+	MaxFail        int           `json:"MaxFail"`
+	CheckInterval  time.Duration `json:"CheckInterval"`
+	NextCheckTime  time.Time     `json:"NextCheckTime"`
+	HealthCheckURL string        `json:"HealthCheckURL"`
+	CheckType      string        `json:"CheckType"`   // tcp/http/icmp
+	CheckTarget    string        `json:"CheckTarget"` // Host:Port
+	failCount      int
 }
 
 // NewHealth 返回一个带默认失败阈值/超时的健康检查状态。
@@ -378,15 +378,15 @@ func (t *Target) AddTarget(target string) {
 // Task 任务记录（NewTask 0x11979c0 / UpdateTask 0x1197d00 / DelTask 0x1197da0 /
 // GetTaskByMd5Password 0x1197e20 / GetTask 0x1197fe0）。
 type Task struct {
-	ID       int64     `json:"Id"`
-	ClientID int64     `json:"ClientId"`
-	Command  string    `json:"command"`
-	Result   string    `json:"result"`
-	Status   string    `json:"Status"` // pending/dispatched/running/completed/failed/timeout
-	MD5Pass  string    `json:"md5_Password,omitempty"`
-	SentAt   time.Time `json:"sent_at"`
+	ID       int64      `json:"Id"`
+	ClientID int64      `json:"ClientId"`
+	Command  string     `json:"command"`
+	Result   string     `json:"result"`
+	Status   string     `json:"Status"` // pending/dispatched/running/completed/failed/timeout
+	MD5Pass  string     `json:"md5_Password,omitempty"`
+	SentAt   time.Time  `json:"sent_at"`
 	DoneAt   *time.Time `json:"done_at,omitempty"`
-	Timeout  int       `json:"timeout"`
+	Timeout  int        `json:"timeout"`
 }
 
 // TargetSetting 任务目标配置。
@@ -412,22 +412,22 @@ const (
 )
 
 const (
-	ModeHTTP          = "http"
-	ModeHTTPS         = "https"
-	ModeDNS           = "dns"
-	ModeWebSocket     = "websocket"
-	ModeCDNWebSocket  = "cdn_websocket"
-	ModeReverse       = "reverse"
-	ModeKCP           = "kcp"
+	ModeHTTP         = "http"
+	ModeHTTPS        = "https"
+	ModeDNS          = "dns"
+	ModeWebSocket    = "websocket"
+	ModeCDNWebSocket = "cdn_websocket"
+	ModeReverse      = "reverse"
+	ModeKCP          = "kcp"
 )
 
 const (
-	ListenerModeHTTP          = "http"
-	ListenerModeHTTPS         = "https"
-	ListenerModeDNS           = "dns"
-	ListenerModeWebSocket     = "websocket"
-	ListenerModeCDNWebSocket  = "cdn_websocket"
-	ListenerModeReverse       = "reverse"
+	ListenerModeHTTP         = "http"
+	ListenerModeHTTPS        = "https"
+	ListenerModeDNS          = "dns"
+	ListenerModeWebSocket    = "websocket"
+	ListenerModeCDNWebSocket = "cdn_websocket"
+	ListenerModeReverse      = "reverse"
 )
 
 const (

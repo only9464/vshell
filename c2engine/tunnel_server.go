@@ -55,9 +55,10 @@ type TunnelServer struct {
 	stopCh   chan struct{}
 	running  bool
 	relayed  int64
-	// OnOpen 在公网连接到达、分配好通道号后调用：由上层把 tunnel_open 任务
-	// 下发给 agent（agent 收到后才来 dial 隧道端口）。
-	OnOpen func(chanID uint32) error
+	// onOpen 在公网连接到达、分配好通道号后调用：由上层把 tunnel_open 任务
+	// 下发给 agent。用 SetOnOpen 设置（带锁），因为 Start 之后仍可能被赋值，
+	// 而为公网连接服务的 goroutine 会并发读取（-race 实测到竞争）。
+	onOpen func(chanID uint32) error
 }
 
 // NewTunnelServer 创建隧道数据面。
@@ -216,7 +217,8 @@ func (ts *TunnelServer) handlePublicConn(conn net.Conn) {
 		return
 	}
 	ts.pending[chanID] = conn
-	cb := ts.OnOpen
+	// 在读锁区间内顺手取回调，避免重复加锁（非重入互斥锁会死锁）
+	cb := ts.onOpen
 	ts.mu.Unlock()
 
 	// 通知上层把 tunnel_open 下发给 agent（agent 会带着这个 chanID 拨回来）。
@@ -314,3 +316,24 @@ func GetTunnelServer(id int64) *TunnelServer {
 
 // ErrTunnelNotRunning 表示隧道数据面未启动。
 var ErrTunnelNotRunning = errors.New("tunnel not running")
+
+// SetOnOpen 线程安全地设置 OnOpen 回调（可在 Start 之后调用）。
+func (ts *TunnelServer) SetOnOpen(f func(chanID uint32) error) {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	ts.onOpen = f
+}
+
+// getOnOpen 返回当前回调（带锁）。
+func (ts *TunnelServer) getOnOpen() func(chanID uint32) error {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	return ts.onOpen
+}
+
+// hasOnOpen 报告是否已设置回调（测试用）。
+func (ts *TunnelServer) hasOnOpen() bool {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	return ts.onOpen != nil
+}

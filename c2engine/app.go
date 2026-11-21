@@ -16,10 +16,10 @@ import (
 // Application 是应用层编排器，负责协调引擎、监听器、客户端状态与后台维护。
 // 逆向符号仅用于追踪分析，不代表接口契约或已完全复刻原版行为。
 type Application struct {
-	mu        sync.RWMutex
-	engine    *Engine
-	connMgr   *ConnectionManager
-	config    *Config
+	mu      sync.RWMutex
+	engine  *Engine
+	connMgr *ConnectionManager
+	config  *Config
 
 	// Listener instances currently managed by this application, keyed by config ID.
 	httpListeners map[int64]*C2Listener
@@ -587,21 +587,21 @@ func (a *Application) GetAppInfo() map[string]interface{} {
 	stats := a.engine.GetStats()
 
 	return map[string]interface{}{
-		"version":          "vshell-3.0",
-		"start_time":       a.stats.StartTime,
-		"uptime_seconds":   int64(time.Since(a.stats.StartTime).Seconds()),
-		"total_checkins":   a.stats.TotalCheckins,
-		"total_commands":   a.stats.TotalCommands,
-		"total_clients":    stats.TotalClients,
-		"online_clients":   stats.OnlineClients,
-		"total_listeners":  stats.TotalListeners,
-		"http_listeners":   len(a.httpListeners),
-		"kcp_listeners":    len(a.kcpListeners),
-		"dns_listeners":    len(a.dnsListeners),
-		"active_tunnels":   stats.ActiveTunnels,
-		"total_hosts":      stats.TotalHosts,
-		"pending_tasks":    stats.PendingTasks,
-		"downloads":        len(GetUploadHistory()),
+		"version":         "vshell-3.0",
+		"start_time":      a.stats.StartTime,
+		"uptime_seconds":  int64(time.Since(a.stats.StartTime).Seconds()),
+		"total_checkins":  a.stats.TotalCheckins,
+		"total_commands":  a.stats.TotalCommands,
+		"total_clients":   stats.TotalClients,
+		"online_clients":  stats.OnlineClients,
+		"total_listeners": stats.TotalListeners,
+		"http_listeners":  len(a.httpListeners),
+		"kcp_listeners":   len(a.kcpListeners),
+		"dns_listeners":   len(a.dnsListeners),
+		"active_tunnels":  stats.ActiveTunnels,
+		"total_hosts":     stats.TotalHosts,
+		"pending_tasks":   stats.PendingTasks,
+		"downloads":       len(GetUploadHistory()),
 	}
 }
 

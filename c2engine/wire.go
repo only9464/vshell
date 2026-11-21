@@ -28,21 +28,21 @@ type AgentField struct {
 
 // 常用帧码（30-case 任务分派反编译，见 .re/AGENT_TASKS.md）。
 const (
-	FrameListRow  = 0x54 // 列表行
-	FrameAck      = 0xa6 // 确认
-	FramePong     = 0xb1 // pong
-	FramePing     = 0xb2 // ping
-	FrameDump     = 0x9b // 进程/任务转储
-	FrameSessRow  = 0x12 // 会话行
-	FrameDetail   = 0x75 // 详情
-	FrameBig      = 0x94 // 大数据帧
-	FrameSub      = 0x1d // 子级
-	FrameElem     = 0x5e // 元素
-	FrameVar      = 0x29 // 变量
-	FrameSet      = 0x47 // 设置
-	FrameGet      = 0x56 // 获取
-	FrameMode     = 0x3b // 模式
-	FrameScalar   = 0x48 // 标量结果
+	FrameListRow = 0x54 // 列表行
+	FrameAck     = 0xa6 // 确认
+	FramePong    = 0xb1 // pong
+	FramePing    = 0xb2 // ping
+	FrameDump    = 0x9b // 进程/任务转储
+	FrameSessRow = 0x12 // 会话行
+	FrameDetail  = 0x75 // 详情
+	FrameBig     = 0x94 // 大数据帧
+	FrameSub     = 0x1d // 子级
+	FrameElem    = 0x5e // 元素
+	FrameVar     = 0x29 // 变量
+	FrameSet     = 0x47 // 设置
+	FrameGet     = 0x56 // 获取
+	FrameMode    = 0x3b // 模式
+	FrameScalar  = 0x48 // 标量结果
 )
 
 // AgentFrame 字段帧缓冲（对齐 FUN_0100d160 的 +0x88/+0x90/+0x94 结构）。

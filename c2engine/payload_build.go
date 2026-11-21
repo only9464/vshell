@@ -206,16 +206,16 @@ func PoBuild(l *Listener, cfg PoConfig) *PoPayload {
 	wireCfg := AgentWireConfig{
 		Server: poServerURL(mode, addr),
 		Type:   mode,
-		Vkey: verifier,
+		Vkey:   verifier,
 		// 取证结论（R14）：官方对 /download/listen 的 proxy 参数**不写进配置区**
 		// （proxy/proxyUrl/Proxy 三种写法解出来都是空串）。此处保持空，与官方一致；
 		// 若将来确认 proxy 的实际来源再改。
 		Proxy: "",
 		Salt:  salt,
-		L:      cfg.Mode == "listen",
-		E:      false,
-		D:      poDisconnectTimeout(l),
-		H:      poPingInterval(l),
+		L:     cfg.Mode == "listen",
+		E:     false,
+		D:     poDisconnectTimeout(l),
+		H:     poPingInterval(l),
 	}
 	if off, perr := PatchAgentConfig(res.Data, wireCfg); perr != nil {
 		Logf("payload: %s has no official config region (%v); official-format config skipped", path, perr)

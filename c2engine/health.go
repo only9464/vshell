@@ -358,10 +358,10 @@ func (mr *MaintenanceRunner) cleanupStaleClients() {
 
 	staleCount := 0
 	for _, client := range mr.engine.clients {
-			if client.LastSeen.Before(cutoff) {
-				client.IsConnect = false
-				client.NowConn = 0
-				staleCount++
+		if client.LastSeen.Before(cutoff) {
+			client.IsConnect = false
+			client.NowConn = 0
+			staleCount++
 		}
 	}
 
@@ -379,9 +379,9 @@ func (mr *MaintenanceRunner) cleanupStaleTasks() {
 
 	staleCount := 0
 	for _, task := range mr.engine.tasks {
-			if task.Status == "dispatched" && task.SentAt.Before(cutoff) {
-				task.Status = "timeout"
-				staleCount++
+		if task.Status == "dispatched" && task.SentAt.Before(cutoff) {
+			task.Status = "timeout"
+			staleCount++
 		}
 	}
 
@@ -411,11 +411,11 @@ func (mr *MaintenanceRunner) cleanupOfflineTunnels() {
 
 // HeartbeatMonitor tracks agent heartbeats and triggers alerts
 type HeartbeatMonitor struct {
-	mu            sync.RWMutex
-	engine        *Engine
-	missedBeats   map[int64]int     // clientID -> consecutive missed heartbeats
+	mu             sync.RWMutex
+	engine         *Engine
+	missedBeats    map[int64]int // clientID -> consecutive missed heartbeats
 	maxMissedBeats int
-	onDisconnect  func(clientID int64)
+	onDisconnect   func(clientID int64)
 }
 
 var heartbeatMon *HeartbeatMonitor
@@ -476,15 +476,15 @@ func (hm *HeartbeatMonitor) CheckHeartbeats() {
 
 // SystemStats holds system-level statistics
 type SystemStats struct {
-	StartTime      time.Time `json:"start_time"`
-	UptimeSeconds  int64     `json:"uptime_seconds"`
-	TotalCheckins  int64     `json:"total_checkins"`
-	TotalCommands  int64     `json:"total_commands"`
-	TotalUploads   int64     `json:"total_uploads"`
-	TotalDownloads int64     `json:"total_downloads"`
-	ActiveClients  int       `json:"active_clients"`
-	ActiveListeners int      `json:"active_listeners"`
-	ActiveTunnels  int       `json:"active_tunnels"`
+	StartTime       time.Time `json:"start_time"`
+	UptimeSeconds   int64     `json:"uptime_seconds"`
+	TotalCheckins   int64     `json:"total_checkins"`
+	TotalCommands   int64     `json:"total_commands"`
+	TotalUploads    int64     `json:"total_uploads"`
+	TotalDownloads  int64     `json:"total_downloads"`
+	ActiveClients   int       `json:"active_clients"`
+	ActiveListeners int       `json:"active_listeners"`
+	ActiveTunnels   int       `json:"active_tunnels"`
 }
 
 var sysStats = &SystemStats{
@@ -542,10 +542,10 @@ func IncrementDownloads() {
 
 // RecoveryManager attempts to auto-restart failed tunnels
 type RecoveryManager struct {
-	mu           sync.RWMutex
-	engine       *Engine
-	maxRetries   int
-	retryDelays  map[int64]int // tunnel ID -> retry count
+	mu          sync.RWMutex
+	engine      *Engine
+	maxRetries  int
+	retryDelays map[int64]int // tunnel ID -> retry count
 }
 
 var recovery *RecoveryManager
@@ -704,7 +704,7 @@ func icmpCheck(ctx context.Context, target string) error {
 // 由控制器注入，重启后需要重新绑定——这里通过回调注册表拿回它。
 func restartTunnel(t *Tunnel) {
 	if ts := GetTunnelServer(t.ID); ts != nil {
-		cb := ts.OnOpen
+		cb := ts.getOnOpen()
 		StopTunnelServer(t.ID)
 		newTS, err := StartTunnelServer(t.ID, t.Port)
 		if err != nil {
@@ -712,7 +712,7 @@ func restartTunnel(t *Tunnel) {
 			t.RunStatus = false
 			return
 		}
-		newTS.OnOpen = cb
+		newTS.SetOnOpen(cb)
 		t.RunStatus = true
 		Logf("Tunnel %d restarted on :%d", t.ID, t.Port)
 		return

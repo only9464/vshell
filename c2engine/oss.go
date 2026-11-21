@@ -42,34 +42,34 @@ import (
 type OSSProvider string
 
 const (
-	ProviderAliOSS   OSSProvider = "aliyun_oss"
+	ProviderAliOSS     OSSProvider = "aliyun_oss"
 	ProviderTencentCOS OSSProvider = "tencent_cos"
-	ProviderAWSS3    OSSProvider = "aws_s3"
-	ProviderCustom   OSSProvider = "custom_http"
+	ProviderAWSS3      OSSProvider = "aws_s3"
+	ProviderCustom     OSSProvider = "custom_http"
 )
 
 // OSSConfig 保存特定提供商的配置。
 // OSSConfig holds configuration for a specific provider.
 type OSSUploadConfig struct {
-	Provider    OSSProvider `json:"provider"`
-	Endpoint    string      `json:"endpoint"`
-	Bucket      string      `json:"bucket"`
-	AccessKey   string      `json:"access_key"`
-	SecretKey   string      `json:"secret_key"`
-	Region      string      `json:"region"`
-	CustomURL   string      `json:"custom_url,omitempty"`
-	CDNDomain   string      `json:"cdn_domain,omitempty"` // CDN加速域名
+	Provider  OSSProvider `json:"provider"`
+	Endpoint  string      `json:"endpoint"`
+	Bucket    string      `json:"bucket"`
+	AccessKey string      `json:"access_key"`
+	SecretKey string      `json:"secret_key"`
+	Region    string      `json:"region"`
+	CustomURL string      `json:"custom_url,omitempty"`
+	CDNDomain string      `json:"cdn_domain,omitempty"` // CDN加速域名
 }
 
 // OSSUploadResult 保存一次上传操作的结果。
 // OSSUploadResult holds the result of an upload operation.
 type OSSUploadResult struct {
-	Success  bool   `json:"success"`
-	URL      string `json:"url"`
-	CDNURL   string `json:"cdn_url,omitempty"`
-	Size     int64  `json:"size"`
-	ETag     string `json:"etag,omitempty"`
-	Error    string `json:"error,omitempty"`
+	Success bool   `json:"success"`
+	URL     string `json:"url"`
+	CDNURL  string `json:"cdn_url,omitempty"`
+	Size    int64  `json:"size"`
+	ETag    string `json:"etag,omitempty"`
+	Error   string `json:"error,omitempty"`
 }
 
 // OSSUploader 处理云存储上传。

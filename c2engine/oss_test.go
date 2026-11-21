@@ -14,10 +14,10 @@ import (
 // implementation).
 func TestOSSSignatureMatchesHMACSHA1(t *testing.T) {
 	ou := &OSSUploader{config: &OSSUploadConfig{
-		AccessKey:  "AKID-test",
-		SecretKey:  "secret-key-123",
-		Bucket:     "my-bucket",
-		Endpoint:   "oss-cn-hangzhou.aliyuncs.com",
+		AccessKey: "AKID-test",
+		SecretKey: "secret-key-123",
+		Bucket:    "my-bucket",
+		Endpoint:  "oss-cn-hangzhou.aliyuncs.com",
 	}}
 
 	method := "PUT"
@@ -46,9 +46,9 @@ func TestOSSSignatureMatchesHMACSHA1(t *testing.T) {
 // TestOSSUploaderURLConstruction verifies provider URL formats.
 func TestOSSUploaderURLConstruction(t *testing.T) {
 	ali := &OSSUploader{config: &OSSUploadConfig{
-		Provider: ProviderAliOSS,
-		Bucket:   "my-bucket",
-		Endpoint: "oss-cn-hangzhou.aliyuncs.com",
+		Provider:  ProviderAliOSS,
+		Bucket:    "my-bucket",
+		Endpoint:  "oss-cn-hangzhou.aliyuncs.com",
 		CDNDomain: "cdn.example.com",
 	}}
 	// Aliyun URL: https://<bucket>.<endpoint>/<bucket>/<file>

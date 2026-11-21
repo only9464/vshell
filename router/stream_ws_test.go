@@ -80,10 +80,7 @@ func TestTerminalWSUpgradesAndStartsAgentShell(t *testing.T) {
 	client.Status = true
 
 	conn, srv := dialTestStream(t, "/api/terminal/ws?id="+itoa64(client.ID))
-	defer func() {
-		conn.Close()
-		srv.Close()
-	}()
+	defer closeWS(t, conn, srv, c2engine.StreamTerminal, client.ID)
 
 	// The handler queues terminal_start for this client's agent.
 	deadline := time.Now().Add(3 * time.Second)
@@ -125,10 +122,7 @@ func TestTerminalWSDeliversAgentOutput(t *testing.T) {
 	client.Status = true
 
 	conn, srv := dialTestStream(t, "/api/terminal/ws?id="+itoa64(client.ID))
-	defer func() {
-		conn.Close()
-		srv.Close()
-	}()
+	defer closeWS(t, conn, srv, c2engine.StreamTerminal, client.ID)
 	waitForViewer(t, c2engine.StreamTerminal, client.ID)
 
 	// Both directions: the publisher needs the viewer registered first.
@@ -159,10 +153,7 @@ func TestScreenWSDeliversCompressedFrames(t *testing.T) {
 	client.Status = true
 
 	conn, srv := dialTestStream(t, "/api/screen/ws?id="+itoa64(client.ID)+"&quality=normal")
-	defer func() {
-		conn.Close()
-		srv.Close()
-	}()
+	defer closeWS(t, conn, srv, c2engine.StreamScreen, client.ID)
 	waitForViewer(t, c2engine.StreamScreen, client.ID)
 
 	img := []byte{0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46}
@@ -230,10 +221,7 @@ func TestTerminalWSKeystrokesAndResize(t *testing.T) {
 	client.Status = true
 
 	conn, srv := dialTestStream(t, "/api/terminal/ws?id="+itoa64(client.ID))
-	defer func() {
-		conn.Close()
-		srv.Close()
-	}()
+	defer closeWS(t, conn, srv, c2engine.StreamTerminal, client.ID)
 	waitForViewer(t, c2engine.StreamTerminal, client.ID)
 
 	// 按键：原始字节会被 base64 塞进 terminal_input
@@ -292,4 +280,22 @@ func taskCommands(clientID int64) []string {
 		out = append(out, task.Command)
 	}
 	return out
+}
+
+// closeWS 关闭 WS 并等待处理器收尾（viewer 注销）后再关服务器。
+//
+// 直接 defer conn.Close()+srv.Close() 会与下一个测试的引擎 Init 竞争：
+// 处理器在 defer 里还会向 agent 投递 terminal_close，httptest 的 Close 并不等待
+// 被 hijack 的连接（-race 实测到竞争）。
+func closeWS(t *testing.T, conn *websocket.Conn, srv *httptest.Server, kind string, clientID int64) {
+	t.Helper()
+	_ = conn.Close()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if c2engine.ViewerCount(kind, clientID) == 0 {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	srv.Close()
 }
