@@ -10,6 +10,7 @@ package main
 import (
 	"bytes"
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
@@ -186,9 +187,15 @@ type httpTransport struct {
 // newHTTPTransport 创建 HTTP 传输。
 // newHTTPTransport creates an HTTP transport.
 func newHTTPTransport(url string) *httpTransport {
+	// 监听器多用自签名证书（原版同样是自签），客户端必须跳过校验，
+	// 否则 https 模式永远连不上（x509: certificate signed by unknown authority）。
+	// 与 transport_ws.go 的 wsTLSConfig 保持一致。
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12},
+	}
 	return &httpTransport{
 		serverURL: strings.TrimRight(url, "/"),
-		client:    &http.Client{Timeout: 30 * time.Second},
+		client:    &http.Client{Timeout: 30 * time.Second, Transport: tr},
 	}
 }
 

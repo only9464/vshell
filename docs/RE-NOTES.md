@@ -823,4 +823,26 @@ e2e §7q 增加 status/search/排序三项断言。
 顺带确认：`db/tunnels.json` 的写入/读取本身没问题（重启日志
 `Engine initialized with 1 tunnels` 正常）。
 
+### E-56 https 监听器：agent 侧从未跳过证书校验（R44）
+
+e2e 新增 §7u（https 监听器 + 自签 TLS）时，先确认了服务端侧正常：
+`Generated self-signed TLS certificate for listener N` → `/health` 用 `curl -k` 返回 200。
+
+但 **agent 连不上**：`newHTTPTransport` 用的是 `http.Client{Timeout: 30s}` 默认
+Transport，会校验证书；监听器是自签的（与原版一致），于是 TLS 握手直接失败。
+`ws`/`wss` 传输早就设置了 `InsecureSkipVerify`，https 这条却漏了。
+
+修复：`newHTTPTransport` 改用带 `TLSClientConfig{InsecureSkipVerify: true, MinVersion: TLS12}`
+的 Transport（与 `transport_ws.go` 的 `wsTLSConfig` 一致）。
+
+修复后人工复现与 e2e 均通过：
+
+```
+Checkin OK: client=1, session=sess_1_...
+clientCount=1 clientOnlineCount=1
+```
+
+> 附带一个统计口径的坑：agent 上报的 `Tp` 是传输族，https 模式仍然是 `"http"`，
+> e2e 断言不能按 `Tp == "https"` 判断上线，改为看 `clientOnlineCount`。
+
 

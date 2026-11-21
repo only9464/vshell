@@ -26,6 +26,7 @@ AGENT_KCP_PID=""
 AGENT_WS_PID=""
 AGENT_DNS_PID=""
 AGENT_PAY_PID=""
+AGENT_HTTPS_PID=""
 OTCP_PID=""
 TGT_PID=""
 
@@ -50,6 +51,7 @@ cleanup() {
   [[ -n "$AGENT_PAY_PID" ]] && kill "$AGENT_PAY_PID" 2>/dev/null
   [[ -n "$TGT_PID"      ]] && kill "$TGT_PID"      2>/dev/null
   [[ -n "$OTCP_PID"     ]] && kill "$OTCP_PID"     2>/dev/null
+  [[ -n "$AGENT_HTTPS_PID" ]] && kill "$AGENT_HTTPS_PID" 2>/dev/null
   [[ -n "$SERVER_PID"    ]] && kill "$SERVER_PID"    2>/dev/null
   rm -rf "$TMP"
 }
@@ -639,6 +641,40 @@ ids=[i['Id'] for i in (d['result']['items'] or []) if i.get('Remark')=='persist-
 print(ids[0] if ids else '')")
 [[ -n "$PERSIST_TID" ]] && api POST /tunnel/del "{\"id\":$PERSIST_TID}" >/dev/null
 log "persistence ok (listener + tunnel 重启后仍在)"
+
+# ---------------------------------------------------------------- 7u. HTTPS 监听器（TLS 路径，R44）
+log "check https listener (self-signed TLS)"
+HTTPS_PORT=$((27600 + RANDOM % 300))
+api POST /listener/add "{\"Mode\":\"https\",\"Vkey\":\"HTTPS-VK\",\"Host\":\"127.0.0.1\",\"Port\":$HTTPS_PORT,\"Remark\":\"tls\"}" \
+  | grep -q '"code":0' || fail "https 监听器创建失败"
+HTTPS_LID=$(api POST /listener/list '{"page":1,"pageSize":100}' | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+ids=[i['Id'] for i in (d['result']['items'] or []) if i.get('Vkey')=='HTTPS-VK']
+print(ids[0] if ids else '')")
+[[ -n "$HTTPS_LID" ]] || fail "https 监听器未注册"
+
+# 自签证书监听器：curl -k 应能拿到面板响应（TLS 握手成功即说明证书已生成）
+TLS_CODE=$(curl -sk -o /dev/null -m 8 -w '%{http_code}' "https://127.0.0.1:$HTTPS_PORT/health")
+[[ "$TLS_CODE" == "200" ]] || fail "https 监听器 /health 返回 $TLS_CODE（TLS 未就绪？）"
+
+# agent 以 https 模式上线
+( cd "$ROOT/agent" && go build -ldflags \
+  "-X main.ServerAddr=https://127.0.0.1:$HTTPS_PORT -X main.VerifyKey=HTTPS-VK -X main.EncryptSalt=" \
+  -o "$TMP/agent_https" . ) || fail "agent(https) 构建失败"
+( cd "$TMP" && exec ./agent_https > agent_https.log 2>&1 ) &
+AGENT_HTTPS_PID=$!
+ONLINE=0
+for _ in $(seq 1 60); do
+  # 注意：agent 上报的 Tp 是传输族（https 走的是 http 传输，Tp 仍为 "http"），
+  # 因此这里按"在线客户端数增加"判断，而不是比对 Tp。
+  if api POST /client/list '{"page":1,"pageSize":100,"status":1}' | grep -q '"clientOnlineCount":[1-9]'; then ONLINE=1; break; fi
+  sleep 0.5
+done
+[[ $ONLINE -eq 1 ]] || fail "https 模式 agent 未上线（TLS 校验可能未跳过）"
+kill "$AGENT_HTTPS_PID" 2>/dev/null
+api POST /listener/del "{\"id\":$HTTPS_LID}" >/dev/null
+log "https listener ok (自签 TLS + agent 上线)"
 
 # ---------------------------------------------------------------- 8. 面板契约
 log "check /client/list field contract (B0.8)"
