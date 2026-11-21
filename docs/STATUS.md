@@ -31,6 +31,7 @@
 | 登录 + JWT | ✅ 已实现 | `controllers/login.go:19-53`、`utils/auth.go:192-208`；响应 `{token,userInfo}` 与 SPA 的 `const {token}=a` 匹配 |
 | 注销 | ⚠️ 形式 | JWT 无状态，`engineDelToken` 空实现 |
 | 前端文件页 | 下载（附件直链）/重命名（mv）/新建目录/上传/wget/编辑/删除；空状态用 `el-empty`；mkd​ir 与重命名走 ElMessageBox | `web/src/views/FilesView.vue` |
+| 前端终端 | CDP 真实键入 `echo UI_TYPE_OK` 并断言 xterm 回显；验证浏览器↔WebSocket↔agent shell 全链路 | `tools/uiprobe/main.go`、`scripts/ui-check.sh` |
 | 前端点击级 | `tools/uiprobe`（CDP 执行器）+ ui-check.sh：真实填表单登录、点刷新；11 个页面渲染断言 | `tools/uiprobe/main.go`、`scripts/ui-check.sh` |
 | 前端渲染 | `scripts/ui-check.sh`：无头 Chromium 真渲染 dashboard/clients/files/terminal 并断言数据；修掉 files 页字段大小写不匹配（列表整列空白） | `web/src/views/FilesView.vue`、`scripts/ui-check.sh` |
 | https 监听器 | 自签证书生成正常；agent 侧补上 `InsecureSkipVerify` 后可上线（e2e §7u） | `agent/main.go`、`scripts/e2e.sh` |

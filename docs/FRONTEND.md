@@ -30,6 +30,15 @@ terminal（xterm 挂载 + WebSocket "已连接"）。这套检查抓到过一个
 
 点击级流程已覆盖「登录 → 文件页 → 切到 /tmp → 重命名 → 目标机文件改名成功」。
 
+**终端真实键入**（R48）：`tools/uiprobe -type` 通过 CDP 的 `Input.insertText` +
+`Input.dispatchKeyEvent` 向 xterm 的 helper-textarea 发送真实键盘事件，ui-check 里
+输入 `echo UI_TYPE_OK` 并断言回显出现——这条链路走完了
+「浏览器键盘 → xterm → WebSocket → 服务端 → agent shell → 回显 → 浏览器」全环。
+
+> 两个坑：① 每次探针必须用**新的调试端口**，否则残留的 chromium 会让新连接落到
+> 旧页面（表现为 `NO_INPUTS`）；② 脚本要写成**幂等**的（已登录就跳过登录），
+> 因为 `-type` 前后会各执行一次同一段脚本。
+
 > 一个坑：不要用 `location.replace()` 整页跳转来"切页"——会丢掉内存里的登录态
 > （store 里的 token 为空），页面被守卫弹回登录页；应改用 `location.hash` 在 SPA 内切换。
 

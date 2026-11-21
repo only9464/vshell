@@ -37,6 +37,7 @@ func main() {
 	port := flag.Int("port", 9223, "调试端口")
 	chrome := flag.String("chrome", "chromium", "浏览器可执行文件")
 	keep := flag.Bool("keep", false, "结束后保留浏览器进程（调试用）")
+	typeText := flag.String("type", "", "在 -script 之后向聚焦元素输入这段文本并回车（走 CDP Input 域，真实键盘事件）")
 	flag.Parse()
 
 	cmd := exec.Command(*chrome, "--headless=new", "--disable-gpu", "--no-sandbox",
@@ -74,6 +75,19 @@ func main() {
 	res, err := evaluate(conn, *script)
 	if err != nil {
 		fail("执行脚本失败: %v", err)
+	}
+	if *typeText != "" {
+		if err := typeAndEnter(conn, *typeText); err != nil {
+			fail("输入文本失败: %v", err)
+		}
+		// 给终端一点时间回显
+		time.Sleep(2 * time.Second)
+		res2, err := evaluate(conn, *script)
+		if err != nil {
+			fail("二次执行脚本失败: %v", err)
+		}
+		fmt.Println(res2)
+		return
 	}
 	fmt.Println(res)
 }
@@ -141,4 +155,56 @@ func evaluate(conn *websocket.Conn, script string) (string, error) {
 func fail(format string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, "[uiprobe] "+format+"\n", args...)
 	os.Exit(1)
+}
+
+// typeAndEnter 通过 CDP Input 域输入文本并回车（真实键盘事件，可驱动 xterm）。
+func typeAndEnter(conn *websocket.Conn, text string) error {
+	if err := call(conn, 10, "Input.insertText", map[string]interface{}{"text": text}); err != nil {
+		return err
+	}
+	// Enter：rawKeyDown + char + keyUp，xterm 主要看 keyCode 13
+	for _, typ := range []string{"rawKeyDown", "char", "keyUp"} {
+		params := map[string]interface{}{
+			"type":                  typ,
+			"key":                   "Enter",
+			"code":                  "Enter",
+			"windowsVirtualKeyCode": 13,
+			"nativeVirtualKeyCode":  13,
+		}
+		if typ == "char" {
+			params["text"] = "\r"
+			params["unmodifiedText"] = "\r"
+		}
+		if err := call(conn, 11, "Input.dispatchKeyEvent", params); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// call 发送一条 CDP 命令并等待对应 id 的响应。
+func call(conn *websocket.Conn, id int, method string, params map[string]interface{}) error {
+	req := map[string]interface{}{"id": id, "method": method, "params": params}
+	if err := conn.WriteJSON(req); err != nil {
+		return err
+	}
+	for {
+		_, data, err := conn.ReadMessage()
+		if err != nil {
+			return err
+		}
+		var resp struct {
+			ID    int `json:"id"`
+			Error *struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		if err := json.Unmarshal(data, &resp); err != nil || resp.ID != id {
+			continue
+		}
+		if resp.Error != nil {
+			return fmt.Errorf("%s: %s", method, resp.Error.Message)
+		}
+		return nil
+	}
 }

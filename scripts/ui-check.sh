@@ -24,6 +24,13 @@ cleanup() {
 trap cleanup EXIT
 
 log() { echo "[ui] $*"; }
+
+# uiprobe 包装：每次用随机调试端口，避免上一次的 chromium 仍占着 9223
+# （残留进程会让新探针连到旧页面，表现为 NO_INPUTS 之类的怪现象）。
+uiprobe() {
+  local port=$((9300 + RANDOM % 600))
+  ( cd "$ROOT" && go run ./tools/uiprobe -port "$port" "$@" )
+}
 fail() { echo "[ui] FAIL: $*" >&2; exit 1; }
 
 command -v "$CHROME" >/dev/null || fail "找不到 $CHROME"
@@ -163,7 +170,7 @@ LOGIN_JS=$(cat <<'JS'
 })()
 JS
 )
-LOGIN_OUT=$(cd "$ROOT" && go run ./tools/uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$LOGIN_JS" 2>&1)
+LOGIN_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$LOGIN_JS" 2>&1)
 echo "$LOGIN_OUT" | grep -q '#/dashboard' || fail "登录表单未跳转到仪表盘: $(echo "$LOGIN_OUT" | head -c 160)"
 echo "$LOGIN_OUT" | grep -q '运行信息\|仪表盘' || fail "登录后页面内容异常: $(echo "$LOGIN_OUT" | head -c 160)"
 
@@ -190,7 +197,7 @@ CLICK_JS=$(cat <<'JS'
 })()
 JS
 )
-CLICK_OUT=$(cd "$ROOT" && go run ./tools/uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$CLICK_JS" 2>&1)
+CLICK_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$CLICK_JS" 2>&1)
 echo "$CLICK_OUT" | grep -q "$(hostname)" || fail "客户端页刷新后没有主机名: $(echo "$CLICK_OUT" | head -c 200)"
 
 log "点击级：文件页重命名（ElMessageBox 输入框）"
@@ -239,9 +246,33 @@ RENAME_JS=$(cat <<'JS'
 })()
 JS
 )
-RENAME_OUT=$(cd "$ROOT" && go run ./tools/uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$RENAME_JS" 2>&1)
+RENAME_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$RENAME_JS" 2>&1)
 echo "$RENAME_OUT" | grep -q 'ui-renamed.txt' || fail "重命名未生效: $(echo "$RENAME_OUT" | head -c 200)"
 [[ -f /tmp/ui-renamed.txt ]] || fail "目标机上没有 ui-renamed.txt"
 rm -f /tmp/ui-renamed.txt /tmp/ui-rename-me.txt
 
-log "全部渲染 + 点击级流程通过（login→dashboard，clients 刷新，files 重命名）"
+log "点击级：终端里真敲命令（CDP Input 域）"
+TERM_JS=$(cat <<'JS'
+(async () => {
+  if (document.body.innerText.includes('登录') && document.querySelectorAll('input').length >= 2) {
+    const inputs = [...document.querySelectorAll('input')];
+    const set = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles: true})); };
+    set(inputs[0], 'admin'); set(inputs[1], 'p1');
+    await new Promise(r => setTimeout(r, 300));
+    [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
+    await new Promise(r => setTimeout(r, 2000));
+  }
+  if (!location.hash.includes('/terminal/')) {
+    location.hash = '#/terminal/1';
+    await new Promise(r => setTimeout(r, 5000));
+  }
+  const ta = document.querySelector('.xterm-helper-textarea');
+  if (ta) ta.focus();
+  return (document.querySelector('.xterm-rows')?.innerText || '').replace(/\n+/g, ' | ');
+})()
+JS
+)
+TERM_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$TERM_JS" -type "echo UI_TYPE_OK" 2>&1)
+echo "$TERM_OUT" | grep -q 'UI_TYPE_OK' || fail "终端里敲命令后没有回显: $(echo "$TERM_OUT" | tail -c 200)"
+
+log "全部渲染 + 点击级流程通过（login→dashboard，clients 刷新，files 重命名，terminal 键入）"
