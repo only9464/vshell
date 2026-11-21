@@ -11,6 +11,10 @@
 
 ### A-1 任务记录层（opcode + argv / 结果帧）
 
+- **进展（R33）**：确认 flaky 双向存在（真实服务端上也会出现 agent 不发 conf）；
+  复刻端 100s 浸泡：29 连接 / 13 认证 / 39 次 conf / **0 次 main**。四个对齐实验
+  （ack+session 单次写、回显分隔字节、会话绑定 vkey、固定会话）均无效。
+  下一步转 IDA 反编译 agent 的 conf 后续处理。
 - **进展（R32）**：确认 conf 分隔字节有三种（0x20/0x22/0x29）；原始字节抓包显示真实
   服务端的 conf 完成序列与复刻端逐项一致（ack+session 合并在一个 TCP 段、随后 agent 关连接）；
   发现 conn2 应答偶尔不是 md5(vkey) 的异常，新增 `VSHELL_FIXED_SESSION` 便于受控复现。

