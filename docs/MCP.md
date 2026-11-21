@@ -30,6 +30,18 @@
 }
 ```
 
+## 2.1 实测（R64，交付包实例）
+
+在 `~/vshell-release` 上跑通：
+
+```
+initialize → serverInfo {name: vshell, version: 4.9.3-replica}，capabilities.tools = true
+tools/list → 13 个工具
+tools/call dashboard      → 真实 KPI（clientCount=1 / clientOnlineCount=1 / cpu / disk…）
+tools/call list_clients   → 客户端条目（含 Arch=amd64、HostName…）
+tools/call run_command    → {"output":"kali\nkali\n"}（真的在被控端执行了 id -un && hostname）
+```
+
 ## 3. 协议实现
 
 | 方法 | 说明 |
