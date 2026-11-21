@@ -24,9 +24,9 @@ async function load(p = path.value) {
 onMounted(() => load('/'))
 
 function enter(row: any) {
-  if (!row.IsDir) return
+  if (!isDir(row)) return
   const base = path.value.endsWith('/') ? path.value : path.value + '/'
-  load(base + row.Name)
+  load(base + nameOf(row))
 }
 function up() {
   const parts = path.value.split('/').filter(Boolean)
@@ -41,17 +41,23 @@ async function mkdir() {
   load()
 }
 async function remove(row: any) {
-  await fileApi.rm(id, (path.value.endsWith('/') ? path.value : path.value + '/') + row.Name)
+  await fileApi.rm(id, (path.value.endsWith('/') ? path.value : path.value + '/') + nameOf(row))
   ElMessage.success('已删除')
   load()
 }
+// 后端 /file/ls 返回小写键（name/size/time/isDir）；这里做一次兼容读取，
+// 避免字段大小写不一致时表格整列空白（R45 实测）。
+type FsEntry = { name?: string; Name?: string; isDir?: boolean; IsDir?: boolean }
+const nameOf = (row: FsEntry) => row.name ?? row.Name ?? ''
+const isDir = (row: FsEntry) => !!(row.isDir ?? row.IsDir)
+
 const editor = ref(false)
 const editorPath = ref('')
 const editorContent = ref('')
 
 async function openFile(row: any) {
-  if (row.IsDir) return enter(row)
-  const full = (path.value.endsWith('/') ? path.value : path.value + '/') + row.Name
+  if (isDir(row)) return enter(row)
+  const full = (path.value.endsWith('/') ? path.value : path.value + '/') + nameOf(row)
   const res: any = await fileApi.cat(id, full)
   editorPath.value = full
   editorContent.value = res?.content ?? String(res ?? '')
@@ -100,16 +106,16 @@ async function upload(ev: Event) {
       <span class="mono">客户端 #{{ id }}</span>
     </div>
     <el-table :data="rows" border size="small" @row-dblclick="openFile">
-      <el-table-column prop="Name" label="名称" min-width="240">
+      <el-table-column prop="name" label="名称" min-width="240">
         <template #default="{ row }">
-          <span :class="{ dir: row.IsDir }">{{ row.Name }}{{ row.IsDir ? '/' : '' }}</span>
+          <span :class="{ dir: isDir(row) }">{{ nameOf(row) }}{{ isDir(row) ? '/' : '' }}</span>
         </template>
       </el-table-column>
-      <el-table-column prop="Size" label="大小" width="120" />
-      <el-table-column prop="Time" label="修改时间" width="220" />
+      <el-table-column prop="size" label="大小" width="120" />
+      <el-table-column prop="time" label="修改时间" width="220" />
       <el-table-column label="操作" width="160">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openFile(row)">{{ row.IsDir ? '进入' : '编辑' }}</el-button>
+          <el-button link type="primary" @click="openFile(row)">{{ isDir(row) ? '进入' : '编辑' }}</el-button>
           <el-button link type="danger" @click="remove(row)">删除</el-button>
         </template>
       </el-table-column>

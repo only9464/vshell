@@ -14,7 +14,12 @@ go build -o vshell-server . && ./vshell-server
 
 开发模式：`pnpm dev`（Vite :5173，`/api` 与 WebSocket 都代理到 :8082）。
 
-已验证：无头 Chromium 渲染 `/app/#/login` 正常（Element Plus 已挂载、资源 200）；
+已验证：`scripts/ui-check.sh` 用无头 Chromium **真渲染** 四个页面并断言真实数据——
+dashboard（运行信息/KPI）、clients（主机名/在线状态）、files（目录条目）、
+terminal（xterm 挂载 + WebSocket "已连接"）。这套检查抓到过一个纯接口测试
+发现不了的 bug：`/file/ls` 返回小写键而页面读大写，导致文件列表整列空白。
+
+另外无头 Chromium 渲染 `/app/#/login` 正常（Element Plus 已挂载、资源 200）；
 接口契约由 e2e §7j 与 `controllers/contract_test.go` 兜住。
 未做：UI 级自动点击（需要 Playwright，环境未装）、屏幕直播页（B6.7）。
 

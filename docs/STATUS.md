@@ -30,6 +30,7 @@
 |---|---|---|
 | 登录 + JWT | ✅ 已实现 | `controllers/login.go:19-53`、`utils/auth.go:192-208`；响应 `{token,userInfo}` 与 SPA 的 `const {token}=a` 匹配 |
 | 注销 | ⚠️ 形式 | JWT 无状态，`engineDelToken` 空实现 |
+| 前端渲染 | `scripts/ui-check.sh`：无头 Chromium 真渲染 dashboard/clients/files/terminal 并断言数据；修掉 files 页字段大小写不匹配（列表整列空白） | `web/src/views/FilesView.vue`、`scripts/ui-check.sh` |
 | https 监听器 | 自签证书生成正常；agent 侧补上 `InsecureSkipVerify` 后可上线（e2e §7u） | `agent/main.go`、`scripts/e2e.sh` |
 | 重启持久化 | e2e §7t：建监听器+隧道 → 重启 → 两者仍在（含隧道备注）；`TestAddTunnelKeepsRemark` 覆盖备注回填 | `scripts/e2e.sh`、`controllers/engine.go` |
 | 并发/边界 | e2e §7s：10 并发 list + 5 并发命令、上传 2MiB 成功 / 33MiB 拒绝；CI 增加 `-race` 步骤 | `scripts/e2e.sh`、`.github/workflows/test.yml` |
