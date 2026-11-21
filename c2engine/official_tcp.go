@@ -27,6 +27,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -81,6 +82,8 @@ type OfficialTCPServer struct {
 	results  chan string
 	closed   bool
 	Logf     func(format string, args ...interface{})
+	// sessions 是已签发的会话（conf 完成后 agent 会用 md5(会话) 认证后续连接）
+	sessions map[string]bool
 }
 
 // officialConn 是一条连接的状态机。
@@ -262,9 +265,17 @@ func (c *officialConn) handle(plain []byte) error {
 		}
 		return nil
 	case "chal":
-		// 期望 md5(vkey)
+		// 期望 md5(vkey)；**conf 之后的连接用 md5(会话ID)**。
+		//
+		// 证据（R58，抓包 testdata/original/wire/mitm_session_2026-11-20.log）：
+		//   conn1 应答 = 9e09b0be…（= md5(vkey)）
+		//   conn1 会话 = IVAoXA2etic7VgbY
+		//   conn2 应答 = a7e78830…
+		//   而 md5("IVAoXA2etic7VgbY") == a7e788304e325a859b36f9063e8b4a88 —— 完全吻合
+		// 即：conf 完成后 agent 记住了会话，后续连接用会话的 md5 认证。
 		want := OfficialAuthResponse(s.vkey)
-		if strings.EqualFold(string(plain), want) {
+		got := string(plain)
+		if strings.EqualFold(got, want) || s.matchSessionResponse(got) {
 			// 实测（R26）：真实服务端在收到 md5(vkey) 后约 270–370ms 才回 "sucs"。
 			// R27 补充：延迟只对**第一条（conf）连接**需要；conf 完成后的后续连接
 			// 立刻回 sucs，否则 agent 不会声明 main/chan。
@@ -290,8 +301,10 @@ func (c *officialConn) handle(plain []byte) error {
 			s.Logf("official-tcp: %s authenticated", c.conn.RemoteAddr())
 			// 实验：认证后再补一条 ack + 会话 ID，观察是否能驱动 agent 注册 main
 			if s.AuthExtras {
+				extra := officialSessionID()
+				s.rememberSession(extra)
 				_ = c.send([]byte{0x01})
-				_ = c.send([]byte(officialSessionID()))
+				_ = c.send([]byte(extra))
 			}
 			c.state = "auth"
 			return nil
@@ -338,10 +351,14 @@ func (c *officialConn) handle(plain []byte) error {
 				s.Logf("official-tcp: client registered: host=%v os=%v user=%v",
 					info["HostName"], info["OsName"], info["UserName"])
 			}
+			// 会话在发送前就登记：conf 完成后的连接会用 md5(会话) 认证（R58 抓包实证）
+			sessID := officialSessionID()
+			s.rememberSession(sessID)
+			s.Logf("official-tcp: session issued %q (md5=%s) to %s", sessID, md5Hex(sessID), c.conn.RemoteAddr())
 			// R30 实验开关：ConfMode 控制 conf 阶段的应答顺序/间隔
 			switch s.ConfMode {
 			case "session_first":
-				if err := c.send([]byte(officialSessionID())); err != nil {
+				if err := c.send([]byte(sessID)); err != nil {
 					return err
 				}
 				if err := c.send([]byte{0x01}); err != nil {
@@ -352,7 +369,7 @@ func (c *officialConn) handle(plain []byte) error {
 					return err
 				}
 				time.Sleep(50 * time.Millisecond)
-				if err := c.send([]byte(officialSessionID())); err != nil {
+				if err := c.send([]byte(sessID)); err != nil {
 					return err
 				}
 			default:
@@ -362,7 +379,7 @@ func (c *officialConn) handle(plain []byte) error {
 				if err != nil {
 					return err
 				}
-				sess, err := FrameEncrypt([]byte(officialSessionID()), s.salt)
+				sess, err := FrameEncrypt([]byte(sessID), s.salt)
 				if err != nil {
 					return err
 				}
@@ -529,4 +546,32 @@ func truncateForLog(s string, n int) string {
 		return s
 	}
 	return s[:n] + "…"
+}
+
+// md5Hex 返回 md5 的小写十六进制串。
+func md5Hex(v string) string {
+	sum := md5.Sum([]byte(v))
+	return hex.EncodeToString(sum[:])
+}
+
+// matchSessionResponse 判断应答是否等于某个已签发会话的 md5（conf 之后的连接用）。
+func (s *OfficialTCPServer) matchSessionResponse(got string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for sess := range s.sessions {
+		if strings.EqualFold(got, md5Hex(sess)) {
+			return true
+		}
+	}
+	return false
+}
+
+// rememberSession 记录已签发的会话，供后续连接的会话认证使用。
+func (s *OfficialTCPServer) rememberSession(sess string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.sessions == nil {
+		s.sessions = map[string]bool{}
+	}
+	s.sessions[sess] = true
 }

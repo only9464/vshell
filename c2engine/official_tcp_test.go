@@ -2,7 +2,9 @@ package c2engine
 
 import (
 	"bufio"
+	"crypto/md5"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -237,4 +239,93 @@ func TestOfficialTCPSendTaskWithoutMain(t *testing.T) {
 		t.Fatal("expected error when no main channel")
 	}
 	fmt.Fprint(io.Discard, "") // 保持 io 导入被使用
+}
+
+// conf 之后，agent 用 md5(会话) 认证后续连接（R58 抓包实证：
+// md5("IVAoXA2etic7VgbY") == conn2 的应答 a7e788304e325a859b36f9063e8b4a88）。
+func TestOfficialSessionAuthOnFollowupConn(t *testing.T) {
+	srv := NewOfficialTCPServer("127.0.0.1:0", "SESSION-VK", "")
+	srv.Logf = func(string, ...interface{}) {}
+	srv.ReadTimeout = 5 * time.Second
+	srv.AuthDelay = 0
+	if err := srv.Start(); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	defer srv.Stop()
+	addr := srv.listener.Addr().String()
+
+	// --- 第一条连接：认证 + conf，拿会话
+	c1, err := net.Dial("tcp", addr)
+	if err != nil {
+		t.Fatalf("dial1: %v", err)
+	}
+	a1 := &fakeAgent{conn: c1, rd: bufio.NewReader(c1), salt: ""}
+	if err := a1.version(); err != nil {
+		t.Fatalf("ver1: %v", err)
+	}
+	if _, err := a1.read(); err != nil { // challenge
+		t.Fatalf("challenge1: %v", err)
+	}
+	if err := a1.send([]byte(OfficialAuthResponse("SESSION-VK"))); err != nil {
+		t.Fatalf("resp1: %v", err)
+	}
+	if got, err := a1.read(); err != nil || string(got) != "sucs" {
+		t.Fatalf("sucs1 = %q, %v", got, err)
+	}
+	if err := a1.send([]byte("conf")); err != nil {
+		t.Fatalf("conf: %v", err)
+	}
+	if _, err := a1.read(); err != nil { // 
+		t.Fatalf("ack1: %v", err)
+	}
+	if err := a1.send([]byte(`conf &#1;&#0;&#0;{"HostName":"h"}`)); err != nil {
+		t.Fatalf("conf json: %v", err)
+	}
+	if _, err := a1.read(); err != nil { // 
+		t.Fatalf("ack2: %v", err)
+	}
+	sess, err := a1.read()
+	if err != nil || len(sess) != 16 {
+		t.Fatalf("session = %q, %v", sess, err)
+	}
+	c1.Close()
+
+	// --- 第二条连接：用 md5(会话) 认证，并注册 main
+	c2, err := net.Dial("tcp", addr)
+	if err != nil {
+		t.Fatalf("dial2: %v", err)
+	}
+	defer c2.Close()
+	a2 := &fakeAgent{conn: c2, rd: bufio.NewReader(c2), salt: ""}
+	if err := a2.version(); err != nil {
+		t.Fatalf("ver2: %v", err)
+	}
+	if _, err := a2.read(); err != nil { // challenge
+		t.Fatalf("challenge2: %v", err)
+	}
+	sum := md5.Sum(sess)
+	if err := a2.send([]byte(hex.EncodeToString(sum[:]))); err != nil {
+		t.Fatalf("resp2: %v", err)
+	}
+	if got, err := a2.read(); err != nil || string(got) != "sucs" {
+		t.Fatalf("sucs2 = %q, %v (session auth rejected)", got, err)
+	}
+	if err := a2.send([]byte("main")); err != nil {
+		t.Fatalf("main: %v", err)
+	}
+	// 用 RunCommand 的"未注册 main"错误消失来间接确认 main 已注册
+	deadline := time.Now().Add(2 * time.Second)
+	registered := false
+	for time.Now().Before(deadline) {
+		srv.mu.Lock()
+		registered = srv.main != nil
+		srv.mu.Unlock()
+		if registered {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if !registered {
+		t.Fatal("main channel not registered after session auth")
+	}
 }

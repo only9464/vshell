@@ -896,4 +896,38 @@ conf 序列是**四条**服务端记录，不是三条：
 2. 认证应答（md5）**每条连接都不同**（`9e09b0be…`、`a7e78830…`），
    而挑战恒为 `md5("4.9.3")`。
 
+### E-59 重大发现：conf 之后的连接用 **md5(会话)** 认证（R58）
+
+在抓包里注意到认证应答**每条连接都不同**：
+`9e09b0be529f6a4206198ad9dc340124`（conn1）与 `a7e788304e325a859b36f9063e8b4a88`（conn2）。
+把 conn1 拿到的会话 `IVAoXA2etic7VgbY` 拿来算：
+
+```
+md5("IVAoXA2etic7VgbY") = a7e788304e325a859b36f9063e8b4a88   ← 与 conn2 应答完全一致
+```
+
+**结论：握手协议是两段式认证**
+
+| 连接 | agent 的应答 |
+|---|---|
+| conf 连接（第一条） | `md5(vkey)` |
+| conf 之后的连接（main/chan） | `md5(会话ID)`，会话来自 conf 阶段的最后一条记录 |
+
+复刻端此前只用 `md5(vkey)` 校验，因此 **main/chan 连接一律被判为认证失败**——
+这正是"agent 打过 conf 后就再没有 main"的直接原因之一。
+
+实现（`c2engine/official_tcp.go`）：
+
+- `rememberSession()` 在**发送会话前**登记（避免竞态）；
+- `matchSessionResponse()` 在挑战应答阶段同时接受 `md5(vkey)` 与任一已签发会话的 md5；
+- 日志新增 `session issued "…" (md5=…)`，便于把应答与会话对上。
+
+回归测试：`TestOfficialSessionAuthOnFollowupConn` —— 第一条连接走完 conf 拿到会话，
+第二条连接用 `md5(会话)` 认证成功并注册 `main`。
+
+**仍然存在的现象**：官方 agent 在复刻端上 conf 完成率很低（40s 窗口内常为 0），
+此时它会用第三种应答值（同一进程内固定，如 `0e49f876…`），推测是
+`md5(vkey + 进程级随机量)`。要推进还需要让 conf 稳定完成——下一步应把
+"conf 完成率"作为量化指标单独优化。
+
 
