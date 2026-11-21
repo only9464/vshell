@@ -529,6 +529,34 @@ print(ids[0] if ids else '')")
 api POST /tunnel/del "{\"id\":$TMP_TID2}" | grep -q '"code":0' || fail "tunnel/del failed"
 log "remaining panel endpoints ok (auth/dashboard/runner/setting/client/file/listener/tunnel)"
 
+# ---------------------------------------------------------------- 7r. 错误语义（负面用例）
+log "check error semantics (negative cases)"
+OFFLINE_ID=99999
+# 不存在的客户端：不同接口的文案约定
+api POST /terminal/shell "{\"id\":$OFFLINE_ID,\"command\":\"id\"}" | grep -q "client is close" \
+  || fail "terminal/shell offline 文案不符"
+api POST /file/ls "{\"id\":$OFFLINE_ID,\"path\":\"/\"}" | grep -qE "connection error|client is close" \
+  || fail "file/ls offline 文案不符"
+api POST /tunnel/add "{\"clientId\":$OFFLINE_ID,\"Port\":28999,\"Mode\":\"tcp\",\"Target\":\"127.0.0.1:22\"}" \
+  | grep -q "add tunnel failed" || fail "tunnel/add 不存在客户端时应失败"
+# 缺参数
+api POST /listener/edit '{"Mode":"http","Vkey":"x"}' | grep -q "id is null" || fail "listener/edit 缺 Id 文案不符"
+api POST /client/delprocess '{"id":1}' | grep -q "id and pid/name required" || fail "delprocess 缺参文案不符"
+# 不存在的实体
+api POST /listener/start '{"id":987654}' | grep -q "not found" || fail "listener/start 不存在时应回 not found（黑盒实测）"
+api POST /listener/stop '{"id":987654}' | grep -q "not found" || fail "listener/stop 不存在时应回 not found（黑盒实测）"
+api POST /tunnel/start '{"id":987654}' | grep -q "start error" || fail "tunnel/start 不存在时应失败"
+api POST /listener/del '{"id":987654}' | grep -q '"code":0' || fail "listener/del 幂等应成功"
+# 重复启动监听器
+DUP_RESP=$(api POST /listener/start "{\"id\":1}")
+echo "$DUP_RESP" | grep -qE 'already start|"code":0' || fail "listener/start 重复启动文案不符: $DUP_RESP"
+# 非法令牌
+BAD_CODE=$(curl -s -o /tmp/badtok.out -w '%{http_code}' -X POST "http://127.0.0.1:$WEB_PORT/api/client/list" \
+  -H "Token: not-a-token" -H 'Content-Type: application/json' -d '{}')
+[[ "$BAD_CODE" == "401" || "$BAD_CODE" == "200" ]] || fail "非法令牌返回 $BAD_CODE"
+grep -qE '"code":-1|401' /tmp/badtok.out 2>/dev/null || [[ "$BAD_CODE" == "401" ]] || fail "非法令牌未拒绝"
+log "error semantics ok (offline/missing/invalid)"
+
 # ---------------------------------------------------------------- 8. 面板契约
 log "check /client/list field contract (B0.8)"
 LIST=$(api POST /client/list '{"page":1,"pageSize":10}')

@@ -218,3 +218,78 @@ func TestStreamWSRejectsBadToken(t *testing.T) {
 func itoa64(n int64) string {
 	return strconv.FormatInt(n, 10)
 }
+
+// 面板 → 服务端方向：按键与 resize 必须变成 agent 侧可执行的命令。
+func TestTerminalWSKeystrokesAndResize(t *testing.T) {
+	initTestEngine(t)
+	client, err := c2engine.GetEngine().NewClient("term-vkey-3", "http", "127.0.0.1:1",
+		"127.0.0.1", "u", "h", "linux", "agent", "amd64")
+	if err != nil {
+		t.Fatalf("new client: %v", err)
+	}
+	client.Status = true
+
+	conn, srv := dialTestStream(t, "/api/terminal/ws?id="+itoa64(client.ID))
+	defer func() {
+		conn.Close()
+		srv.Close()
+	}()
+	waitForViewer(t, c2engine.StreamTerminal, client.ID)
+
+	// 按键：原始字节会被 base64 塞进 terminal_input
+	if err := conn.WriteMessage(websocket.TextMessage, []byte("echo hi\n")); err != nil {
+		t.Fatalf("write keystroke: %v", err)
+	}
+	wantPlain := "echo hi\n"
+	want := "terminal_input:" + base64.StdEncoding.EncodeToString([]byte(wantPlain))
+	if !waitForTaskCommand(t, client.ID, want, 3*time.Second) {
+		t.Fatalf("keystroke did not become %q (got %v)", want, taskCommands(client.ID))
+	}
+
+	// resize 控制帧
+	if err := conn.WriteMessage(websocket.TextMessage, []byte(`{"type":"1","cols":120,"rows":40}`)); err != nil {
+		t.Fatalf("write resize: %v", err)
+	}
+	if !waitForTaskCommandPrefix(t, client.ID, "terminal_resize cols=120 rows=40", 3*time.Second) {
+		t.Fatalf("resize did not become terminal_resize (got %v)", taskCommands(client.ID))
+	}
+}
+
+// waitForTaskCommand 等待 agent 队列里出现完全等于 cmd 的任务。
+func waitForTaskCommand(t *testing.T, clientID int64, cmd string, d time.Duration) bool {
+	t.Helper()
+	deadline := time.Now().Add(d)
+	for time.Now().Before(deadline) {
+		for _, task := range c2engine.GetEngine().GetPendingTasks(clientID) {
+			if task.Command == cmd {
+				return true
+			}
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	return false
+}
+
+// waitForTaskCommandPrefix 等待出现指定前缀的任务。
+func waitForTaskCommandPrefix(t *testing.T, clientID int64, prefix string, d time.Duration) bool {
+	t.Helper()
+	deadline := time.Now().Add(d)
+	for time.Now().Before(deadline) {
+		for _, task := range c2engine.GetEngine().GetPendingTasks(clientID) {
+			if strings.HasPrefix(task.Command, prefix) {
+				return true
+			}
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	return false
+}
+
+// taskCommands 返回队列里的命令列表，便于失败时排查。
+func taskCommands(clientID int64) []string {
+	var out []string
+	for _, task := range c2engine.GetEngine().GetPendingTasks(clientID) {
+		out = append(out, task.Command)
+	}
+	return out
+}

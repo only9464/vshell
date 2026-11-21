@@ -30,6 +30,7 @@
 |---|---|---|
 | 登录 + JWT | ✅ 已实现 | `controllers/login.go:19-53`、`utils/auth.go:192-208`；响应 `{token,userInfo}` 与 SPA 的 `const {token}=a` 匹配 |
 | 注销 | ⚠️ 形式 | JWT 无状态，`engineDelToken` 空实现 |
+| 错误语义 | 离线客户端上文件类接口统一回 `connection error`；`listener/stop` 缺实体回 `not found`；e2e §7r 用负面用例固化 | `controllers/file.go`、`listener.go` |
 | 客户端列表 | ⚠️ 字段契约不符 | 后端出 `id/ip/os/arch`（`client.go:70-81`），SPA 读 `Id/OsName/UserName/...` |
 | 客户端备注/删除文件/杀进程 | ✅ 下发通 | `client.go:116-149` → `dispatchCmd`；但受 B0.1 阻塞 |
 | 监听器 CRUD/启停 | ⚠️ 半 | `listener.go` 全实现，但 `Add` 丢弃 Host → 恒绑 443（`engine.go:201`） |

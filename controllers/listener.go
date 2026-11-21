@@ -203,6 +203,12 @@ func (c *ListenerController) Stop() {
 		c.JsonErr("id error")
 		return
 	}
+	// 黑盒（R40）：不存在的监听器 → "not found"（与 start 一致）；
+	// 存在的监听器 stop 返回 "stop success"。
+	if engineGetListener(id) == nil {
+		c.JsonErr("not found")
+		return
+	}
 	engineStopListener(id)
 	c.JsonOkVerb("stop")
 }

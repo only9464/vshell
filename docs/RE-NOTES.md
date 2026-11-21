@@ -758,4 +758,26 @@ garbled 字面量访问方式），所以"字符串→xref→函数"这条路径
 回归测试：`TestGetClientListStatusFilterUsesStatus`、`TestClientSearchAndSortFields`；
 e2e §7q 增加 status/search/排序三项断言。
 
+### E-53 离线/缺参语义对齐（R40）
+
+用"负面用例"（不存在的 id、缺参数、非法令牌）对照实时原版，发现两处行为差异：
+
+| 场景 | 原版 | 复刻端（修复前） |
+|---|---|---|
+| `file/ls`、`file/cat`、`file/getdisk` 对离线客户端 | `connection error` | 静默返回空列表 / 空结果（code 0） |
+| `listener/stop` 对不存在的 id | `not found` | `stop success` |
+
+修复：
+- `controllers/file.go` 新增 `requireClient(id)`：客户端缺失/离线统一回
+  `connection error`，用在 `ls`/`cat`/`getdisk` 等"不经过 dispatchCmd"的入口。
+- `controllers/listener.go` 的 `Stop` 先查存在性，缺失回 `not found`（与 `Start` 一致）。
+
+同时确认了原版的几个语义（已写进 e2e §7r 断言）：
+
+| 接口 | 缺失实体时 |
+|---|---|
+| `listener/start` / `stop` | `not found` |
+| `listener/del` | `delete success`（幂等） |
+| `tunnel/start` / `stop` | `start error` / `stop error` |
+
 

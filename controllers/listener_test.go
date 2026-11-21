@@ -15,3 +15,14 @@ func TestListenerEditRequiresCapitalID(t *testing.T) {
 		t.Fatalf("lowercase id should be rejected with \"id is null\", got %s", body)
 	}
 }
+
+// 黑盒对齐（R40）：listener/stop 对不存在的 id 返回 "not found"。
+func TestListenerStopMissingReturnsNotFound(t *testing.T) {
+	base, rec := newTestController()
+	base.Controller.Ctx.Input.RequestBody = []byte(`{"id":987654}`)
+	c := &ListenerController{ApiBaseController: *base}
+	c.Stop()
+	if body := rec.Body.String(); !strings.Contains(body, "not found") {
+		t.Fatalf("stop missing → %s", body)
+	}
+}
