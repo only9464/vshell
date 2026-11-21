@@ -37,7 +37,29 @@ def load_functions(binary):
     return funcs
 
 
-def rip_refs(data, target):
+def instruction_starts(binary):
+    """用 objdump 取所有指令起始地址（用于过滤指令内部的假阳性匹配）。"""
+    import tempfile
+    starts = set()
+    with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as tmp:
+        path = tmp.name
+    try:
+        subprocess.run(["objdump", "-d", "--no-show-raw-insn", binary],
+                       stdout=open(path, "w"), stderr=subprocess.DEVNULL, text=True)
+        for line in open(path, encoding="utf-8", errors="ignore"):
+            if ":" in line:
+                head = line.split(":", 1)[0].strip()
+                if head and all(c in "0123456789abcdef" for c in head):
+                    starts.add(int(head, 16))
+    finally:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+    return starts
+
+
+def rip_refs(data, target, starts=None):
     """扫描 `lea reg, [rip+disp32]`（REX 0x48/0x4c + 8d modrm 05/0d/15/1d/25/2d/35/3d）。"""
     hits = []
     modrm = {0x05, 0x0d, 0x15, 0x1d, 0x25, 0x2d, 0x35, 0x3d}
@@ -50,6 +72,8 @@ def rip_refs(data, target):
         disp = struct.unpack_from("<i", data, i + 3)[0]
         # rip 相对：下一条指令 = i+7
         if i + 7 + disp == target:
+            if starts is not None and i not in starts:
+                continue  # 命中的是某条指令内部的字节，忽略
             hits.append(i)
     return hits
 
@@ -69,6 +93,8 @@ def main():
         return 1
     print(f"{args.text!r} 出现 {len(offs)} 次：{[hex(o) for o in offs[:8]]}")
 
+    starts = instruction_starts(args.binary)
+    print(f"指令起始地址: {len(starts)} 条（用于过滤假阳性）")
     funcs = load_functions(args.binary)
     addrs = [a for a, _ in funcs]
 
@@ -78,7 +104,7 @@ def main():
 
     total = 0
     for off in offs:
-        for ref in rip_refs(data, off):
+        for ref in rip_refs(data, off, starts):
             faddr, fname = owner(ref)
             print(f"  ref @{ref:#x} → {fname or '?'} ({faddr:#x})")
             total += 1

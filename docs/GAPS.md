@@ -11,6 +11,10 @@
 
 ### A-1 任务记录层（opcode + argv / 结果帧）
 
+- **进展（R36）**：用 IDA 复核发现 R35 的"字符串→函数"定位是**假阳性**
+  （0x643600 实际是 cryptobyte 的 addLengthPrefixed）；工具已改用 objdump 指令对齐过滤。
+  agent 模板的字符串**没有直接 LEA 引用**，该路径在 agent 上不成立 —— 需 IDA 人工分析
+  或换机器做动态跟踪。见 RE-NOTES E-49。
 - **进展（R35）**：新增 `scripts/find-string-ref.py`（字符串→xref→函数）；
   在 agent 模板里定位到 conf/main/chan 三个连号处理函数（0x643600/0x644860/0x644aa0），
   并发现 **agent 里根本没有 "sucs" 字面量** → 认证应答内容不参与判定。
