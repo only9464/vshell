@@ -11,6 +11,9 @@
 
 ### A-1 任务记录层（opcode + argv / 结果帧）
 
+- **进展（R32）**：确认 conf 分隔字节有三种（0x20/0x22/0x29）；原始字节抓包显示真实
+  服务端的 conf 完成序列与复刻端逐项一致（ack+session 合并在一个 TCP 段、随后 agent 关连接）；
+  发现 conn2 应答偶尔不是 md5(vkey) 的异常，新增 `VSHELL_FIXED_SESSION` 便于受控复现。
 - **进展（R31）**：新增可复现探针 `scripts/official-probe.sh`；修掉一个真实 bug——
   agent 的 `conf` 记录里 "conf" 后面的**分隔字节会变**（0x20/0x29），此前用
   `HasPrefix("conf ")` 判定导致整条被忽略、conf 无法完成。修复后 conf 稳定，

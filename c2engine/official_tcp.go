@@ -468,7 +468,13 @@ func (s *OfficialTCPServer) RunCommand(cmd string, timeout time.Duration) (strin
 //
 // 抓包里的形态是**大小写字母+数字**（如 FQ0022pIHROm5ibh），不是纯十六进制；
 // 这里按同样字符集随机生成。
+// FixedSessionForTest 允许把会话 ID 固定成已知值（仅用于取证/测试，走环境变量）。
+var FixedSessionForTest = ""
+
 func officialSessionID() string {
+	if FixedSessionForTest != "" {
+		return FixedSessionForTest
+	}
 	// 抓包里的会话 ID（如 FQ0022pIHROm5ibh）是 **12 字节随机数的 base64**（16 字符）；
 	// 用普通字母数字串时 agent 收到后会直接关闭连接（R26 实测）。
 	buf := make([]byte, 12)

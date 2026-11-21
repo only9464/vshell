@@ -151,6 +151,7 @@ func runOfficialTCP(args []string) {
 	srv := c2engine.NewOfficialTCPServer(*addr, *vkey, *salt)
 	srv.AuthExtras = os.Getenv("VSHELL_AUTH_EXTRAS") == "1"
 	srv.ConfMode = os.Getenv("VSHELL_CONF_MODE")
+	c2engine.FixedSessionForTest = os.Getenv("VSHELL_FIXED_SESSION")
 	if err := srv.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "official-tcp: %v\n", err)
 		os.Exit(1)
