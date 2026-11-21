@@ -493,13 +493,9 @@ func engineGetAppInfo() map[string]interface{} {
 	m := collectHostMetrics()
 	eng := c2engine.GetEngine()
 
-	clients, clientTotal := eng.GetClientList(0, 0, "", "", "", "", 0)
-	online := int64(0)
-	for _, c := range clients {
-		if c.Status {
-			online++
-		}
-	}
+	_, clientTotal := eng.GetClientList(0, 0, "", "", "", "", 0)
+	// 在线数用引擎侧统一判定（Status || NowConn>0），与客户端列表保持一致
+	online := eng.OnlineClientCount()
 	listeners := eng.GetListenerList()
 	listenerOnline := 0
 	for _, l := range listeners {

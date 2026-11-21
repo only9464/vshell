@@ -930,4 +930,27 @@ md5("IVAoXA2etic7VgbY") = a7e788304e325a859b36f9063e8b4a88   ← 与 conn2 应�
 `md5(vkey + 进程级随机量)`。要推进还需要让 conf 稳定完成——下一步应把
 "conf 完成率"作为量化指标单独优化。
 
+### E-60 概览页"在线客户端"恒为 0（R60，实测交付包时发现）
+
+现象：`/api/dashboard/info` 的 `clientOnlineCount` 恒为 0，而 `/api/client/list`
+的同一个字段是 1（浏览器里就是"客户端 1 / 在线 0"）。
+
+两个原因叠加：
+
+1. `engineGetClientList(0, 0, …)` 里 `limit=0` 时 `end=offset+0` → **返回空切片**，
+   概览页拿它遍历统计，自然恒 0；
+2. 概览页的在线判定用 `c.Status`，而列表用 `c.Status || c.NowConn>0`，两处口径不一致。
+
+修复：
+
+- `GetClientList`：`limit<=0` 视为"不限制"（返回全部）；
+- 新增 `Engine.OnlineClientCount()`，与列表共用 `clientOnline()` 判定；
+- `engineGetAppInfo` 改用该方法。
+
+回归测试：`TestGetClientListLimitZeroMeansAll`（同时覆盖 limit=0 与在线计数）。
+
+> 附带教训：验证交付包时发现，**改完代码必须确认运行中的进程真的换了**——
+> 当时 `cp` 因"文本文件忙"失败，而老进程的 `exe` 已经变成 `(deleted)`，
+> 用 `ls -l /proc/<pid>/exe` 才看出来还在跑旧二进制。
+
 

@@ -344,7 +344,9 @@ func (e *Engine) GetClientList(offset, limit int, field, order, search, sort str
 		return []*Client{}, total
 	}
 	end := offset + limit
-	if end > len(filtered) {
+	if limit <= 0 || end > len(filtered) {
+		// limit<=0 表示"不限制"：此前 end=offset+0 会返回空列表，
+		// 概览页用它统计在线数，结果恒为 0（R60 实测）。
 		end = len(filtered)
 	}
 	return filtered[offset:end], total
@@ -1089,4 +1091,17 @@ func clientOnline(c *Client) bool {
 		return false
 	}
 	return c.Status || c.NowConn > 0
+}
+
+// OnlineClientCount 返回在线客户端数量（判定与面板一致：Status 或仍有连接）。
+func (e *Engine) OnlineClientCount() int64 {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	var n int64
+	for _, c := range e.clients {
+		if clientOnline(c) {
+			n++
+		}
+	}
+	return n
 }

@@ -68,3 +68,24 @@ func TestClientSearchAndSortFields(t *testing.T) {
 		t.Fatalf("sort by HostName failed: %v", list)
 	}
 }
+
+// GetClientList 的 limit<=0 应视为"不限制"（概览页曾因此统计出 0 在线）。
+func TestGetClientListLimitZeroMeansAll(t *testing.T) {
+	e := &Engine{
+		clients: map[int64]*Client{
+			1: {ID: 1, Status: true},
+			2: {ID: 2},
+		},
+		listeners: map[int64]*Listener{},
+		tunnels:   map[int64]*Tunnel{},
+		hosts:     map[int64]*Host{},
+		tasks:     map[int64]*Task{},
+	}
+	list, total := e.GetClientList(0, 0, "", "", "", "", 0)
+	if total != 2 || len(list) != 2 {
+		t.Fatalf("limit=0 → total=%d len=%d（应为全部）", total, len(list))
+	}
+	if got := e.OnlineClientCount(); got != 1 {
+		t.Fatalf("OnlineClientCount=%d（应为 1）", got)
+	}
+}
