@@ -31,6 +31,7 @@
 | 登录 + JWT | ✅ 已实现 | `controllers/login.go:19-53`、`utils/auth.go:192-208`；响应 `{token,userInfo}` 与 SPA 的 `const {token}=a` 匹配 |
 | 注销 | ⚠️ 形式 | JWT 无状态，`engineDelToken` 空实现 |
 | 前端文件页 | 下载（附件直链）/重命名（mv）/新建目录/上传/wget/编辑/删除；空状态用 `el-empty`；mkd​ir 与重命名走 ElMessageBox | `web/src/views/FilesView.vue` |
+| 前端布局 | 侧边栏可折叠并持久化（窄屏默认折叠）；列表页统一 `#empty` 空态 | `web/src/layouts/BasicLayout.vue`、各列表页 |
 | 前端详情/主题 | 客户端详情抽屉（13 字段 + 在线 + 心跳 + 快捷入口）；暗色主题切换并持久化 | `web/src/views/ClientListView.vue`、`layouts/BasicLayout.vue` |
 | 前端表单 | 监听器新建走完整表单流程（label 定位输入框），断言列表出现新 Vkey 且后端存在 | `scripts/ui-check.sh` |
 | 前端终端 | CDP 真实键入 `echo UI_TYPE_OK` 并断言 xterm 回显；验证浏览器↔WebSocket↔agent shell 全链路 | `tools/uiprobe/main.go`、`scripts/ui-check.sh` |

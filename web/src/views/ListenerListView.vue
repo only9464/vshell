@@ -76,6 +76,9 @@ async function remove(row: ListenerItem) {
           <el-button link type="danger" @click="remove(row)">删除</el-button>
         </template>
       </el-table-column>
+          <template #empty>
+        <el-empty :description="loading ? '加载中…' : '还没有监听器'" />
+      </template>
     </el-table>
 
     <el-dialog v-model="dialog" title="新建监听器" width="460px">

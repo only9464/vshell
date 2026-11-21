@@ -26,6 +26,14 @@ function logout() {
   router.push('/login')
 }
 
+// 侧边栏折叠：窄屏默认折叠（<900px），桌面记住用户选择
+const narrow = window.matchMedia('(max-width: 900px)').matches
+const collapsed = ref(narrow || localStorage.getItem('vshell.nav') === 'collapsed')
+function toggleNav() {
+  collapsed.value = !collapsed.value
+  localStorage.setItem('vshell.nav', collapsed.value ? 'collapsed' : 'expanded')
+}
+
 // 主题切换：给 <html> 加/去 .dark，并记住选择
 const dark = ref(document.documentElement.classList.contains('dark'))
 function toggleTheme() {
@@ -37,9 +45,9 @@ function toggleTheme() {
 
 <template>
   <el-container style="height: 100%">
-    <el-aside width="200px" class="aside">
-      <div class="brand">VShell</div>
-      <el-menu :default-active="active" class="menu">
+    <el-aside :width="collapsed ? '64px' : '200px'" class="aside">
+      <div class="brand">{{ collapsed ? 'VS' : 'VShell' }}</div>
+      <el-menu :default-active="active" class="menu" :collapse="collapsed">
         <el-menu-item v-for="m in menus" :key="m.path" :index="m.path" @click="go(m.path)">
           <span>{{ m.label }}</span>
         </el-menu-item>
@@ -47,6 +55,7 @@ function toggleTheme() {
     </el-aside>
     <el-container>
       <el-header class="header">
+        <el-button link @click="toggleNav" :title="collapsed ? '展开菜单' : '收起菜单'">{{ collapsed ? '»' : '«' }}</el-button>
         <span class="title">{{ route.meta.title || '' }}</span>
         <span class="spacer" />
         <span class="user">{{ auth.username }}</span>
@@ -61,6 +70,11 @@ function toggleTheme() {
 </template>
 
 <style scoped>
+@media (max-width: 900px) {
+  .header { flex-wrap: wrap; }
+  .title { font-size: 14px; }
+}
+:deep(.el-main) { padding: 12px; }
 .aside { background: #1f2937; color: #e5e7eb; }
 .brand { height: 56px; display: flex; align-items: center; justify-content: center; font-weight: 700; letter-spacing: 1px; color: #fff; }
 .menu { border-right: none; background: transparent; }

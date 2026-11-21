@@ -200,6 +200,39 @@ JS
 CLICK_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$CLICK_JS" 2>&1)
 echo "$CLICK_OUT" | grep -q "$(hostname)" || fail "客户端页刷新后没有主机名: $(echo "$CLICK_OUT" | head -c 200)"
 
+log "点击级：侧边栏折叠（宽度 200px → 64px，选择持久化）"
+NAV_JS=$(cat <<'JS'
+(async () => {
+  const waitFor = async (fn, ms) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (fn()) return true; await new Promise(r => setTimeout(r, 250)); } return false; };
+  if (document.body.innerText.includes('登录') && document.querySelectorAll('input').length >= 2) {
+    const inputs = [...document.querySelectorAll('input')];
+    const set = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles: true})); };
+    set(inputs[0], 'admin'); set(inputs[1], 'p1');
+    await new Promise(r => setTimeout(r, 300));
+    [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
+    await waitFor(() => location.hash.includes('/dashboard'), 8000);
+  }
+  const aside = document.querySelector('.aside');
+  if (!aside) return 'NO_ASIDE';
+  const before = aside.getBoundingClientRect().width;
+  const btn = [...document.querySelectorAll('.header button')].find(b => ['«','»'].includes(b.innerText.trim()));
+  if (!btn) return 'NO_NAV_BTN';
+  btn.click();
+  await new Promise(r => setTimeout(r, 500));
+  const after = aside.getBoundingClientRect().width;
+  const stored = localStorage.getItem('vshell.nav');
+  // 无头浏览器窗口较窄（800px），<900px 时侧栏默认折叠，所以点击是"展开"。
+  // 断言宽度确实变化且状态被记住即可。
+  const expectState = after < before ? 'collapsed' : 'expanded';
+  return after !== before && stored === expectState
+    ? `NAV_OK ${Math.round(before)}→${Math.round(after)} ${stored}`
+    : `NAV_FAIL ${before}→${after} stored=${stored}`;
+})()
+JS
+)
+NAV_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$NAV_JS" 2>&1)
+echo "$NAV_OUT" | grep -q 'NAV_OK' || fail "侧边栏折叠异常: $(echo "$NAV_OUT" | tail -c 160)"
+
 log "点击级：切换暗色主题（html.dark + localStorage）"
 THEME_JS=$(cat <<'JS'
 (async () => {

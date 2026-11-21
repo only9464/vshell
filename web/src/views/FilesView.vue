@@ -131,8 +131,7 @@ async function upload(ev: Event) {
       </label>
       <span class="mono">客户端 #{{ id }}</span>
     </div>
-    <el-empty v-if="!loading && rows.length === 0" description="目录为空" />
-    <el-table v-else :data="rows" border size="small" @row-dblclick="openFile">
+    <el-table :data="rows" border size="small" @row-dblclick="openFile">
       <el-table-column prop="name" label="名称" min-width="240">
         <template #default="{ row }">
           <span :class="{ dir: isDir(row) }">{{ nameOf(row) }}{{ isDir(row) ? '/' : '' }}</span>
@@ -148,6 +147,9 @@ async function upload(ev: Event) {
           <el-button link type="danger" @click="remove(row)">删除</el-button>
         </template>
       </el-table-column>
+          <template #empty>
+        <el-empty :description="loading ? '加载中…' : '目录为空'" />
+      </template>
     </el-table>
     <el-dialog v-model="editor" :title="editorPath" width="70%">
       <el-input v-model="editorContent" type="textarea" :rows="18" class="mono" />

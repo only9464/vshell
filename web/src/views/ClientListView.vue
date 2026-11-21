@@ -108,6 +108,9 @@ async function remove(row: ClientItem) {
           <el-button link type="danger" @click="remove(row)">删除</el-button>
         </template>
       </el-table-column>
+          <template #empty>
+        <el-empty :description="loading ? '加载中…' : '还没有客户端上线'" />
+      </template>
     </el-table>
 
     <el-drawer v-model="drawer" title="客户端详情" size="420px">
