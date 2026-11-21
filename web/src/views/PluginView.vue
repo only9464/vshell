@@ -61,7 +61,13 @@ async function run(name: string) {
           <el-table :data="filtered" size="small" v-loading="loading">
             <el-table-column prop="name" label="名称" />
             <template #empty>
-              <el-empty :description="loading ? '加载中…' : 'plugins/ 目录下没有插件'" />
+              <div v-if="loading">加载中…</div>
+              <div v-else class="empty-hint">
+                <div>plugins/ 目录下没有插件</div>
+                <div class="sub">支持的扩展名：<span class="mono">.elf</span>（Linux）、
+                  <span class="mono">.so</span>、<span class="mono">.dylib</span>；
+                  面板会用目标机架构执行并回显输出</div>
+              </div>
             </template>
             <el-table-column width="80">
               <template #default="{ row }">
@@ -86,5 +92,7 @@ async function run(name: string) {
 </template>
 
 <style scoped>
+.empty-hint { text-align: center; color: var(--el-text-color-secondary); font-size: 13px; padding: 8px; }
+.empty-hint .sub { font-size: 12px; opacity: .8; margin-top: 4px; line-height: 1.6; }
 .out { min-height: 240px; margin: 0; white-space: pre-wrap; font-family: ui-monospace, monospace; }
 </style>

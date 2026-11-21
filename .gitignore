@@ -83,7 +83,11 @@ __pycache__/
 *.webp
 
 # --- Third-party tools ---
-plugins/
+# 插件二进制不入库，但保留示例源码与说明
+plugins/*
+!plugins/README.md
+!plugins/sysinfo/
+!plugins/sysinfo/**
 
 # --- Test artifacts ---
 test_edit.txt
