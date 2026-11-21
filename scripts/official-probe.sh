@@ -72,7 +72,10 @@ count() { # $1=日志文件 $2=关键字
 }
 
 # 2. 复刻端 official-tcp 服务端
-"$ROOT/vshell-server" official-tcp -listen "127.0.0.1:$OFF_PORT" -vkey "$VKEY" -cmd id \
+# 每次都用当前源码重建，避免用到仓库里过期的 vshell-server（R59 踩到：
+# 之前所有 A/B 结果其实来自 10 月 21 日的旧二进制，结论全部作废重跑）。
+( cd "$ROOT" && go build -o "$WORK/vshell-server" . ) || { log "服务端构建失败"; exit 1; }
+"$WORK/vshell-server" official-tcp -listen "127.0.0.1:$OFF_PORT" -vkey "$VKEY" -cmd id \
   > "$WORK/off.log" 2>&1 &
 OFF_PID=$!
 sleep 1
@@ -89,12 +92,18 @@ for r in $(seq 1 "$ROUNDS"); do
   kill "$AGENT_PID" 2>/dev/null
   wait "$AGENT_PID" 2>/dev/null
   cp "$WORK/off.log" "$WORK/off.log.run$r"
-  printf '  连接=%s 认证=%s conf=%s main=%s chan=%s\n' \
-    "$(count "$WORK/off.log" 'conn from')" \
-    "$(count "$WORK/off.log" 'authenticated')" \
-    "$(count "$WORK/off.log" 'client registered')" \
-    "$(count "$WORK/off.log" 'main channel registered')" \
-    "$(count "$WORK/off.log" 'data channel registered')"
+  CONNS=$(count "$WORK/off.log" 'conn from')
+  AUTHS=$(count "$WORK/off.log" 'authenticated')
+  CONF=$(count "$WORK/off.log" 'client registered')
+  SESS=$(count "$WORK/off.log" 'session issued')
+  MAIN=$(count "$WORK/off.log" 'main channel registered')
+  CHAN=$(count "$WORK/off.log" 'data channel registered')
+  printf '  连接=%s 认证=%s conf=%s 会话=%s main=%s chan=%s\n' \
+    "$CONNS" "$AUTHS" "$CONF" "$SESS" "$MAIN" "$CHAN"
+  # conf 完成率 = 会话签发数 / 连接数（会话只在 conf 流程末尾签发）
+  if [[ "$CONNS" -gt 0 ]]; then
+    printf '  conf 完成率=%.0f%%（会话/连接）\n' "$(awk "BEGIN{printf 100*$SESS/$CONNS}")"
+  fi
 done
 
 log "复刻端日志：$WORK/off.log.run*"
