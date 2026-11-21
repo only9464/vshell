@@ -32,6 +32,7 @@
 | 注销 | ⚠️ 形式 | JWT 无状态，`engineDelToken` 空实现 |
 | 前端文件页 | 下载（附件直链）/重命名（mv）/新建目录/上传/wget/编辑/删除；空状态用 `el-empty`；mkd​ir 与重命名走 ElMessageBox | `web/src/views/FilesView.vue` |
 | 重启恢复 | `AppStart` 会按持久化状态重新启动监听器（此前重启后显示"运行"但端口没在听） | `controllers/engine.go` |
+| 截图/屏幕 | 功能链路正常；本机无图形会话导致截屏工具全部失败，页面已给出安装建议（环境限制） | `web/src/views/ScreenshotView.vue`、GAPS §E2 |
 | 概览计数 | `/dashboard/info` 的在线数改用 `Engine.OnlineClientCount()`，与列表口径一致（此前因 `limit=0` 返回空切片而恒为 0） | `c2engine/engine.go`、`controllers/engine.go` |
 | 交付包 | `~/vshell-release`：服务端 + 前端 + 通用 agent（支持 `-server/-vkey/-salt`）+ 启停脚本 + README；实测起服务→建监听器→agent 上线可用 | `agent/main.go`、`~/vshell-release/` |
 | 前端终端/概览 | 终端控制条（字号/清屏/复制/重连）；概览页最近上线客户端（前 5 台） | `web/src/views/TerminalView.vue`、`DashboardView.vue` |
