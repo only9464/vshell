@@ -5,6 +5,8 @@
 # 用法：sudo ./scripts/official-probe.sh [轮数，默认 1]
 set -uo pipefail
 ROUNDS=${1:-1}
+# 观察窗口（秒）：官方 agent 每 ~5s 重连一次，窗口越长统计越可信
+WINDOW=${WINDOW:-20}
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 # 必须与原版二进制同一文件系统才能硬链（/tmp 常是 tmpfs），放在 $HOME 下。
 WORK=$(mktemp -d "$HOME/.official-probe.XXXXXX")
@@ -80,10 +82,10 @@ make_payload "127.0.0.1:$LISTEN_PORT" "$WORK/agent-orig.elf" || true
 
 for r in $(seq 1 "$ROUNDS"); do
   : > "$WORK/off.log.run$r"
-  log "第 $r 轮：官方 agent → 复刻端（20s）"
-  ( cd "$WORK" && exec timeout 20 ./agent-official.elf >/dev/null 2>&1 ) &
+  log "第 $r 轮：官方 agent → 复刻端（${WINDOW}s）"
+  ( cd "$WORK" && exec timeout "$WINDOW" ./agent-official.elf >/dev/null 2>&1 ) &
   AGENT_PID=$!
-  sleep 20
+  sleep "$WINDOW"
   kill "$AGENT_PID" 2>/dev/null
   wait "$AGENT_PID" 2>/dev/null
   cp "$WORK/off.log" "$WORK/off.log.run$r"
