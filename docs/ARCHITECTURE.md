@@ -78,6 +78,8 @@ mux (net/http)
 |---|---|---|
 | `Client` | `ID/VerifyKey/Addr/Status/IsConnect/LocalIP/UserName/HostName/OsName/ProcessName/Arch` | 一个被控端；`Status` **当前无人写**（STATUS §4-③） |
 | `Listener` | `ID/Mode/ListenAddr/ConnectAddr/VerifyKey/EncryptSalt/PingInterval` | 监听器；`Mode ∈ {http,https,dns,websocket,cdn_websocket,reverse}` |
+| `OfficialTCPServer` | `official_tcp.go` | **官方协议** tcp 服务端：帧层复用 `FrameEncrypt/FrameDecrypt`，按抓包实现 认证→通道注册→任务/结果（真官方 agent 可连上并上报 client；见 RE-NOTES E-33…E-47） |
+| `OfficialAgentSim` | `official_agent_sim.go` | 官方 agent 模拟器：无需原版载荷即可验证上述服务端（e2e §7p） |
 | `Tunnel` | `ID/ClientID/Port/Mode/Target/RunStatus` | 隧道；数据面由 `c2engine.TunnelServer` 承载 |
 | `Host` | `ID/ClientID/Host/Target/Scheme` | 反连主机（无会话处理） |
 | `Task` | `ID/ClientID/Command/Timeout/Status/Result` | 命令；**持久化进 tunnels 表**（有反编译依据） |
