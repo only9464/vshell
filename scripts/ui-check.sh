@@ -98,6 +98,8 @@ expect "$TMP/clients.html" '在线' '客户端列表没有在线状态'
 log "渲染 #/files/1"
 render '#/files/1' "$TMP/files.html"
 expect "$TMP/files.html" '修改时间' '文件页表头缺失'
+expect "$TMP/files.html" '重命名' '文件页缺少重命名按钮'
+expect "$TMP/files.html" '下载' '文件页缺少下载按钮'
 python3 - "$TMP/files.html" <<'PY' || fail "文件列表为空（file/ls 字段大小写不匹配？）"
 import re,sys
 s=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
@@ -191,4 +193,55 @@ JS
 CLICK_OUT=$(cd "$ROOT" && go run ./tools/uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$CLICK_JS" 2>&1)
 echo "$CLICK_OUT" | grep -q "$(hostname)" || fail "客户端页刷新后没有主机名: $(echo "$CLICK_OUT" | head -c 200)"
 
-log "全部渲染 + 点击级流程通过（login→dashboard，clients 刷新）"
+log "点击级：文件页重命名（ElMessageBox 输入框）"
+# 造一个待重命名的文件：agent 与本机同机，直接本地写即可（避免等 agent 轮询）
+printf 'hi\n' > /tmp/ui-rename-me.txt
+RENAME_JS=$(cat <<'JS'
+(async () => {
+  const inputs = [...document.querySelectorAll('input')];
+  if (inputs.length < 2) return 'NO_INPUTS';
+  const set = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles: true})); };
+  set(inputs[0], 'admin'); set(inputs[1], 'p1');
+  await new Promise(r => setTimeout(r, 300));
+  [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
+  await new Promise(r => setTimeout(r, 2200));
+
+  location.hash = '#/files/1';
+  await new Promise(r => setTimeout(r, 1500));
+
+  // 切到 /tmp（文件页默认打开根目录）
+  const pathInput = [...document.querySelectorAll('input')].find(i => i.value === '/');
+  if (!pathInput) return 'NO_PATH_INPUT';
+  pathInput.value = '/tmp';
+  pathInput.dispatchEvent(new Event('input', {bubbles: true}));
+  await new Promise(r => setTimeout(r, 200));
+  [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '打开')?.click();
+  await new Promise(r => setTimeout(r, 2000));
+
+  // 找到 ui-rename-me.txt 所在行，点该行的"重命名"
+  const rows = [...document.querySelectorAll('.el-table__row')];
+  const row = rows.find(r => r.innerText.includes('ui-rename-me.txt'));
+  if (!row) return 'NO_TARGET_ROW|' + document.body.innerText.replace(/\n+/g, ' ').slice(0, 160);
+  const btn = [...row.querySelectorAll('button')].find(b => b.innerText.trim() === '重命名');
+  if (!btn) return 'NO_RENAME_BTN';
+  btn.click();
+  await new Promise(r => setTimeout(r, 600));
+
+  // 弹框输入新名字并确定
+  const box = document.querySelector('.el-message-box__input input') || document.querySelector('.el-message-box input');
+  if (!box) return 'NO_DIALOG';
+  box.value = 'ui-renamed.txt';
+  box.dispatchEvent(new Event('input', {bubbles: true}));
+  await new Promise(r => setTimeout(r, 200));
+  [...document.querySelectorAll('.el-message-box button')].find(b => b.innerText.trim() === '确定')?.click();
+  await new Promise(r => setTimeout(r, 2000));
+  return document.body.innerText.replace(/\n+/g, ' ');
+})()
+JS
+)
+RENAME_OUT=$(cd "$ROOT" && go run ./tools/uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$RENAME_JS" 2>&1)
+echo "$RENAME_OUT" | grep -q 'ui-renamed.txt' || fail "重命名未生效: $(echo "$RENAME_OUT" | head -c 200)"
+[[ -f /tmp/ui-renamed.txt ]] || fail "目标机上没有 ui-renamed.txt"
+rm -f /tmp/ui-renamed.txt /tmp/ui-rename-me.txt
+
+log "全部渲染 + 点击级流程通过（login→dashboard，clients 刷新，files 重命名）"

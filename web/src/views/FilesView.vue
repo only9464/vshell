@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { fileApi } from '../api'
+import { downloadURL } from '../api/http'
 
 
 const route = useRoute()
@@ -34,15 +35,40 @@ function up() {
   load('/' + parts.join('/'))
 }
 async function mkdir() {
-  const name = prompt('目录名')
-  if (!name) return
-  await fileApi.mkdir(id, path.value, name)
+  // 用 Element Plus 的输入框而不是原生 prompt：原生 prompt 在无头浏览器里
+  // 直接返回 null，既影响自动化验证，体验也差。
+  const { value } = await ElMessageBox.prompt('目录名', '新建目录', { inputValue: '' })
+  if (!value) return
+  await fileApi.mkdir(id, path.value, value)
   ElMessage.success('已创建')
   load()
 }
+function fullPath(row: any) {
+  const base = path.value.endsWith('/') ? path.value : path.value + '/'
+  return base + nameOf(row)
+}
+
 async function remove(row: any) {
-  await fileApi.rm(id, (path.value.endsWith('/') ? path.value : path.value + '/') + nameOf(row))
+  await fileApi.rm(id, fullPath(row))
   ElMessage.success('已删除')
+  load()
+}
+
+// 浏览器下载：走 /file/downloadtobrowser（服务端回附件，带 token 直链）
+function download(row: any) {
+  if (isDir(row)) return
+  const base = path.value.endsWith('/') ? path.value : path.value + '/'
+  window.open(downloadURL('/file/downloadtobrowser', { id, path: base, target: nameOf(row) }), '_blank')
+}
+
+// 重命名：后端 mv 用 "src|<-dst" 约定
+async function rename(row: any) {
+  const old = nameOf(row)
+  const { value: name } = await ElMessageBox.prompt('新名称', '重命名', { inputValue: old })
+  if (!name || name === old) return
+  const base = path.value.endsWith('/') ? path.value : path.value + '/'
+  await fileApi.mv(id, base + old, base + name)
+  ElMessage.success('已重命名')
   load()
 }
 // 后端 /file/ls 返回小写键（name/size/time/isDir）；这里做一次兼容读取，
@@ -105,7 +131,8 @@ async function upload(ev: Event) {
       </label>
       <span class="mono">客户端 #{{ id }}</span>
     </div>
-    <el-table :data="rows" border size="small" @row-dblclick="openFile">
+    <el-empty v-if="!loading && rows.length === 0" description="目录为空" />
+    <el-table v-else :data="rows" border size="small" @row-dblclick="openFile">
       <el-table-column prop="name" label="名称" min-width="240">
         <template #default="{ row }">
           <span :class="{ dir: isDir(row) }">{{ nameOf(row) }}{{ isDir(row) ? '/' : '' }}</span>
@@ -113,9 +140,11 @@ async function upload(ev: Event) {
       </el-table-column>
       <el-table-column prop="size" label="大小" width="120" />
       <el-table-column prop="time" label="修改时间" width="220" />
-      <el-table-column label="操作" width="160">
+      <el-table-column label="操作" width="240">
         <template #default="{ row }">
           <el-button link type="primary" @click="openFile(row)">{{ isDir(row) ? '进入' : '编辑' }}</el-button>
+          <el-button v-if="!isDir(row)" link type="primary" @click="download(row)">下载</el-button>
+          <el-button link @click="rename(row)">重命名</el-button>
           <el-button link type="danger" @click="remove(row)">删除</el-button>
         </template>
       </el-table-column>

@@ -24,6 +24,12 @@ terminal（xterm 挂载 + WebSocket "已连接"）。这套检查抓到过一个
 完成真实交互：登录表单填值→点「登录」→跳转仪表盘；再切到客户端页→点「刷新」→
 列表里出现真实主机名。
 
+**文件页的三个交互**（R47）：表格新增「下载」（直连 `/file/downloadtobrowser` 附件）
+与「重命名」（`mv` 的 `src|<-dst` 约定）；`mkdir`/重命名改用 Element Plus 的
+`ElMessageBox.prompt`（原生 `prompt()` 在无头浏览器里恒返回 null，无法自动化）。
+
+点击级流程已覆盖「登录 → 文件页 → 切到 /tmp → 重命名 → 目标机文件改名成功」。
+
 > 一个坑：不要用 `location.replace()` 整页跳转来"切页"——会丢掉内存里的登录态
 > （store 里的 token 为空），页面被守卫弹回登录页；应改用 `location.hash` 在 SPA 内切换。
 
