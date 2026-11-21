@@ -29,6 +29,8 @@ export interface ClientItem {
   HostName: string
   OsName: string
   ProcessName: string
+  Arch: string
+  Version: string
   Location: string
   IsConnect: boolean
   PingCheckTime: number

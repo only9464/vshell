@@ -67,6 +67,8 @@ func (c *ClientController) List() {
 			"UserName":      cl.UserName,
 			"HostName":      cl.HostName,
 			"OsName":        cl.OSType,
+			"Arch":          cl.Arch,
+			"Version":       cl.Version,
 			"ProcessName":   cl.ProcessName,
 			"Location":      cl.Location,
 			"IsConnect":     cl.Status || cl.IsConnect,

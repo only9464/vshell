@@ -200,6 +200,62 @@ JS
 CLICK_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$CLICK_JS" 2>&1)
 echo "$CLICK_OUT" | grep -q "$(hostname)" || fail "客户端页刷新后没有主机名: $(echo "$CLICK_OUT" | head -c 200)"
 
+log "点击级：切换暗色主题（html.dark + localStorage）"
+THEME_JS=$(cat <<'JS'
+(async () => {
+  const waitFor = async (fn, ms) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (fn()) return true; await new Promise(r => setTimeout(r, 250)); } return false; };
+  if (document.body.innerText.includes('登录') && document.querySelectorAll('input').length >= 2) {
+    const inputs = [...document.querySelectorAll('input')];
+    const set = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles: true})); };
+    set(inputs[0], 'admin'); set(inputs[1], 'p1');
+    await new Promise(r => setTimeout(r, 300));
+    [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
+    await waitFor(() => location.hash.includes('/dashboard'), 8000);
+  }
+  const btn = [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '暗色');
+  if (!btn) return 'NO_THEME_BTN';
+  btn.click();
+  await new Promise(r => setTimeout(r, 600));
+  const isDark = document.documentElement.classList.contains('dark');
+  const stored = localStorage.getItem('vshell.theme');
+  return isDark && stored === 'dark' ? 'THEME_OK' : `THEME_FAIL isDark=${isDark} stored=${stored}`;
+})()
+JS
+)
+THEME_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$THEME_JS" 2>&1)
+echo "$THEME_OUT" | grep -q 'THEME_OK' || fail "暗色主题切换失败: $(echo "$THEME_OUT" | tail -c 160)"
+
+log "点击级：客户端详情抽屉（点主机名 → 抽屉出现全字段）"
+DRAWER_JS=$(cat <<'JS'
+(async () => {
+  const waitFor = async (fn, ms) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (fn()) return true; await new Promise(r => setTimeout(r, 250)); } return false; };
+  if (document.body.innerText.includes('登录') && document.querySelectorAll('input').length >= 2) {
+    const inputs = [...document.querySelectorAll('input')];
+    const set = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles: true})); };
+    set(inputs[0], 'admin'); set(inputs[1], 'p1');
+    await new Promise(r => setTimeout(r, 300));
+    [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
+    await waitFor(() => location.hash.includes('/dashboard'), 8000);
+  }
+  if (!location.hash.includes('/clients')) { location.hash = '#/clients'; }
+  await waitFor(() => document.querySelectorAll('.el-table__row').length > 0, 10000);
+
+  // 点主机名列的链接
+  const row = [...document.querySelectorAll('.el-table__row')][0];
+  if (!row) return 'NO_ROW';
+  const hostBtn = [...row.querySelectorAll('button')].find(b => b.innerText.trim() !== '' && !['终端','文件','屏幕','截图','插件','备注','删除'].includes(b.innerText.trim()));
+  if (!hostBtn) return 'NO_HOST_LINK';
+  hostBtn.click();
+  const opened = await waitFor(() => !!document.querySelector('.el-drawer'), 5000);
+  if (!opened) return 'NO_DRAWER';
+  const text = document.querySelector('.el-drawer')?.innerText || '';
+  return text.includes('Vkey') && text.includes('内网 IP') && text.includes('在线') ? 'DRAWER_OK' : 'DRAWER_INCOMPLETE|' + text.replace(/\n+/g, ' ').slice(0, 160);
+})()
+JS
+)
+DRAWER_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$DRAWER_JS" 2>&1)
+echo "$DRAWER_OUT" | grep -q 'DRAWER_OK' || fail "客户端详情抽屉异常: $(echo "$DRAWER_OUT" | tail -c 220)"
+
 log "点击级：文件页重命名（ElMessageBox 输入框）"
 # 造一个待重命名的文件：agent 与本机同机，直接本地写即可（避免等 agent 轮询）
 printf 'hi\n' > /tmp/ui-rename-me.txt

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
@@ -25,6 +25,14 @@ function logout() {
   auth.logout()
   router.push('/login')
 }
+
+// 主题切换：给 <html> 加/去 .dark，并记住选择
+const dark = ref(document.documentElement.classList.contains('dark'))
+function toggleTheme() {
+  dark.value = !dark.value
+  document.documentElement.classList.toggle('dark', dark.value)
+  localStorage.setItem('vshell.theme', dark.value ? 'dark' : 'light')
+}
 </script>
 
 <template>
@@ -42,6 +50,7 @@ function logout() {
         <span class="title">{{ route.meta.title || '' }}</span>
         <span class="spacer" />
         <span class="user">{{ auth.username }}</span>
+        <el-button link @click="toggleTheme">{{ dark ? '浅色' : '暗色' }}</el-button>
         <el-button link type="primary" @click="logout">退出</el-button>
       </el-header>
       <el-main>
