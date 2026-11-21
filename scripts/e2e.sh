@@ -508,6 +508,17 @@ api POST /tunnel/edit "{\"Id\":$TMP_TID,\"Port\":$((TMP_LPORT+11)),\"Mode\":\"tc
 api POST /tunnel/editremark "{\"id\":$TMP_TID,\"remark\":\"vtmp3\"}" | grep -q '"code":0' \
   || fail "tunnel/editremark failed"
 api POST /tunnel/dellist "{\"id\":[$TMP_TID]}" | grep -q '"code":0' || fail "tunnel/dellist failed"
+
+# tunnel/del（单条删除）
+api POST /tunnel/add "{\"clientId\":$CLIENT_ID,\"Port\":$((TMP_LPORT+12)),\"Mode\":\"tcp\",\"Target\":\"127.0.0.1:24\",\"Remark\":\"vtmp4\"}" >/dev/null
+TMP_TID2=$(api POST /tunnel/list '{"page":1,"pageSize":50}' | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+items=d['result']['items'] or []
+ids=[i['Id'] for i in items if i.get('Port')==$((TMP_LPORT+12))]
+print(ids[0] if ids else '')")
+[[ -n "$TMP_TID2" ]] || fail "temp tunnel2 not created"
+api POST /tunnel/del "{\"id\":$TMP_TID2}" | grep -q '"code":0' || fail "tunnel/del failed"
 log "remaining panel endpoints ok (auth/dashboard/runner/setting/client/file/listener/tunnel)"
 
 # ---------------------------------------------------------------- 8. 面板契约
