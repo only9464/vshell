@@ -112,4 +112,83 @@ render '#/terminal/1' "$TMP/term.html"
 expect "$TMP/term.html" 'xterm' '终端 xterm 未挂载'
 expect "$TMP/term.html" '已连接' '终端 WebSocket 未连上'
 
-log "全部页面渲染正常（dashboard / clients / files / terminal）"
+log "渲染 #/listeners"
+render '#/listeners' "$TMP/listeners.html"
+expect "$TMP/listeners.html" '监听地址' '监听器页表头缺失'
+expect "$TMP/listeners.html" 'UI-VK' '监听器页没有真实 Vkey（字段契约不符？）'
+expect "$TMP/listeners.html" '运行' '监听器页没有状态标记'
+
+log "渲染 #/download"
+render '#/download' "$TMP/download.html"
+expect "$TMP/download.html" 'Stageless' '下载页缺少 Stageless 按钮'
+expect "$TMP/download.html" '架构' '下载页缺架构选择'
+
+log "渲染 #/tunnels"
+render '#/tunnels' "$TMP/tunnels.html"
+expect "$TMP/tunnels.html" '服务器端口' '隧道页表头缺失'
+
+log "渲染 #/plugins/1"
+render '#/plugins/1' "$TMP/plugins.html"
+expect "$TMP/plugins.html" '服务器插件' '插件页卡片缺失'
+
+log "渲染 #/settings"
+render '#/settings' "$TMP/settings.html"
+expect "$TMP/settings.html" '企业微信' '设置页字段缺失'
+
+log "渲染 #/screen/1"
+render '#/screen/1' "$TMP/screen.html"
+expect "$TMP/screen.html" '客户端 #1' '屏幕页未渲染'
+
+log "渲染 #/screenshot/1"
+render '#/screenshot/1' "$TMP/shot.html"
+expect "$TMP/shot.html" '重新截图' '截图页按钮缺失'
+
+# ---------------- 点击级流程（CDP：真填表单 / 真点按钮） ----------------
+log "点击级：登录表单 → 仪表盘"
+LOGIN_JS=$(cat <<'JS'
+(async () => {
+  const inputs = [...document.querySelectorAll('input')];
+  if (inputs.length < 2) return 'NO_INPUTS';
+  const set = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles: true})); };
+  set(inputs[0], 'admin');
+  set(inputs[1], 'p1');
+  await new Promise(r => setTimeout(r, 300));
+  const btn = [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录');
+  if (!btn) return 'NO_BUTTON';
+  btn.click();
+  await new Promise(r => setTimeout(r, 2500));
+  return location.hash + '|' + document.body.innerText.replace(/\n+/g, ' ');
+})()
+JS
+)
+LOGIN_OUT=$(cd "$ROOT" && go run ./tools/uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$LOGIN_JS" 2>&1)
+echo "$LOGIN_OUT" | grep -q '#/dashboard' || fail "登录表单未跳转到仪表盘: $(echo "$LOGIN_OUT" | head -c 160)"
+echo "$LOGIN_OUT" | grep -q '运行信息\|仪表盘' || fail "登录后页面内容异常: $(echo "$LOGIN_OUT" | head -c 160)"
+
+log "点击级：登录 → 切到客户端页 → 点刷新"
+CLICK_JS=$(cat <<'JS'
+(async () => {
+  // 同一个页面上下文里完成：登录 → hash 路由切换 → 点击刷新
+  // （不要用 location.replace 整页跳转：会丢失内存里的登录态，且脚本随之中断）
+  const inputs = [...document.querySelectorAll('input')];
+  if (inputs.length < 2) return 'NO_INPUTS';
+  const set = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles: true})); };
+  set(inputs[0], 'admin'); set(inputs[1], 'p1');
+  await new Promise(r => setTimeout(r, 300));
+  [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
+  await new Promise(r => setTimeout(r, 2200));
+
+  location.hash = '#/clients';
+  await new Promise(r => setTimeout(r, 1500));
+  const btn = [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '刷新');
+  if (!btn) return 'NO_REFRESH_BUTTON|' + document.body.innerText.replace(/\n+/g, ' ').slice(0, 120);
+  btn.click();
+  await new Promise(r => setTimeout(r, 1500));
+  return document.body.innerText.replace(/\n+/g, ' ');
+})()
+JS
+)
+CLICK_OUT=$(cd "$ROOT" && go run ./tools/uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$CLICK_JS" 2>&1)
+echo "$CLICK_OUT" | grep -q "$(hostname)" || fail "客户端页刷新后没有主机名: $(echo "$CLICK_OUT" | head -c 200)"
+
+log "全部渲染 + 点击级流程通过（login→dashboard，clients 刷新）"

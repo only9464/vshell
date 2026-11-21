@@ -19,6 +19,14 @@ dashboard（运行信息/KPI）、clients（主机名/在线状态）、files（
 terminal（xterm 挂载 + WebSocket "已连接"）。这套检查抓到过一个纯接口测试
 发现不了的 bug：`/file/ls` 返回小写键而页面读大写，导致文件列表整列空白。
 
+**点击级验证**（R46）：仓库内新增 `tools/uiprobe`（基于 Chrome DevTools Protocol 的
+无头浏览器执行器，用现有 gorilla/websocket 依赖，无需 puppeteer）。`ui-check.sh` 用它
+完成真实交互：登录表单填值→点「登录」→跳转仪表盘；再切到客户端页→点「刷新」→
+列表里出现真实主机名。
+
+> 一个坑：不要用 `location.replace()` 整页跳转来"切页"——会丢掉内存里的登录态
+> （store 里的 token 为空），页面被守卫弹回登录页；应改用 `location.hash` 在 SPA 内切换。
+
 另外无头 Chromium 渲染 `/app/#/login` 正常（Element Plus 已挂载、资源 200）；
 接口契约由 e2e §7j 与 `controllers/contract_test.go` 兜住。
 未做：UI 级自动点击（需要 Playwright，环境未装）、屏幕直播页（B6.7）。
