@@ -25,6 +25,10 @@ jobs:
       - name: Test (server)
         run: go test ./... -count=1
 
+      # 竞态检测：功能测试看不出数据竞争，只有 -race 能抓到（R41 一次抓到 3 处）
+      - name: Test (server, race)
+        run: go test -race ./c2engine ./controllers ./router ./mcp ./utils -count=1
+
       - name: Test (agent)
         working-directory: agent
         run: |

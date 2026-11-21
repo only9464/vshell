@@ -557,6 +557,51 @@ BAD_CODE=$(curl -s -o /tmp/badtok.out -w '%{http_code}' -X POST "http://127.0.0.
 grep -qE '"code":-1|401' /tmp/badtok.out 2>/dev/null || [[ "$BAD_CODE" == "401" ]] || fail "非法令牌未拒绝"
 log "error semantics ok (offline/missing/invalid)"
 
+# ---------------------------------------------------------------- 7s. 并发与边界（R42）
+log "check concurrency + upload boundaries"
+# 并发请求：10 个并行 client/list，全部必须是 code:0（能暴露锁/共享状态问题）
+# 注意：不能直接用 `wait`——脚本前面还挂着 server/agent 等后台进程，会永远等下去。
+CONC_FAIL=0
+CONC_PIDS=""
+for i in $(seq 1 10); do
+  ( api POST /client/list '{"page":1,"pageSize":10}' | grep -q '"code":0' || echo FAIL > "$TMP/conc_$i" ) &
+  CONC_PIDS="$CONC_PIDS $!"
+done
+for p in $CONC_PIDS; do wait "$p"; done
+for f in "$TMP"/conc_*; do [[ -f "$f" ]] && CONC_FAIL=$((CONC_FAIL+1)); done
+[[ "$CONC_FAIL" -eq 0 ]] || fail "并发 client/list 有 $CONC_FAIL 个失败"
+
+# 并发终端命令：5 条并行 shell，输出都应回来
+CONC_OUT="$TMP/conc_shell.out"
+: > "$CONC_OUT"
+CONC_PIDS=""
+for i in $(seq 1 5); do
+  ( api POST /terminal/shell "{\"id\":$CLIENT_ID,\"command\":\"echo conc-$i\"}" >> "$CONC_OUT" 2>&1 ) &
+  CONC_PIDS="$CONC_PIDS $!"
+done
+for p in $CONC_PIDS; do wait "$p"; done
+grep -q "conc-" "$CONC_OUT" || fail "并发终端命令无输出"
+
+# 上传边界：2 MiB 文件（正常）+ 33 MiB（超限应被拒）
+dd if=/dev/zero of="$TMP/big2.bin" bs=1M count=2 status=none
+UP2=$(curl -sS -m 60 -X POST "http://127.0.0.1:$WEB_PORT/api/file/upload" -H "Token: $TOKEN" \
+  -F "id=$CLIENT_ID" -F "path=/tmp" -F "file=@$TMP/big2.bin")
+echo "$UP2" | grep -q '"code":0' || fail "2MiB 上传失败: $UP2"
+for _ in $(seq 1 30); do
+  SIZE=$(stat -c%s /tmp/big2.bin 2>/dev/null || echo 0)
+  [[ "$SIZE" == "2097152" ]] && break
+  sleep 0.5
+done
+[[ "$(stat -c%s /tmp/big2.bin 2>/dev/null || echo 0)" == "2097152" ]] || fail "目标端 2MiB 文件大小不符"
+rm -f /tmp/big2.bin
+
+dd if=/dev/zero of="$TMP/big33.bin" bs=1M count=33 status=none
+UP33=$(curl -sS -m 120 -X POST "http://127.0.0.1:$WEB_PORT/api/file/upload" -H "Token: $TOKEN" \
+  -F "id=$CLIENT_ID" -F "path=/tmp" -F "file=@$TMP/big33.bin")
+echo "$UP33" | grep -q "file too large" || fail "超限上传未被拒绝: $(echo "$UP33" | head -c 120)"
+rm -f "$TMP/big33.bin" "$TMP/big2.bin"
+log "concurrency + upload boundaries ok (10 并发 / 2MiB 正常 / 33MiB 拒绝)"
+
 # ---------------------------------------------------------------- 8. 面板契约
 log "check /client/list field contract (B0.8)"
 LIST=$(api POST /client/list '{"page":1,"pageSize":10}')
