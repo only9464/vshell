@@ -13,6 +13,7 @@
 | [docs/PROTOCOL.md](docs/PROTOCOL.md) | 线协议：传输帧、KCP 链路、DNS、24 字节记录 |
 | [docs/API.md](docs/API.md) | 面板 HTTP/WS 契约 + 前端字段契约 |
 | [docs/FRONTEND.md](docs/FRONTEND.md) | Vue3 重写方案 |
+| [docs/CHECKLIST.md](docs/CHECKLIST.md) | 发版门禁与人工确认项 |
 | [docs/RELEASE.md](docs/RELEASE.md) | 部署、上线客户端、备份升级 |
 | [docs/DEV.md](docs/DEV.md) | 构建 / 运行 / 调试 / 测试 |
 | [docs/MCP.md](docs/MCP.md) | 原生 MCP：`vshell-server mcp` + 13 个工具 |
