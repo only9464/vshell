@@ -1,0 +1,1 @@
+import{d as t,i as n,w as c,r as e,a as r,o as s}from"./index-D5oPSd8o.js";const i=t({__name:"DownloadView",setup(_){return(p,d)=>{const o=e("a-empty"),a=e("a-card");return s(),n(a,null,{default:c(()=>[r(o,{description:"DownloadView 待移植（当前使用旧前端）"})]),_:1})}}});export{i as default};

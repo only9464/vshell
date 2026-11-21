@@ -101,7 +101,6 @@ async function remove(row: ClientItem) {
         <template #default="{ row }">
           <el-button link type="primary" @click="router.push(`/terminal/${row.Id}`)">终端</el-button>
           <el-button link type="primary" @click="router.push(`/files/${row.Id}`)">文件</el-button>
-          <el-button link type="primary" @click="router.push(`/screen/${row.Id}`)">屏幕</el-button>
           <el-button link type="primary" @click="router.push(`/screenshot/${row.Id}`)">截图</el-button>
           <el-button link type="primary" @click="router.push(`/plugins/${row.Id}`)">插件</el-button>
           <el-button link @click="editRemark(row)">备注</el-button>
@@ -129,7 +128,6 @@ async function remove(row: ClientItem) {
         <div class="drawer-actions">
           <el-button type="primary" @click="router.push(`/terminal/${current.Id}`)">终端</el-button>
           <el-button @click="router.push(`/files/${current.Id}`)">文件</el-button>
-          <el-button @click="router.push(`/screen/${current.Id}`)">屏幕</el-button>
           <el-button @click="router.push(`/screenshot/${current.Id}`)">截图</el-button>
           <el-button @click="router.push(`/plugins/${current.Id}`)">插件</el-button>
         </div>

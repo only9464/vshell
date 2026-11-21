@@ -1,1 +1,0 @@
-import{d as a,i as n,w as c,r as e,a as r,o as s}from"./index-5qVFoHo3.js";const d=a({__name:"AboutView",setup(_){return(p,m)=>{const o=e("a-empty"),t=e("a-card");return s(),n(t,null,{default:c(()=>[r(o,{description:"AboutView 待移植（当前使用旧前端）"})]),_:1})}}});export{d as default};

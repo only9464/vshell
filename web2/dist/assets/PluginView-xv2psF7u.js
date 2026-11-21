@@ -1,0 +1,1 @@
+import{d as a,i as n,w as c,r as e,a as r,o as s}from"./index-D5oPSd8o.js";const l=a({__name:"PluginView",setup(_){return(p,i)=>{const o=e("a-empty"),t=e("a-card");return s(),n(t,null,{default:c(()=>[r(o,{description:"PluginView 待移植（当前使用旧前端）"})]),_:1})}}});export{l as default};

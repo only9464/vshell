@@ -1,0 +1,1 @@
+import{d as t,i as n,w as r,r as e,a as c,o as s}from"./index-D5oPSd8o.js";const l=t({__name:"TerminalView",setup(_){return(p,m)=>{const a=e("a-empty"),o=e("a-card");return s(),n(o,null,{default:r(()=>[c(a,{description:"TerminalView 待移植（当前使用旧前端）"})]),_:1})}}});export{l as default};

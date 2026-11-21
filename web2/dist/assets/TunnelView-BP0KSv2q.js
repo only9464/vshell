@@ -1,1 +1,0 @@
-import{d as t,i as a,w as c,r as e,a as r,o as s}from"./index-5qVFoHo3.js";const l=t({__name:"TunnelView",setup(_){return(p,m)=>{const n=e("a-empty"),o=e("a-card");return s(),a(o,null,{default:c(()=>[r(n,{description:"TunnelView 待移植（当前使用旧前端）"})]),_:1})}}});export{l as default};

@@ -56,17 +56,23 @@ web2/
 | 页面（4.9.3 路径） | 状态 | 说明 |
 |---|---|---|
 | `/login` | ✅ 完成 | 用户名/密码 + 回车提交 |
-| `/dashboard/index` | 🚧 基础版 | KPI 卡片；待补：运行信息表、流量/趋势、最近上线 |
-| `/clientManager/index` | ⬜ | 列表列、操作列、右键菜单、详情抽屉 |
+| `/dashboard/index` | 🚧 基础版 | KPI 卡片；待补：运行信息表、趋势图、最近上线 |
+| `/clientManager/index` | ✅ 完成 | 12 列表格 + 操作列 + 详情抽屉（在线标签、备注、删除） |
 | `/clientManager/terminal` | ⬜ | xterm + WS（沿用已验证的接口） |
 | `/clientManager/filemanager` | ⬜ | 目录树/表格、上传、编辑、下载 |
-| `/clientManager/screen` | ⬜ | 实时画面 + 质量切换 |
-| `/listener/index` | ⬜ | 列表 + 新建/编辑弹窗（模式、Vkey、盐、心跳） |
+| ~~屏幕监控~~ | ❌ 按要求删除 | 当前环境无图形会话，功能整体移除（前后端菜单/路由/页面均删，后端 `/api/screen/ws` 保留不再被 UI 使用） |
+| `/listener/index` | ✅ 完成 | 列表 + 新建/编辑弹窗（模式、Vkey、地址、端口、心跳、盐、备注）+ 启停/删除 |
 | `/download/index` | ⬜ | 载荷类型 × 架构、复制命令 |
 | `/tunnel/index` | ⬜ | 列表 + 新建/编辑/启停 |
 | `/pluginrunner/index` | ⬜ | 插件列表 + 执行 + 输出 |
-| `/setting/index` | ⬜ | 设置表单 |
-| `/about/index` | ⬜ | 版本信息 |
+| `/setting/index` | ✅ 完成 | 企业微信/钉钉三个字段 + 保存 |
+| `/about/index` | ✅ 完成 | 版本、许可到期、Web 端口、客户端上限 |
+
+## 4.1 接口约定（重要）
+
+4.9.3 的业务接口**几乎都是 POST**（`client/list`、`listener/list`、`file/ls`…），
+只有少数是 GET（`/dashboard/info`、`/setting/get`、`/runner/list`、`/screenshot/get`）。
+新前端里统一用 `post()`，只有这些 GET 接口用 `get()`——踩过一次 404。
 
 ## 5. 验证方式
 
