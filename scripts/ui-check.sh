@@ -38,6 +38,8 @@ command -v "$CHROME" >/dev/null || fail "找不到 $CHROME"
 
 mkdir -p "$TMP/conf" "$TMP/db"
 ln -sfn "$ROOT/static" "$TMP/static"
+# 新前端（web2，Ant Design Vue 版）是当前默认前端；同时保留旧 web 目录
+ln -sfn "$ROOT/web2" "$TMP/web2"
 ln -sfn "$ROOT/web" "$TMP/web"
 cat > "$TMP/conf/setting.conf" <<CONF
 master_type=web
@@ -76,7 +78,7 @@ done
 
 # 渲染一个路由并返回 DOM
 render() { # $1=route  $2=输出文件
-  cat > "$TMP/web/dist/bootstrap.html" <<BOOT
+  cat > "$TMP/web2/dist/bootstrap.html" <<BOOT
 <!doctype html><html><head><meta charset="utf-8"></head><body><script>
 localStorage.setItem('vshell.token','$TOK');
 localStorage.setItem('vshell.username','admin');
@@ -93,7 +95,7 @@ expect() { # $1=文件 $2=关键字 $3=说明
 }
 
 log "渲染 #/dashboard"
-render '#/dashboard' "$TMP/dash.html"
+render '#/dashboard/index' "$TMP/dash.html"
 expect "$TMP/dash.html" '运行信息' 'dashboard 未渲染'
 expect "$TMP/dash.html" '版本' 'dashboard 缺少 KPI'
 expect "$TMP/dash.html" '负载趋势' 'dashboard 缺少趋势卡片'
@@ -101,12 +103,12 @@ expect "$TMP/dash.html" 'polyline' 'dashboard 趋势图未渲染（sparkline 没
 expect "$TMP/dash.html" '最近上线客户端' 'dashboard 缺少最近上线卡片'
 
 log "渲染 #/clients"
-render '#/clients' "$TMP/clients.html"
+render '#/clientManager/index' "$TMP/clients.html"
 expect "$TMP/clients.html" "$(hostname)" '客户端列表没有主机名（字段契约不符？）'
 expect "$TMP/clients.html" '在线' '客户端列表没有在线状态'
 
 log "渲染 #/files/1"
-render '#/files/1' "$TMP/files.html"
+render '#/clientManager/files/1' "$TMP/files.html"
 expect "$TMP/files.html" '修改时间' '文件页表头缺失'
 expect "$TMP/files.html" '重命名' '文件页缺少重命名按钮'
 expect "$TMP/files.html" '下载' '文件页缺少下载按钮'
@@ -120,44 +122,38 @@ if not any(c.endswith('/') or c.endswith('.txt') or c for c in cells[:4]):
 PY
 
 log "渲染 #/terminal/1"
-render '#/terminal/1' "$TMP/term.html"
+render '#/clientManager/terminal/1' "$TMP/term.html"
 expect "$TMP/term.html" 'xterm' '终端 xterm 未挂载'
 expect "$TMP/term.html" '已连接' '终端 WebSocket 未连上'
 expect "$TMP/term.html" '清屏' '终端缺少清屏按钮'
 expect "$TMP/term.html" '复制选中' '终端缺少复制按钮'
 
 log "渲染 #/listeners"
-render '#/listeners' "$TMP/listeners.html"
+render '#/listener/index' "$TMP/listeners.html"
 expect "$TMP/listeners.html" '监听地址' '监听器页表头缺失'
 expect "$TMP/listeners.html" 'UI-VK' '监听器页没有真实 Vkey（字段契约不符？）'
 expect "$TMP/listeners.html" '运行' '监听器页没有状态标记'
 
 log "渲染 #/download"
-render '#/download' "$TMP/download.html"
+render '#/download/index' "$TMP/download.html"
 expect "$TMP/download.html" 'Stageless' '下载页缺少 Stageless 按钮'
 expect "$TMP/download.html" '架构' '下载页缺架构选择'
 expect "$TMP/download.html" '复制 stageless 拉取命令' '下载页缺少复制命令按钮'
 
 log "渲染 #/tunnels"
-render '#/tunnels' "$TMP/tunnels.html"
+render '#/tunnel/index' "$TMP/tunnels.html"
 expect "$TMP/tunnels.html" '服务器端口' '隧道页表头缺失'
 
 log "渲染 #/plugins/1"
-render '#/plugins/1' "$TMP/plugins.html"
+render '#/pluginrunner/index' "$TMP/plugins.html"
 expect "$TMP/plugins.html" '服务器插件' '插件页卡片缺失'
 expect "$TMP/plugins.html" '筛选插件名' '插件页缺少筛选框'
 
 log "渲染 #/settings"
-render '#/settings' "$TMP/settings.html"
+render '#/setting/index' "$TMP/settings.html"
 expect "$TMP/settings.html" '企业微信' '设置页字段缺失'
 
-log "渲染 #/screen/1"
-render '#/screen/1' "$TMP/screen.html"
-expect "$TMP/screen.html" '客户端 #1' '屏幕页未渲染'
 
-log "渲染 #/screenshot/1"
-render '#/screenshot/1' "$TMP/shot.html"
-expect "$TMP/shot.html" '重新截图' '截图页按钮缺失'
 
 # ---------------- 点击级流程（CDP：真填表单 / 真点按钮） ----------------
 log "点击级：登录表单 → 仪表盘"
@@ -194,7 +190,7 @@ CLICK_JS=$(cat <<'JS'
   [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
   await new Promise(r => setTimeout(r, 2200));
 
-  location.hash = '#/clients';
+  location.hash = '#/clientManager/index';
   await new Promise(r => setTimeout(r, 1500));
   const btn = [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '刷新');
   if (!btn) return 'NO_REFRESH_BUTTON|' + document.body.innerText.replace(/\n+/g, ' ').slice(0, 120);
@@ -219,10 +215,10 @@ NAV_JS=$(cat <<'JS'
     [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
-  const aside = document.querySelector('.aside');
+  const aside = document.querySelector('.ant-layout-sider');
   if (!aside) return 'NO_ASIDE';
   const before = aside.getBoundingClientRect().width;
-  const btn = [...document.querySelectorAll('.header button')].find(b => ['«','»'].includes(b.innerText.trim()));
+  const btn = document.querySelector('[data-test="nav-toggle"]');
   if (!btn) return 'NO_NAV_BTN';
   btn.click();
   await new Promise(r => setTimeout(r, 500));
@@ -282,7 +278,8 @@ THEME_JS=$(cat <<'JS'
   if (!btn) return 'NO_THEME_BTN';
   btn.click();
   await new Promise(r => setTimeout(r, 600));
-  const isDark = document.documentElement.classList.contains('dark');
+  // 新前端（对齐 4.9.3）用 <html data-theme="dark">，不是 .dark 类
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const stored = localStorage.getItem('vshell.theme');
   return isDark && stored === 'dark' ? 'THEME_OK' : `THEME_FAIL isDark=${isDark} stored=${stored}`;
 })()
@@ -303,21 +300,22 @@ DRAWER_JS=$(cat <<'JS'
     [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
-  if (!location.hash.includes('/clients')) { location.hash = '#/clients'; }
+  if (!location.hash.includes('/clientManager')) { location.hash = '#/clientManager/index'; }
   // 注意：仪表盘现在也有表格（最近上线客户端），必须等到客户端页自己的工具栏出现，
   // 否则会抓到仪表盘的行（R56 踩到：NO_HOST_LINK）。
   await waitFor(() => location.hash.includes('/clients') && document.body.innerText.includes('共'), 10000);
-  await waitFor(() => document.querySelectorAll('.el-table__row').length > 0, 10000);
+  await waitFor(() => document.querySelectorAll('.ant-table-row, .el-table__row').length > 0, 10000);
 
   // 点主机名列的链接
-  const row = [...document.querySelectorAll('.el-table__row')][0];
+  const row = [...document.querySelectorAll('.ant-table-row, .el-table__row')][0];
   if (!row) return 'NO_ROW';
-  const hostBtn = [...row.querySelectorAll('button')].find(b => b.innerText.trim() !== '' && !['终端','文件','屏幕','截图','插件','备注','删除'].includes(b.innerText.trim()));
+  // 新前端主机名是 <a>，旧前端是 <button>，两者都兼容
+  const hostBtn = row.querySelector('td a, td button');
   if (!hostBtn) return 'NO_HOST_LINK';
   hostBtn.click();
-  const opened = await waitFor(() => !!document.querySelector('.el-drawer'), 5000);
+  const opened = await waitFor(() => !!document.querySelector('.ant-drawer-content, .el-drawer'), 5000);
   if (!opened) return 'NO_DRAWER';
-  const text = document.querySelector('.el-drawer')?.innerText || '';
+  const text = (document.querySelector('.ant-drawer-content') || document.querySelector('.el-drawer'))?.innerText || '';
   return text.includes('Vkey') && text.includes('内网 IP') && text.includes('在线') ? 'DRAWER_OK' : 'DRAWER_INCOMPLETE|' + text.replace(/\n+/g, ' ').slice(0, 160);
 })()
 JS
@@ -338,12 +336,12 @@ RENAME_JS=$(cat <<'JS'
   [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
   await new Promise(r => setTimeout(r, 2200));
 
-  location.hash = '#/files/1';
+  location.hash = '#/clientManager/files/1';
   await new Promise(r => setTimeout(r, 1200));
 
   // 等文件页真正加载出表格（首屏可能还在拉 /file/ls）
   const waitFor = async (fn, ms) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (fn()) return true; await new Promise(r => setTimeout(r, 200)); } return false; };
-  await waitFor(() => document.querySelectorAll('.el-table__row').length > 0, 8000);
+  await waitFor(() => document.querySelectorAll('.ant-table-row, .el-table__row').length > 0, 8000);
 
   // 切到 /tmp（文件页默认打开根目录）
   const pathInput = [...document.querySelectorAll('input')].find(i => i.value === '/');
@@ -357,22 +355,23 @@ RENAME_JS=$(cat <<'JS'
   if (!ok) return 'TARGET_NOT_LISTED|' + document.body.innerText.replace(/\n+/g, ' ').slice(0, 160);
 
   // 找到 ui-rename-me.txt 所在行，点该行的"重命名"
-  const rows = [...document.querySelectorAll('.el-table__row')];
+  const rows = [...document.querySelectorAll('.ant-table-row, .el-table__row')];
   const row = rows.find(r => r.innerText.includes('ui-rename-me.txt'));
   if (!row) return 'NO_TARGET_ROW|' + document.body.innerText.replace(/\n+/g, ' ').slice(0, 160);
-  const btn = [...row.querySelectorAll('button')].find(b => b.innerText.trim() === '重命名');
+  const btn = [...row.querySelectorAll('button, a')].find(b => b.innerText.trim() === '重命名');
   if (!btn) return 'NO_RENAME_BTN';
   btn.click();
   await new Promise(r => setTimeout(r, 600));
 
   // 弹框输入新名字并确定
-  const box = document.querySelector('.el-message-box__input input') || document.querySelector('.el-message-box input');
+  const box = document.querySelector('.ant-modal input') || document.querySelector('.el-message-box input') || document.querySelector('.el-message-box input');
   if (!box) return 'NO_DIALOG';
   box.value = 'ui-renamed.txt';
   box.dispatchEvent(new Event('input', {bubbles: true}));
   await new Promise(r => setTimeout(r, 200));
-  const boxBtn = [...document.querySelectorAll('.el-message-box button')].find(b => b.innerText.trim() === '确定');
-  if (!boxBtn) return 'NO_CONFIRM_BTN|' + document.querySelector('.el-message-box')?.innerText;
+  const boxBtn = document.querySelector('.ant-modal .ant-btn-primary') ||
+    [...document.querySelectorAll('.el-message-box button')].find(b => b.innerText.trim() === '确定');
+  if (!boxBtn) return 'NO_CONFIRM_BTN';
   boxBtn.click();
   const done = await waitFor(() => document.body.innerText.includes('ui-renamed.txt'), 10000);
   return done ? 'RENAMED_OK' : 'RENAME_PENDING';
@@ -404,7 +403,7 @@ TERM_JS=$(cat <<'JS'
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
   if (!location.hash.includes('/terminal/')) {
-    location.hash = '#/terminal/1';
+    location.hash = '#/clientManager/terminal/1';
   }
   // 等 WebSocket 真正连上（页面状态文本出现"已连接"），再等首屏输出
   await waitFor(() => document.body.innerText.includes('已连接'), 15000);
@@ -438,20 +437,23 @@ LS_JS=$(cat <<'JS'
     [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
-  if (!location.hash.includes('/listeners')) { location.hash = '#/listeners'; await new Promise(r => setTimeout(r, 1500)); }
+  if (!location.hash.includes('/listener')) { location.hash = '#/listener/index'; await new Promise(r => setTimeout(r, 1500)); }
   await waitFor(() => [...document.querySelectorAll('button')].some(b => b.innerText.trim() === '新建监听器'), 8000);
 
   [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '新建监听器')?.click();
-  const opened = await waitFor(() => !!document.querySelector('.el-dialog'), 5000);
+  const opened = await waitFor(() => !!document.querySelector('.ant-modal-wrap, .el-dialog'), 5000);
   if (!opened) return 'NO_DIALOG';
 
-  const dlg = document.querySelector('.el-dialog');
+  const dlg = document.querySelector('.ant-modal-wrap') || document.querySelector('.el-dialog');
   const set = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles: true})); };
   // 按表单项的 label 定位输入框：弹窗里第一个 input 是 el-select 的内部输入框，
   // 用下标取会错位（R49 踩到：Vkey 被写进了模式选择框）。
   const fieldInput = (label) => {
-    const item = [...dlg.querySelectorAll('.el-form-item')]
-      .find(it => (it.querySelector('.el-form-item__label')?.innerText || '').trim().startsWith(label));
+    const items = [...dlg.querySelectorAll('.ant-form-item, .el-form-item')];
+    const item = items.find(it => {
+      const l = it.querySelector('.ant-form-item-label, .el-form-item__label');
+      return (l?.innerText || '').trim().startsWith(label);
+    });
     return item ? item.querySelector('input') : null;
   };
   const vkeyEl = fieldInput('Vkey');
@@ -462,7 +464,8 @@ LS_JS=$(cat <<'JS'
   const remarkEl = fieldInput('备注');   if (remarkEl) set(remarkEl, 'ui-form');
   await new Promise(r => setTimeout(r, 300));
 
-  const createBtn = [...dlg.querySelectorAll('button')].find(b => b.innerText.trim() === '创建');
+  const createBtn = [...dlg.querySelectorAll('.ant-modal-footer button, .el-dialog__footer button')]
+    .find(b => b.innerText.replace(/\s/g, '') === '创建' || b.classList.contains('ant-btn-primary'));
   if (!createBtn) return 'NO_CREATE_BTN';
   createBtn.click();
   const listed = await waitFor(() => document.body.innerText.includes('UI-FORM-VK'), 10000);

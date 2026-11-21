@@ -90,6 +90,10 @@ func main() {
 		fail("执行脚本失败: %v", err)
 	}
 	if *netlog {
+		// 先开 Network 再重新导航，否则事件都在 enable 之前发生、收不到
+		_ = call(conn, 19, "Page.enable", map[string]interface{}{})
+		_ = call(conn, 20, "Network.enable", map[string]interface{}{})
+		_ = call(conn, 21, "Page.navigate", map[string]interface{}{"url": *url})
 		printNet(conn, *wait)
 		return
 	}
@@ -256,7 +260,6 @@ func call(conn *websocket.Conn, id int, method string, params map[string]interfa
 
 // printNet 打开 Network 域，收集一段时间内的请求（URL + 请求头里的鉴权字段）。
 func printNet(conn *websocket.Conn, wait time.Duration) {
-	_ = call(conn, 20, "Network.enable", map[string]interface{}{})
 	deadline := time.Now().Add(wait)
 	type rec struct {
 		URL  string            `json:"url"`

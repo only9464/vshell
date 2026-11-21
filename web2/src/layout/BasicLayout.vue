@@ -65,7 +65,9 @@ function onUserMenu({ key }: { key: string }) {
 
     <a-layout>
       <a-layout-header class="header">
-        <component :is="collapsed ? MenuUnfoldOutlined : MenuFoldOutlined" class="trigger" @click="toggleNav" />
+        <span data-test="nav-toggle" class="trigger" @click="toggleNav">
+          <component :is="collapsed ? MenuUnfoldOutlined : MenuFoldOutlined" />
+        </span>
         <a-breadcrumb class="crumb">
           <a-breadcrumb-item>{{ current.title }}</a-breadcrumb-item>
         </a-breadcrumb>

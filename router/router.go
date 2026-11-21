@@ -175,12 +175,12 @@ func InitRouter() http.Handler {
 		http.ServeContent(w, r, info.Name(), info.ModTime(), f)
 	})
 
-	// 新版 Vue3 面板（web/dist，构建产物）。与提取的原版 SPA（static/）并存：
-	// /app/ → web/dist；不带结尾斜杠时 301 到 /app/ 以便相对资源解析。
+	// 新版 Vue3 面板（web2/dist 优先，回落到 web/dist）。与提取的原版 SPA（static/）并存：
+	// /app/ → web2/dist（Ant Design Vue 版，对齐 4.9.3 技术栈）；不带结尾斜杠时 301 到 /app/。
 	mux.HandleFunc("/app", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/app/", http.StatusMovedPermanently)
 	})
-	mux.HandleFunc("/app/", serveVueApp("web/dist"))
+	mux.HandleFunc("/app/", serveVueApp(frontendDir()))
 
 	// 用户信息 / 菜单 / 权限码（黑盒验证的原版响应格式）
 	mux.HandleFunc("/api/getUserInfo", handleGetUserInfo)
@@ -259,6 +259,18 @@ func isProtectedStatic(p string) bool {
 // subtleCompare 定时安全比较（避免用 == 泄露口令长度/内容前缀）。
 func subtleCompare(a, b string) bool {
 	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
+}
+
+// frontendDir 返回要托管的前端产物目录：优先 web2/dist（Ant Design Vue 版），
+// 没有再回落到 web/dist（旧 Element Plus 版），两个都不存在时仍按 web/dist 处理
+// （后续请求会 404，日志里能看到）。
+func frontendDir() string {
+	for _, dir := range []string{"web2/dist", "web/dist"} {
+		if _, err := os.Stat(filepath.Join(dir, "index.html")); err == nil {
+			return dir
+		}
+	}
+	return "web/dist"
 }
 
 // serveVueApp 托管新版面板的静态产物（web/dist），带 index.html 回退。
