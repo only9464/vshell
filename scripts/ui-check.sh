@@ -133,6 +133,7 @@ log "渲染 #/download"
 render '#/download' "$TMP/download.html"
 expect "$TMP/download.html" 'Stageless' '下载页缺少 Stageless 按钮'
 expect "$TMP/download.html" '架构' '下载页缺架构选择'
+expect "$TMP/download.html" '复制 stageless 拉取命令' '下载页缺少复制命令按钮'
 
 log "渲染 #/tunnels"
 render '#/tunnels' "$TMP/tunnels.html"
@@ -141,6 +142,7 @@ expect "$TMP/tunnels.html" '服务器端口' '隧道页表头缺失'
 log "渲染 #/plugins/1"
 render '#/plugins/1' "$TMP/plugins.html"
 expect "$TMP/plugins.html" '服务器插件' '插件页卡片缺失'
+expect "$TMP/plugins.html" '筛选插件名' '插件页缺少筛选框'
 
 log "渲染 #/settings"
 render '#/settings' "$TMP/settings.html"

