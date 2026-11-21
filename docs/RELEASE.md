@@ -65,6 +65,17 @@ CONF
 | 健康检查 | `curl -sk https://127.0.0.1:<port>/health`（HTTP 监听器） |
 | MCP 接入 | `./vshell-server mcp`，见 [MCP.md](MCP.md) |
 
+## 4.1 插件怎么用
+
+把要执行的文件放进 `plugins/`（支持 `.elf` / `.so` / `.dylib`），面板「插件」页会列出它们，
+点「执行」后由**目标机**下载运行并回显输出。
+
+交付包内置了一个示例 `sysinfo.elf`（源码在 `plugins/sysinfo/`）：
+
+```bash
+(cd plugins/sysinfo && go build -ldflags="-s -w" -o ../../plugins/sysinfo.elf .)
+```
+
 ## 5. 验证部署是否正常
 
 ```bash
