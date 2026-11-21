@@ -77,6 +77,16 @@ func main() {
 		fail("执行脚本失败: %v", err)
 	}
 	if *typeText != "" {
+		// 打字前先"点一下"终端区域：页面在收到 WS 输出后会重渲染，
+		// focus 可能已经丢了，单纯 focus() 有时不生效（xterm 需要 mousedown）。
+		_, _ = evaluate(conn, `(() => {
+			const x = document.querySelector('.xterm');
+			if (x) x.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+			const ta = document.querySelector('.xterm-helper-textarea');
+			if (ta) ta.focus();
+			return document.activeElement ? document.activeElement.className : null;
+		})()`)
+		time.Sleep(300 * time.Millisecond)
 		if err := typeAndEnter(conn, *typeText); err != nil {
 			fail("输入文本失败: %v", err)
 		}
@@ -157,10 +167,28 @@ func fail(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
-// typeAndEnter 通过 CDP Input 域输入文本并回车（真实键盘事件，可驱动 xterm）。
+// typeAndEnter 通过 CDP Input 域逐字符发送键盘事件（真实键盘行为，可驱动 xterm）。
+//
+// 不用 Input.insertText：它走组合输入路径，xterm 在无头环境里可能收不到；
+// 逐字符 keyDown(text=...) + keyUp 与真实敲键盘一致。
 func typeAndEnter(conn *websocket.Conn, text string) error {
-	if err := call(conn, 10, "Input.insertText", map[string]interface{}{"text": text}); err != nil {
-		return err
+	for i, ch := range text {
+		params := map[string]interface{}{
+			"type":                  "keyDown",
+			"key":                   string(ch),
+			"text":                  string(ch),
+			"unmodifiedText":        string(ch),
+			"windowsVirtualKeyCode": int(ch),
+			"nativeVirtualKeyCode":  int(ch),
+		}
+		if err := call(conn, 10+i*2, "Input.dispatchKeyEvent", params); err != nil {
+			return err
+		}
+		if err := call(conn, 11+i*2, "Input.dispatchKeyEvent", map[string]interface{}{
+			"type": "keyUp", "key": string(ch), "windowsVirtualKeyCode": int(ch),
+		}); err != nil {
+			return err
+		}
 	}
 	// Enter：rawKeyDown + char + keyUp，xterm 主要看 keyCode 13
 	for _, typ := range []string{"rawKeyDown", "char", "keyUp"} {
