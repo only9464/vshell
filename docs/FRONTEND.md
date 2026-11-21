@@ -46,6 +46,10 @@ terminal（xterm 挂载 + WebSocket "已连接"）。这套检查抓到过一个
 **暗色主题**（R50）：顶栏「暗色/浅色」切换 `html.dark`（Element Plus 的 dark css-vars），
 选择写入 `localStorage['vshell.theme']`，刷新后保持。
 
+**仪表盘趋势图**（R52）：新增 `components/Sparkline.vue`——纯 SVG 折线 + 面积填充，
+不引第三方图表库（包体不变）。仪表盘每 2 秒采样 `/dashboard/info`，保留最近 30 个点，
+分别画 CPU 与磁盘/内存占用；组件卸载时清理定时器。
+
 **响应式与空态**（R51）：侧边栏可折叠（桌面记住选择，`<900px` 默认折叠为 64px 图标栏），
 顶栏窄屏换行；四个列表页统一用 `el-table` 的 `#empty` 插槽（表头保留，加载中显示"加载中…"）。
 

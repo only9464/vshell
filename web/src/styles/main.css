@@ -6,3 +6,21 @@ body {
 .page { padding: 16px; }
 .toolbar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+/* ---- 暗色适配：body 跟随主题（Element Plus 的变量只作用于组件） ---- */
+html.dark body { background: #141414; color: var(--el-text-color-primary); }
+html.dark .el-card { background: var(--el-bg-color-overlay); }
+
+/* ---- 移动端（<=900px）：工具栏换行、表格横滚、抽屉全屏 ---- */
+@media (max-width: 900px) {
+  .page { padding: 8px; }
+  .toolbar { flex-wrap: wrap; }
+  .toolbar .el-input { width: 100% !important; }
+  /* 表格宽度不足时允许横向滚动，避免按钮被挤掉 */
+  .el-table { width: 100%; }
+  .el-table__body-wrapper { overflow-x: auto; }
+  .el-drawer { width: 100% !important; }
+  .el-dialog { width: calc(100% - 24px) !important; }
+  /* KPI 卡片在小屏两列 */
+  .el-col-6 { max-width: 50%; flex: 0 0 50%; }
+}

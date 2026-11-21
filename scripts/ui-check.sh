@@ -96,6 +96,8 @@ log "渲染 #/dashboard"
 render '#/dashboard' "$TMP/dash.html"
 expect "$TMP/dash.html" '运行信息' 'dashboard 未渲染'
 expect "$TMP/dash.html" '版本' 'dashboard 缺少 KPI'
+expect "$TMP/dash.html" '负载趋势' 'dashboard 缺少趋势卡片'
+expect "$TMP/dash.html" 'polyline' 'dashboard 趋势图未渲染（sparkline 没出 SVG）'
 
 log "渲染 #/clients"
 render '#/clients' "$TMP/clients.html"
@@ -232,6 +234,32 @@ JS
 )
 NAV_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$NAV_JS" 2>&1)
 echo "$NAV_OUT" | grep -q 'NAV_OK' || fail "侧边栏折叠异常: $(echo "$NAV_OUT" | tail -c 160)"
+
+log "点击级：暗色主题下 body 背景跟随（避免白底黑字割裂）"
+DARKBG_JS=$(cat <<'JS'
+(async () => {
+  const waitFor = async (fn, ms) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (fn()) return true; await new Promise(r => setTimeout(r, 250)); } return false; };
+  if (document.body.innerText.includes('登录') && document.querySelectorAll('input').length >= 2) {
+    const inputs = [...document.querySelectorAll('input')];
+    const set = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles: true})); };
+    set(inputs[0], 'admin'); set(inputs[1], 'p1');
+    await new Promise(r => setTimeout(r, 300));
+    [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
+    await waitFor(() => location.hash.includes('/dashboard'), 8000);
+  }
+  const btn = [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '暗色');
+  if (btn) { btn.click(); await new Promise(r => setTimeout(r, 600)); }
+  const bg = getComputedStyle(document.body).backgroundColor;
+  // 暗色下 body 背景应是深色（rgb 各分量都小于 60）
+  const m = bg.match(/rgb\((\d+), (\d+), (\d+)/);
+  if (!m) return 'BG_UNPARSED ' + bg;
+  const dark = Number(m[1]) < 60 && Number(m[2]) < 60 && Number(m[3]) < 60;
+  return dark ? 'DARKBG_OK ' + bg : 'DARKBG_FAIL ' + bg;
+})()
+JS
+)
+DARKBG_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$DARKBG_JS" 2>&1)
+echo "$DARKBG_OUT" | grep -q 'DARKBG_OK' || fail "暗色下 body 背景未跟随: $(echo "$DARKBG_OUT" | tail -c 120)"
 
 log "点击级：切换暗色主题（html.dark + localStorage）"
 THEME_JS=$(cat <<'JS'
