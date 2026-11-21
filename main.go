@@ -38,6 +38,10 @@ func loadConfig() *utils.FullSettings {
 		fmt.Println("load config file error")
 		os.Exit(1)
 	}
+	// 关键：把 full settings 同步到鉴权用的单例，否则 GetJWTSecret() 可能落到
+	// 惰性初始化时的**随机密钥**上；等某次 UpdateConfig（保存设置）触发同步后，
+	// 密钥换了，之前签发的 token 全部失效（表现为"保存设置后接口 401/-1"）。
+	utils.SyncSettingsFromConfig()
 	return cfg
 }
 

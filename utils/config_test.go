@@ -2,6 +2,7 @@ package utils
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -117,7 +118,7 @@ func TestParseBool(t *testing.T) {
 		{"off", true, false},
 		{"", true, false},
 		{"", false, false},
-		{"garbage", true, true},  // returns default
+		{"garbage", true, true}, // returns default
 		{"garbage", false, false},
 	}
 
@@ -247,5 +248,35 @@ func TestUpdateConfig(t *testing.T) {
 	}
 	if loaded.WebUsername != "newadmin" {
 		t.Errorf("WebUsername: got %q, want newadmin", loaded.WebUsername)
+	}
+}
+
+// 保存设置（UpdateConfig → SyncSettingsFromConfig）不能改变 JWT 密钥，
+// 否则此前签发的 token 会全部失效。
+func TestUpdateConfigKeepsJWTSecretStable(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "setting.conf")
+	cfg := GetFullSettings()
+	prevSecret := cfg.WebJWTSecret
+	cfg.WebJWTSecret = "stable-secret-for-test"
+	t.Cleanup(func() { cfg.WebJWTSecret = prevSecret })
+
+	// 先让鉴权单例与配置同步（模拟服务启动），再签发 token
+	SyncSettingsFromConfig()
+
+	tok, err := GenerateToken("admin")
+	if err != nil {
+		t.Fatalf("GenerateToken: %v", err)
+	}
+	if _, err := ValidateToken(tok); err != nil {
+		t.Fatalf("token should validate before update: %v", err)
+	}
+
+	if err := UpdateConfig(map[string]interface{}{"wx_key": "k1"}, path); err != nil {
+		t.Fatalf("UpdateConfig: %v", err)
+	}
+
+	if _, err := ValidateToken(tok); err != nil {
+		t.Fatalf("token invalidated by settings save (secret rotated): %v", err)
 	}
 }

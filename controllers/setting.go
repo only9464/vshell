@@ -38,6 +38,18 @@ func (c *SettingController) Edit() {
 		c.JsonErr("save setting failed: " + err.Error())
 		return
 	}
+	// 同步内存单例：Get 直接读 GetFullSettings()，只写文件的话要重启才生效
+	// （e2e 曾因此失败：edit 成功但 get 读不到）。
+	cfg := utils.GetFullSettings()
+	if v, ok := updates["wx_key"].(string); ok {
+		cfg.WxKey = v
+	}
+	if v, ok := updates["dingding_access_token"].(string); ok {
+		cfg.DingdingAccessToken = v
+	}
+	if v, ok := updates["dingding_key_word"].(string); ok {
+		cfg.DingdingKeyWord = v
+	}
 	c.JsonOkVerb("modified")
 }
 
@@ -52,4 +64,8 @@ func (c *SettingController) Get() {
 }
 
 // settingConfPath 返回设置文件路径（与原版一致：conf/setting.conf）。
-func settingConfPath() string { return "conf/setting.conf" }
+//
+// 测试可替换路径，避免污染仓库里的 conf/。
+var settingConfPathFn = func() string { return "conf/setting.conf" }
+
+func settingConfPath() string { return settingConfPathFn() }

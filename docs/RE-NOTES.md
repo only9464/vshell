@@ -722,4 +722,24 @@ garbled 字面量访问方式），所以"字符串→xref→函数"这条路径
 剩下可行的只有：IDA 人工分析（按调用图定位 net/aes 附近的状态机）或换一台干净机器
 做动态调试（把 gdb 断点下在 `net.Conn.Write` 的调用者上，看它在什么条件下写 "main"）。
 
+### E-51 保存设置会踢掉所有登录（R38，e2e 覆盖发现）
+
+给 e2e 补端点覆盖时，`setting/edit` 之后 `setting/get` 一直拿不到新值。排查发现：
+
+1. `UpdateConfig` 写完文件会调用 `SyncSettingsFromConfig()`；
+2. 该函数在 `web_jwt_secret` 为空时**每次重新生成随机密钥**；
+3. 于是"保存一次设置"就把 JWT 密钥轮换了 —— **此前签发的所有 token 全部失效**
+   （表现为接口返回 `{"code":-1,"result":null}`）。
+
+修复三处：
+
+| 位置 | 改动 |
+|---|---|
+| `utils/config.go` | 密钥为空时优先沿用已有单例的密钥，其次生成一次并写回 cfg |
+| `main.go` | 启动时（`loadConfig`）就调用 `SyncSettingsFromConfig()`，保证从第一个请求起密钥稳定 |
+| `controllers/setting.go` | `Edit` 成功后同步更新内存单例，`Get` 立即能读到新值 |
+
+回归测试：`TestUpdateConfigKeepsJWTSecretStable`（保存设置后旧 token 仍有效）、
+`TestSettingEditVisibleImmediately`（保存后立刻可读）。
+
 

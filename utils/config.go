@@ -416,9 +416,24 @@ func SyncSettingsFromConfig() {
 	settingsOnce.Do(func() {}) // ensure once is consumed
 	cfg := GetFullSettings()
 
+	// 密钥稳定性：配置里没写 web_jwt_secret 时，优先沿用**已有单例**的密钥，
+	// 其次生成一次并写回 cfg。否则每次保存设置（UpdateConfig → 本函数）都会
+	// 轮换密钥，让此前签发的所有 token 失效。
+	settingsMu.RLock()
+	var existingSecret string
+	if settings != nil {
+		existingSecret = settings.WebJWTSecret
+	}
+	settingsMu.RUnlock()
+
 	jwtSecret := cfg.WebJWTSecret
 	if jwtSecret == "" {
-		jwtSecret = generateJWTSecret()
+		if existingSecret != "" {
+			jwtSecret = existingSecret
+		} else {
+			jwtSecret = generateJWTSecret()
+		}
+		cfg.WebJWTSecret = jwtSecret
 	}
 
 	settingsMu.Lock()

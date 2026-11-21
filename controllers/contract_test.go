@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
 	"vshell/utils"
@@ -316,5 +317,26 @@ func TestContractLoginEnvelope(t *testing.T) {
 		assertSameKeys(t, "login.result", res, want["result"].(map[string]interface{}))
 	} else {
 		t.Fatalf("login result = %#v, want an object", got["result"])
+	}
+}
+
+// 设置保存后必须立刻能在 Get 里读到（不需要重启）。
+func TestSettingEditVisibleImmediately(t *testing.T) {
+	dir := t.TempDir()
+	prev := settingConfPathFn
+	settingConfPathFn = func() string { return dir + "/setting.conf" }
+	t.Cleanup(func() { settingConfPathFn = prev })
+
+	base, rec := newTestController()
+	base.Controller.Ctx.Input.RequestBody = []byte(`{"wx_key":"k1","dingding_access_token":"t1","dingding_key_word":"w1"}`)
+	(&SettingController{ApiBaseController: *base}).Edit()
+	if body := rec.Body.String(); !strings.Contains(body, "code\":0") {
+		t.Fatalf("edit failed: %s", body)
+	}
+
+	base2, rec2 := newTestController()
+	(&SettingController{ApiBaseController: *base2}).Get()
+	if body := rec2.Body.String(); !strings.Contains(body, "k1") {
+		t.Fatalf("get did not see the new value immediately: %s", body)
 	}
 }

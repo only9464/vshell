@@ -436,6 +436,80 @@ grep -q "uid=" "$TMP/otcp.log" || fail "official-tcp server did not receive comm
 kill "$OTCP_PID" 2>/dev/null
 log "official-tcp ok: 模拟 agent 完成认证/通道注册/任务执行"
 
+# ---------------------------------------------------------------- 7q. 面板端点覆盖补全（R38）
+log "check remaining panel endpoints"
+# --- 认证类
+api GET /getUserInfo | grep -q '"username"' || fail "getUserInfo failed"
+api GET /getMenuList | grep -q '"code":0' || fail "getMenuList failed"
+api GET /getPermCode | grep -q '"code":0' || fail "getPermCode failed"
+api GET /logout | grep -q '"code":0' || fail "logout failed"
+
+# --- 概览 / 插件列表 / 设置
+api GET /dashboard/info | grep -q '"version"' || fail "dashboard/info failed"
+api GET /runner/list | grep -q '"code":0' || fail "runner/list failed"
+api POST /setting/edit "{\"wx_key\":\"e2e-wx\",\"dingding_access_token\":\"e2e-dt\",\"dingding_key_word\":\"e2e-kw\"}" \
+  | grep -q '"code":0' || fail "setting/edit failed"
+api GET /setting/get | grep -q 'e2e-wx' || fail "setting/get did not persist"
+
+# --- 客户端备注 / 删除文件
+api POST /client/editremark "{\"id\":$CLIENT_ID,\"remark\":\"e2e-note\"}" | grep -q '"code":0' \
+  || fail "client/editremark failed"
+api POST /client/list '{"page":1,"pageSize":50}' | grep -q 'e2e-note' || fail "client remark not saved"
+printf 'del-me\n' > /tmp/vs_delme.txt
+api POST /client/delfile "{\"id\":$CLIENT_ID,\"paths\":\"/tmp/vs_delme.txt\"}" | grep -q '"code":0' \
+  || fail "client/delfile failed"
+for _ in $(seq 1 20); do [[ ! -f /tmp/vs_delme.txt ]] && break; sleep 0.5; done
+[[ ! -f /tmp/vs_delme.txt ]] || fail "client/delfile did not remove the file"
+
+# --- 文件 mkdir / rmlist
+api POST /file/mkdir "{\"id\":$CLIENT_ID,\"path\":\"/tmp/vs_e2e_dir\"}" | grep -q '"code":0' \
+  || fail "file/mkdir failed"
+for _ in $(seq 1 20); do [[ -d /tmp/vs_e2e_dir ]] && break; sleep 0.5; done
+[[ -d /tmp/vs_e2e_dir ]] || fail "file/mkdir did not create the dir"
+touch /tmp/vs_e2e_dir/a.txt /tmp/vs_e2e_dir/b.txt
+api POST /file/rmlist "{\"id\":$CLIENT_ID,\"path\":\"/tmp/vs_e2e_dir\",\"name\":\"a.txt|<-b.txt\"}" \
+  | grep -q '"code":0' || fail "file/rmlist failed"
+for _ in $(seq 1 20); do [[ ! -f /tmp/vs_e2e_dir/a.txt && ! -f /tmp/vs_e2e_dir/b.txt ]] && break; sleep 0.5; done
+[[ ! -f /tmp/vs_e2e_dir/a.txt && ! -f /tmp/vs_e2e_dir/b.txt ]] || fail "file/rmlist did not delete files"
+rmdir /tmp/vs_e2e_dir 2>/dev/null || true
+
+# --- 监听器 edit / editremark / stop / del / dellist（用临时监听器，不影响主链路）
+TMP_LPORT=$((26000 + RANDOM % 500))
+api POST /listener/add "{\"Mode\":\"http\",\"Vkey\":\"E2E-TMP\",\"Host\":\"127.0.0.1\",\"Port\":$TMP_LPORT,\"Remark\":\"tmp\"}" >/dev/null
+TMP_LID=$(api POST /listener/list '{"page":1,"pageSize":50}' | python3 -c '
+import sys,json
+d=json.load(sys.stdin)
+print([i["Id"] for i in d["result"]["items"] if i["Vkey"]=="E2E-TMP"][0])')
+api POST /listener/edit "{\"Id\":$TMP_LID,\"Mode\":\"http\",\"Vkey\":\"E2E-TMP2\",\"Remark\":\"tmp2\",\"OssUrl\":\"\",\"vip\":false}" \
+  | grep -q '"code":0' || fail "listener/edit failed"
+api POST /listener/editremark "{\"id\":$TMP_LID,\"remark\":\"tmp-remark\"}" | grep -q '"code":0' \
+  || fail "listener/editremark failed"
+api POST /listener/stop "{\"id\":$TMP_LID}" | grep -q '"code":0' || fail "listener/stop failed"
+api POST /listener/del "{\"id\":$TMP_LID}" | grep -q '"code":0' || fail "listener/del failed"
+
+api POST /listener/add "{\"Mode\":\"http\",\"Vkey\":\"E2E-TMP3\",\"Host\":\"127.0.0.1\",\"Port\":$((TMP_LPORT+1)),\"Remark\":\"tmp\"}" >/dev/null
+TMP_LID2=$(api POST /listener/list '{"page":1,"pageSize":50}' | python3 -c '
+import sys,json
+d=json.load(sys.stdin)
+print([i["Id"] for i in d["result"]["items"] if i["Vkey"]=="E2E-TMP3"][0])')
+api POST /listener/dellist "{\"id\":[$TMP_LID2]}" | grep -q '"code":0' || fail "listener/dellist failed"
+
+# --- 隧道 edit / editremark / dellist / del
+api POST /tunnel/add "{\"clientId\":$CLIENT_ID,\"Port\":$((TMP_LPORT+10)),\"Mode\":\"tcp\",\"Target\":\"127.0.0.1:22\",\"Remark\":\"vtmp\"}" >/dev/null
+TMP_TID=$(api POST /tunnel/list '{"page":1,"pageSize":50}' | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+items=d['result']['items'] or []
+ids=[i['Id'] for i in items if i.get('Port')==$((TMP_LPORT+10))]
+print(ids[0] if ids else '')")
+[[ -n "$TMP_TID" ]] || fail "temp tunnel not created (list=$(api POST /tunnel/list '{"page":1,"pageSize":50}' | head -c 200))"
+api POST /tunnel/edit "{\"Id\":$TMP_TID,\"Port\":$((TMP_LPORT+11)),\"Mode\":\"tcp\",\"Target\":\"127.0.0.1:23\",\"Remark\":\"vtmp2\"}" \
+  | grep -q '"code":0' || fail "tunnel/edit failed"
+api POST /tunnel/editremark "{\"id\":$TMP_TID,\"remark\":\"vtmp3\"}" | grep -q '"code":0' \
+  || fail "tunnel/editremark failed"
+api POST /tunnel/dellist "{\"id\":[$TMP_TID]}" | grep -q '"code":0' || fail "tunnel/dellist failed"
+log "remaining panel endpoints ok (auth/dashboard/runner/setting/client/file/listener/tunnel)"
+
 # ---------------------------------------------------------------- 8. 面板契约
 log "check /client/list field contract (B0.8)"
 LIST=$(api POST /client/list '{"page":1,"pageSize":10}')
