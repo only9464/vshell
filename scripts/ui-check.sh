@@ -98,6 +98,7 @@ expect "$TMP/dash.html" '运行信息' 'dashboard 未渲染'
 expect "$TMP/dash.html" '版本' 'dashboard 缺少 KPI'
 expect "$TMP/dash.html" '负载趋势' 'dashboard 缺少趋势卡片'
 expect "$TMP/dash.html" 'polyline' 'dashboard 趋势图未渲染（sparkline 没出 SVG）'
+expect "$TMP/dash.html" '最近上线客户端' 'dashboard 缺少最近上线卡片'
 
 log "渲染 #/clients"
 render '#/clients' "$TMP/clients.html"
@@ -122,6 +123,8 @@ log "渲染 #/terminal/1"
 render '#/terminal/1' "$TMP/term.html"
 expect "$TMP/term.html" 'xterm' '终端 xterm 未挂载'
 expect "$TMP/term.html" '已连接' '终端 WebSocket 未连上'
+expect "$TMP/term.html" '清屏' '终端缺少清屏按钮'
+expect "$TMP/term.html" '复制选中' '终端缺少复制按钮'
 
 log "渲染 #/listeners"
 render '#/listeners' "$TMP/listeners.html"
@@ -301,6 +304,9 @@ DRAWER_JS=$(cat <<'JS'
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
   if (!location.hash.includes('/clients')) { location.hash = '#/clients'; }
+  // 注意：仪表盘现在也有表格（最近上线客户端），必须等到客户端页自己的工具栏出现，
+  // 否则会抓到仪表盘的行（R56 踩到：NO_HOST_LINK）。
+  await waitFor(() => location.hash.includes('/clients') && document.body.innerText.includes('共'), 10000);
   await waitFor(() => document.querySelectorAll('.el-table__row').length > 0, 10000);
 
   // 点主机名列的链接

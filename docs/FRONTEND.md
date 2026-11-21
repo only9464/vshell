@@ -46,6 +46,11 @@ terminal（xterm 挂载 + WebSocket "已连接"）。这套检查抓到过一个
 **暗色主题**（R50）：顶栏「暗色/浅色」切换 `html.dark`（Element Plus 的 dark css-vars），
 选择写入 `localStorage['vshell.theme']`，刷新后保持。
 
+**终端控制条**（R56）：字号 A-/A+（12–20px，记忆在 `localStorage['vshell.termFont']`）、
+清屏（本地 clear + 发 Ctrl+L）、复制选中、断线重连。
+
+**仪表盘「最近上线客户端」**（R56）：按最后心跳排序取前 5 台，带在线状态与跳转入口。
+
 **仪表盘趋势图**（R52）：新增 `components/Sparkline.vue`——纯 SVG 折线 + 面积填充，
 不引第三方图表库（包体不变）。仪表盘每 2 秒采样 `/dashboard/info`，保留最近 30 个点，
 分别画 CPU 与磁盘/内存占用；组件卸载时清理定时器。

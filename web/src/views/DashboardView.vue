@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { dashboardApi } from '../api'
+import { clientApi, dashboardApi, type ClientItem } from '../api'
 import Sparkline from '../components/Sparkline.vue'
 
 const info = ref<Record<string, any>>({})
@@ -8,6 +8,7 @@ const loading = ref(false)
 
 // 采样序列（保留最近 30 个点，约 1 分钟）
 const MAX_POINTS = 30
+const recent = ref<ClientItem[]>([])
 const cpuSeries = ref<number[]>([])
 const memSeries = ref<number[]>([])
 
@@ -15,6 +16,15 @@ async function load() {
   loading.value = true
   try {
     info.value = await dashboardApi.info()
+    // 最近上线：按最后活跃时间倒序取前 5 台
+    try {
+      const res = await clientApi.list(1, 50, '')
+      recent.value = [...(res.items || [])]
+        .sort((a, b) => Number(b.PingCheckTime || 0) - Number(a.PingCheckTime || 0))
+        .slice(0, 5)
+    } catch {
+      // 概览页不因客户端接口失败而整体报错
+    }
     cpuSeries.value = [...cpuSeries.value, Number(info.value.cpu) || 0].slice(-MAX_POINTS)
     memSeries.value = [...memSeries.value, Number(info.value.disk) || 0].slice(-MAX_POINTS)
   } finally {
@@ -65,6 +75,26 @@ onBeforeUnmount(() => {
           <div class="chart-label">磁盘/内存占用</div>
           <Sparkline :values="memSeries" color="#67c23a" />
         </div>
+      </div>
+    </el-card>
+    <el-card style="margin-top: 12px">
+      <template #header>最近上线客户端</template>
+      <el-table :data="recent" size="small" border>
+        <el-table-column prop="HostName" label="主机名" min-width="140" />
+        <el-table-column prop="UserName" label="用户" width="110" />
+        <el-table-column prop="OsName" label="系统" width="110" />
+        <el-table-column prop="LocalIP" label="内网 IP" width="130" />
+        <el-table-column label="在线" width="80">
+          <template #default="{ row }">
+            <el-tag :type="row.IsConnect ? 'success' : 'info'" size="small">{{ row.IsConnect ? '在线' : '离线' }}</el-tag>
+          </template>
+        </el-table-column>
+        <template #empty>
+          <el-empty description="还没有客户端上线" />
+        </template>
+      </el-table>
+      <div style="margin-top: 8px">
+        <el-button link type="primary" @click="$router.push('/clients')">查看全部客户端</el-button>
       </div>
     </el-card>
     <el-card style="margin-top: 12px">
