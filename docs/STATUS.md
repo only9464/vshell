@@ -31,6 +31,7 @@
 | 登录 + JWT | ✅ 已实现 | `controllers/login.go:19-53`、`utils/auth.go:192-208`；响应 `{token,userInfo}` 与 SPA 的 `const {token}=a` 匹配 |
 | 注销 | ⚠️ 形式 | JWT 无状态，`engineDelToken` 空实现 |
 | 前端文件页 | 下载（附件直链）/重命名（mv）/新建目录/上传/wget/编辑/删除；空状态用 `el-empty`；mkd​ir 与重命名走 ElMessageBox | `web/src/views/FilesView.vue` |
+| 交付包 | `~/vshell-release`：服务端 + 前端 + 通用 agent（支持 `-server/-vkey/-salt`）+ 启停脚本 + README；实测起服务→建监听器→agent 上线可用 | `agent/main.go`、`~/vshell-release/` |
 | 前端终端/概览 | 终端控制条（字号/清屏/复制/重连）；概览页最近上线客户端（前 5 台） | `web/src/views/TerminalView.vue`、`DashboardView.vue` |
 | 前端下载/插件页 | 下载页「复制拉取命令」+8 种架构；插件页筛选/空态/输出复制与清空 | `web/src/views/DownloadView.vue`、`PluginView.vue` |
 | 前端仪表盘 | KPI + 运行信息 + 纯 SVG 趋势图（每 2s 采样，保留 30 点）；暗色下 body 背景跟随 | `web/src/views/DashboardView.vue`、`components/Sparkline.vue` |
