@@ -24,6 +24,7 @@ const routes = [
       { path: 'dashboard/index', component: () => import('../views/DashboardView.vue') },
       { path: 'clientManager/index', component: () => import('../views/ClientView.vue') },
       { path: 'clientManager/terminal/:id', component: () => import('../views/TerminalView.vue') },
+      { path: 'clientManager/screenshot/:id', component: () => import('../views/ScreenshotView.vue') },
       { path: 'clientManager/files/:id', component: () => import('../views/FilesView.vue') },
       { path: 'listener/index', component: () => import('../views/ListenerView.vue') },
       { path: 'download/index', component: () => import('../views/DownloadView.vue') },

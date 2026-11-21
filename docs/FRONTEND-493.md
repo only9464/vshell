@@ -56,7 +56,7 @@ web2/
 | 页面（4.9.3 路径） | 状态 | 说明 |
 |---|---|---|
 | `/login` | ✅ 完成 | 用户名/密码 + 回车提交 |
-| `/dashboard/index` | 🚧 基础版 | KPI 卡片；待补：运行信息表、趋势图、最近上线 |
+| `/dashboard/index` | ✅ 完成 | KPI 卡片 + 负载趋势（CPU/磁盘双 SVG，4s 采样）+ 运行信息 + 最近上线客户端 |
 | `/clientManager/index` | ✅ 完成 | 12 列表格 + 操作列 + 详情抽屉（在线标签、备注、删除） |
 | `/clientManager/terminal` | ✅ 完成 | xterm + WS（实测"已连接"），字号/清屏/复制/重连 |
 | `/clientManager/files` | ✅ 完成 | 目录列表（真实数据）、进入/上级、编辑、上传、下载、重命名、新建目录、删除 |
