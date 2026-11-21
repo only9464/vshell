@@ -30,6 +30,7 @@
 |---|---|---|
 | 登录 + JWT | ✅ 已实现 | `controllers/login.go:19-53`、`utils/auth.go:192-208`；响应 `{token,userInfo}` 与 SPA 的 `const {token}=a` 匹配 |
 | 注销 | ⚠️ 形式 | JWT 无状态，`engineDelToken` 空实现 |
+| 重启持久化 | e2e §7t：建监听器+隧道 → 重启 → 两者仍在（含隧道备注）；`TestAddTunnelKeepsRemark` 覆盖备注回填 | `scripts/e2e.sh`、`controllers/engine.go` |
 | 并发/边界 | e2e §7s：10 并发 list + 5 并发命令、上传 2MiB 成功 / 33MiB 拒绝；CI 增加 `-race` 步骤 | `scripts/e2e.sh`、`.github/workflows/test.yml` |
 | 并发安全 | `GetTask` 在锁内返回副本；隧道 `OnOpen` 走 `SetOnOpen/getOnOpen`；`go test -race` 在 c2engine/router 上全绿 | `c2engine/engine.go`、`tunnel_server.go`、`router/stream_ws_test.go` |
 | 错误语义 | 离线客户端上文件类接口统一回 `connection error`；`listener/stop` 缺实体回 `not found`；e2e §7r 用负面用例固化 | `controllers/file.go`、`listener.go` |

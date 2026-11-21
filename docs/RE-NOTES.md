@@ -809,4 +809,18 @@ e2e §7q 增加 status/search/排序三项断言。
 
 结果：`go test -race ./c2engine ./router` 全绿；`go test ./...` 全绿。
 
+### E-55 隧道备注在新建时被丢弃（R43）
+
+新增 e2e §7t（建监听器+隧道 → 重启服务端 → 校验仍在）时发现：重启后隧道还在，
+但 **`Remark` 变成空串**。
+
+根因：`engineAddTunnel` 只调 `c2engine.NewTunnel(clientID, port, mode, target)`，
+签名里没有 remark，控制器也没回填 → 面板填的"备注"既不显示也不进 `db/tunnels.json`。
+
+修复：`engineAddTunnel` 在创建成功后回填 `Remark` 并立即 `SaveTunnels()`；
+回归测试 `TestAddTunnelKeepsRemark`；e2e §7t 同时校验监听器与隧道在重启后仍存在。
+
+顺带确认：`db/tunnels.json` 的写入/读取本身没问题（重启日志
+`Engine initialized with 1 tunnels` 正常）。
+
 

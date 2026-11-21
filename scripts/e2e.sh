@@ -602,6 +602,44 @@ echo "$UP33" | grep -q "file too large" || fail "超限上传未被拒绝: $(ech
 rm -f "$TMP/big33.bin" "$TMP/big2.bin"
 log "concurrency + upload boundaries ok (10 并发 / 2MiB 正常 / 33MiB 拒绝)"
 
+# ---------------------------------------------------------------- 7t. 重启持久化（R43）
+log "check persistence across restart"
+# 建一个监听器 + 一条隧道，然后重启服务端，验证都还在
+PERSIST_LPORT=$((27000 + RANDOM % 500))
+api POST /listener/add "{\"Mode\":\"http\",\"Vkey\":\"PERSIST-VK\",\"Host\":\"127.0.0.1\",\"Port\":$PERSIST_LPORT,\"Remark\":\"persist\"}" >/dev/null
+api POST /tunnel/add "{\"clientId\":$CLIENT_ID,\"Port\":$((PERSIST_LPORT+1)),\"Mode\":\"tcp\",\"Target\":\"127.0.0.1:22\",\"Remark\":\"persist-tunnel\"}" >/dev/null
+
+kill "$SERVER_PID" 2>/dev/null
+for _ in $(seq 1 50); do kill -0 "$SERVER_PID" 2>/dev/null || break; sleep 0.1; done
+( cd "$TMP" && exec ./vshell-server >> server.log 2>&1 ) &
+SERVER_PID=$!
+READY=0
+for _ in $(seq 1 50); do
+  if curl -s -o /dev/null -m 1 "http://127.0.0.1:$WEB_PORT/"; then READY=1; break; fi
+  sleep 0.2
+done
+[[ $READY -eq 1 ]] || fail "重启后服务端未恢复"
+
+api POST /listener/list '{"page":1,"pageSize":100}' | grep -q '"Vkey":"PERSIST-VK"' \
+  || fail "重启后监听器丢失"
+api POST /tunnel/list '{"page":1,"pageSize":100}' | grep -q 'persist-tunnel' \
+  || fail "重启后隧道丢失（db/tunnels.json 未生效？）"
+
+# 清理
+PERSIST_LID=$(api POST /listener/list '{"page":1,"pageSize":100}' | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+ids=[i['Id'] for i in (d['result']['items'] or []) if i.get('Vkey')=='PERSIST-VK']
+print(ids[0] if ids else '')")
+[[ -n "$PERSIST_LID" ]] && api POST /listener/del "{\"id\":$PERSIST_LID}" >/dev/null
+PERSIST_TID=$(api POST /tunnel/list '{"page":1,"pageSize":100}' | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+ids=[i['Id'] for i in (d['result']['items'] or []) if i.get('Remark')=='persist-tunnel']
+print(ids[0] if ids else '')")
+[[ -n "$PERSIST_TID" ]] && api POST /tunnel/del "{\"id\":$PERSIST_TID}" >/dev/null
+log "persistence ok (listener + tunnel 重启后仍在)"
+
 # ---------------------------------------------------------------- 8. 面板契约
 log "check /client/list field contract (B0.8)"
 LIST=$(api POST /client/list '{"page":1,"pageSize":10}')

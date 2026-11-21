@@ -120,3 +120,31 @@ func TestEngineStartListenerReportsError(t *testing.T) {
 		t.Fatal("starting an unknown listener returned nil")
 	}
 }
+
+// 新建隧道时备注必须落到隧道对象上（否则面板备注丢失且不持久化）。
+func TestAddTunnelKeepsRemark(t *testing.T) {
+	e := c2engine.GetEngine()
+	if err := e.Init(&c2engine.Config{DBPath: t.TempDir() + "/data.db"}); err != nil {
+		t.Fatalf("init: %v", err)
+	}
+	cl, err := e.NewClient("rv", "http", "127.0.0.1:1", "127.0.0.1", "u", "h", "linux", "a", "amd64")
+	if err != nil {
+		t.Fatalf("new client: %v", err)
+	}
+	if err := engineAddTunnel(EngineTunnel{Port: 28123, Mode: "tcp", Target: "127.0.0.1:22", Remark: "备注X"}, cl.ID); err != nil {
+		t.Fatalf("add tunnel: %v", err)
+	}
+	tunnels := e.GetTunnelList()
+	found := false
+	for _, tn := range tunnels {
+		if tn.Port == 28123 {
+			found = true
+			if tn.Remark != "备注X" {
+				t.Fatalf("remark = %q", tn.Remark)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("tunnel not created")
+	}
+}

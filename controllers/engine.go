@@ -429,8 +429,17 @@ func engineStopTunnel(id int64) {
 // 复刻端以 clientID=0 登记（无归属客户端），与 GetTunnel → RunStatus 的启停
 // 语义一致。
 func engineAddTunnel(t EngineTunnel, clientID int64) error {
-	_, err := c2engine.GetEngine().NewTunnel(clientID, t.Port, t.Mode, t.Target)
-	return err
+	tn, err := c2engine.GetEngine().NewTunnel(clientID, t.Port, t.Mode, t.Target)
+	if err != nil {
+		return err
+	}
+	// 备注要落到隧道对象上，否则面板填的"备注"既不显示也不持久化
+	// （NewTunnel 没有 remark 形参；e2e §7t 重启校验时发现丢失）。
+	if t.Remark != "" {
+		tn.Remark = t.Remark
+		c2engine.GetEngine().SaveTunnels()
+	}
+	return nil
 }
 
 // engineGetTunnel 返回单条隧道（供控制器判断存在性）。
