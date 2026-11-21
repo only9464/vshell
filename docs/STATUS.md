@@ -149,6 +149,7 @@
 | 模板缺失 | 直接报 `open <path>: file does not exist`（原版文案），不再生成 MinimalPE 假外壳 | `PoBuild` |
 | 单测 | 配置块写入/读回/缺失/长度非法四个用例 | `c2engine/config_block_test.go` |
 | 文件上传 | multipart → base64 → agent 落盘；e2e 上传后用 `cat` 校验 | `controllers/file.go:Upload`、`e2e §7b` |
+| 客户端列表 | 在线筛选统一为 `Status‖NowConn>0`；搜索覆盖主机名/用户名/IP/进程/备注（大小写不敏感）；排序字段大小写不敏感 | `c2engine/engine.go`、`engine_test.go` |
 | 设置/鉴权稳定性 | 保存设置不再轮换 JWT 密钥（此前会踢掉所有登录）；`setting/get` 立即读到新值 | `utils/config.go`、`main.go`、`controllers/setting.go` |
 | 设置持久化 | `/setting/edit` 写回 `conf/setting.conf`；`/setting/get` 读配置 | `controllers/setting.go` |
 | 终端 PTY | Unix 用 creack/pty；`terminal_pty_test.go` 断言 `[ -t 1 ]` 为真且 `stty size` 跟随 resize | `agent/terminal_unix.go`、`terminal_pty_test.go` |

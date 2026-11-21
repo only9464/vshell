@@ -15,8 +15,8 @@ import (
 
 // Engine is the central C2 management system
 type Engine struct {
-	mu        sync.RWMutex
-	config    *Config
+	mu     sync.RWMutex
+	config *Config
 
 	// Data stores
 	clients   map[int64]*Client
@@ -54,13 +54,13 @@ var (
 func GetEngine() *Engine {
 	once.Do(func() {
 		instance = &Engine{
-			config:    DefaultConfig(),
-			clients:   make(map[int64]*Client),
-			listeners: make(map[int64]*Listener),
-			tunnels:   make(map[int64]*Tunnel),
-			hosts:     make(map[int64]*Host),
-			tasks:     make(map[int64]*Task),
-			vkeyIndex: make(map[string]int64),
+			config:      DefaultConfig(),
+			clients:     make(map[int64]*Client),
+			listeners:   make(map[int64]*Listener),
+			tunnels:     make(map[int64]*Tunnel),
+			hosts:       make(map[int64]*Host),
+			tasks:       make(map[int64]*Task),
+			vkeyIndex:   make(map[string]int64),
 			blockedKeys: make(map[string]bool),
 		}
 	})
@@ -324,11 +324,14 @@ func (e *Engine) GetClientList(offset, limit int, field, order, search, sort str
 		}
 	}
 
-	// status 过滤：1=仅在线，2=仅离线
+	// status 过滤：1=仅在线，2=仅离线。
+	// 在线判定必须与面板展示一致（Status || NowConn>0）——HTTP/WS 传输只有
+	// Status 会被 checkin 置位，NowConn 恒为 0；此前只看 NowConn 会让"在线"筛选
+	// 返回空列表（e2e 抓到的真 bug）。
 	if status == 1 || status == 2 {
 		f := make([]*Client, 0, len(filtered))
 		for _, c := range filtered {
-			online := c.NowConn > 0
+			online := clientOnline(c)
 			if (status == 1 && online) || (status == 2 && !online) {
 				f = append(f, c)
 			}
@@ -352,7 +355,8 @@ func sortClients(list []*Client, field, order string) {
 	less := func(i, j int) bool {
 		a, b := list[i], list[j]
 		var r bool
-		switch field {
+		// 面板可能传 "Id"/"HostName" 这类首字母大写的字段名，统一按小写比较
+		switch strings.ToLower(field) {
 		case "id":
 			r = a.ID < b.ID
 		case "ip":
@@ -365,8 +369,12 @@ func sortClients(list []*Client, field, order string) {
 			r = a.Arch < b.Arch
 		case "version":
 			r = a.Version < b.Version
-		case "lastTime":
+		case "lasttime", "pingchecktime":
 			r = a.LastTime < b.LastTime
+		case "hostname":
+			r = a.HostName < b.HostName
+		case "username":
+			r = a.UserName < b.UserName
 		default:
 			r = a.ID < b.ID
 		}
@@ -379,9 +387,25 @@ func sortClients(list []*Client, field, order string) {
 }
 
 // clientMatches 检查客户端是否匹配 search 关键字。
+// clientMatches 判断客户端是否命中搜索词（大小写不敏感）。
+//
+// 覆盖面板搜索框实际会输入的字段：主机名、用户名、IP、进程名、备注、系统、架构、版本。
+// 此前只匹配 Addr/Remark/OSType/Arch/Version，按主机名搜不到任何结果（e2e 抓到的 bug）。
 func clientMatches(c *Client, search string) bool {
-	return contains(c.Addr, search) || contains(c.Remark, search) ||
-		contains(c.OSType, search) || contains(c.Arch, search) || contains(c.Version, search)
+	if c == nil || search == "" {
+		return false
+	}
+	q := strings.ToLower(search)
+	fields := []string{
+		c.HostName, c.UserName, c.LocalIP, c.Addr, c.ProcessName,
+		c.Remark, c.OSType, c.Arch, c.Version, c.Location,
+	}
+	for _, f := range fields {
+		if f != "" && strings.Contains(strings.ToLower(f), q) {
+			return true
+		}
+	}
+	return false
 }
 
 func contains(s, sub string) bool {
@@ -1049,3 +1073,10 @@ func (e *Engine) SaveTunnels() {
 	}
 }
 
+// clientOnline 是全局统一的"在线"判定：checkin 置位的 Status，或仍有连接。
+func clientOnline(c *Client) bool {
+	if c == nil {
+		return false
+	}
+	return c.Status || c.NowConn > 0
+}

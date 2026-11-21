@@ -451,6 +451,14 @@ api POST /setting/edit "{\"wx_key\":\"e2e-wx\",\"dingding_access_token\":\"e2e-d
   | grep -q '"code":0' || fail "setting/edit failed"
 api GET /setting/get | grep -q 'e2e-wx' || fail "setting/get did not persist"
 
+# --- 客户端列表过滤（status / search / 排序）
+ONLINE_CNT=$(api POST /client/list '{"page":1,"pageSize":50,"status":1}' | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['result']['total'])")
+[[ "$ONLINE_CNT" -ge 1 ]] || fail "client/list status=1 未返回在线客户端（NowConn/Status 判定不一致？）"
+SEARCH_CNT=$(api POST /client/list "{\"page\":1,\"pageSize\":50,\"search\":\"$(hostname)\"}" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['result']['total'])")
+[[ "$SEARCH_CNT" -ge 1 ]] || fail "client/list search 未按主机名命中"
+SORTED_HEAD=$(api POST /client/list '{"page":1,"pageSize":50,"field":"Id","order":"descend"}' | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['result']['items'][0]['Id'])")
+[[ -n "$SORTED_HEAD" ]] || fail "client/list 排序返回空"
+
 # --- 客户端备注 / 删除文件
 api POST /client/editremark "{\"id\":$CLIENT_ID,\"remark\":\"e2e-note\"}" | grep -q '"code":0' \
   || fail "client/editremark failed"

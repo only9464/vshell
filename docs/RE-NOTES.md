@@ -742,4 +742,20 @@ garbled 字面量访问方式），所以"字符串→xref→函数"这条路径
 回归测试：`TestUpdateConfigKeepsJWTSecretStable`（保存设置后旧 token 仍有效）、
 `TestSettingEditVisibleImmediately`（保存后立刻可读）。
 
+### E-52 客户端列表的筛选/搜索两个真 bug（R39）
+
+给 `client/list` 补筛选断言时抓到两个问题：
+
+1. **`status=1`（仅在线）返回空**：引擎侧用 `NowConn > 0` 判定在线，但 HTTP/WS 传输
+   只有 `Status` 会被 checkin 置位、`NowConn` 恒为 0 → "在线"筛选永远空。
+   修复：统一为 `clientOnline(c) = c.Status || c.NowConn > 0`（与面板 `IsConnect` 同源）。
+2. **搜索按主机名搜不到**：`clientMatches` 只匹配 `Addr/Remark/OSType/Arch/Version`，
+   不含 `HostName/UserName/LocalIP/ProcessName/Location`，且区分大小写。
+   修复：覆盖全部展示字段 + 大小写不敏感。
+
+另外把 `sortClients` 的字段名改成大小写不敏感（面板会传 `Id`/`HostName` 这类首字母大写）。
+
+回归测试：`TestGetClientListStatusFilterUsesStatus`、`TestClientSearchAndSortFields`；
+e2e §7q 增加 status/search/排序三项断言。
+
 
