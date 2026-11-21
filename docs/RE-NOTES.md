@@ -953,4 +953,19 @@ md5("IVAoXA2etic7VgbY") = a7e788304e325a859b36f9063e8b4a88   ← 与 conn2 应�
 > 当时 `cp` 因"文本文件忙"失败，而老进程的 `exe` 已经变成 `(deleted)`，
 > 用 `ls -l /proc/<pid>/exe` 才看出来还在跑旧二进制。
 
+### E-61 重启后面板显示"运行"但端口没在听（R60，交付包实测发现）
+
+现象：重启服务端后，「监听器」页显示**运行**，但 `:8083` 没有任何进程监听，
+agent 一直 `connect: connection refused`；再点"启动"却报 `already start`。
+
+原因：监听器的 `Status` 是**持久化**字段，重启后原样加载为 true；但真正的
+`net.Listen` 只在 `engineStartListener` 里发生，启动流程没有恢复动作。
+
+修复：`AppStart` 在 `engine.Init()` 之后调用 `restoreRunningListeners()`，
+把持久化里标记为运行中的监听器逐个真正启动，并打印
+`Restored N listener(s) from persisted state`。
+
+实测：重启后 `:8083` 直接处于监听状态，agent 自动恢复上线，
+概览页 `1 台 / 在线 1`。
+
 

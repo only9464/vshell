@@ -640,7 +640,29 @@ func AppStart(cfg *utils.FullSettings) error {
 	}); err != nil {
 		return err
 	}
+	// 恢复监听器：持久化里标记为"运行中"的监听器，重启后必须真正重新绑定端口，
+	// 否则面板显示"运行"但端口没在听，agent 连不上（R60 实测踩到）。
+	restoreRunningListeners()
 	return nil
+}
+
+// restoreRunningListeners 重新启动上次运行时处于开启状态的监听器。
+func restoreRunningListeners() {
+	eng := c2engine.GetEngine()
+	started := 0
+	for _, l := range eng.GetListenerList() {
+		if l == nil || !l.Status {
+			continue
+		}
+		if err := engineStartListener(l.ID); err != nil {
+			log.Printf("[C2Engine] Restore listener %d failed: %v", l.ID, err)
+			continue
+		}
+		started++
+	}
+	if started > 0 {
+		log.Printf("[C2Engine] Restored %d listener(s) from persisted state", started)
+	}
 }
 
 // licenseConfigKey 是原版在设置单例中查询的许可证配置键（FUN_0194bd60 以
