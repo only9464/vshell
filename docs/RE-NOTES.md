@@ -798,7 +798,11 @@ e2e §7q 增加 status/search/排序三项断言。
    > 被 `TestTunnelServerRelaysBytes` 立刻抓出来（OnOpen 不再被调用），已修正为
    > "在既有临界区内直接读字段"。
 
-3. **WS 测试的拆除顺序**（仅测试代码）
+3. **`C2Listener.Start` 读 `Config.Mode`**：`UpdateListener` 会改写监听器字段，
+   而监听 goroutine 并发读 `cl.Config.Mode` → 竞争。修复：构造时把 `mode`
+   快照到 `C2Listener.mode`，`Start` 内只用快照。
+
+4. **WS 测试的拆除顺序**（仅测试代码）
    `httptest.Server.Close()` 不等待被 hijack 的 WebSocket 连接，处理器的 defer 里还会
    向 agent 投递 `terminal_close`，于是与下一个测试的 `Engine.Init()` 竞争。
    修复：新增 `closeWS()` 测试助手——先关连接，轮询等待 viewer 注销，再关服务器。

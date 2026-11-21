@@ -33,12 +33,15 @@ import (
 // C2Listener 管理单个 C2 协议监听器。
 // C2Listener manages a single C2 protocol listener.
 type C2Listener struct {
-	mu        sync.RWMutex
-	ID        int64
-	Config    *Listener
-	server    *http.Server
-	listener  net.Listener
-	tlsCert   *tls.Certificate
+	mu       sync.RWMutex
+	ID       int64
+	Config   *Listener
+	server   *http.Server
+	listener net.Listener
+	tlsCert  *tls.Certificate
+	// mode 在构造时快照：运行期 goroutine 不能再读 Config.Mode，
+	// 否则会与 UpdateListener 的写入竞争（-race 实测）。
+	mode      string
 	isRunning bool
 	stopCh    chan struct{}
 	mux       *http.ServeMux
@@ -64,6 +67,7 @@ func NewC2Listener(config *Listener) *C2Listener {
 	return &C2Listener{
 		ID:       config.ID,
 		Config:   config,
+		mode:     config.Mode,
 		sessions: make(map[string]*AgentSession),
 		stopCh:   make(chan struct{}),
 	}
@@ -100,7 +104,7 @@ func (cl *C2Listener) Start() error {
 	cl.mux = mux
 
 	// Register C2 protocol handlers based on mode
-	switch cl.Config.Mode {
+	switch cl.mode {
 	case ListenerModeHTTP:
 		cl.registerHTTPHandlers(mux)
 	case ListenerModeHTTPS:
@@ -128,7 +132,7 @@ func (cl *C2Listener) Start() error {
 		IdleTimeout:  120 * time.Second,
 	}
 
-	if cl.Config.Mode == ListenerModeHTTPS {
+	if cl.mode == ListenerModeHTTPS {
 		cert, err := cl.loadOrGenerateTLS()
 		if err != nil {
 			cl.mu.Unlock()
@@ -150,7 +154,7 @@ func (cl *C2Listener) Start() error {
 		cl.mu.Unlock()
 
 		var err error
-		if cl.Config.Mode == ListenerModeHTTPS {
+		if cl.mode == ListenerModeHTTPS {
 			ln, e := net.Listen("tcp", addr)
 			if e != nil {
 				log.Printf("[C2Listener %d] Failed to bind: %v", cl.ID, e)
