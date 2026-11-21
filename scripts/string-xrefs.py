@@ -91,7 +91,43 @@ def rodata_strings(blob, base_addr, data):
     return out
 
 
-def rip_relative_targets(blob, text_off, text_size, text_addr):
+def instruction_starts(blob, text_off, text_size, text_addr, cache):
+    """用 objdump 取 .text 内全部指令起始地址（过滤"指令内部字节"造成的假阳性）。
+
+    结果按 (text_addr, text_size) 缓存在 cache 里，避免每个 pattern 重跑 objdump。
+    """
+    key = (text_addr, text_size)
+    if key in cache:
+        return cache[key]
+    import subprocess, tempfile, os
+    path = os.environ.get("STRING_XREFS_BIN")
+    starts = set()
+    if not path:
+        cache[key] = None
+        return None
+    with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as tmp:
+        out = tmp.name
+    try:
+        subprocess.run(["objdump", "-d", "--no-show-raw-insn", path],
+                       stdout=open(out, "w"), stderr=subprocess.DEVNULL, text=True)
+        for line in open(out, encoding="utf-8", errors="ignore"):
+            if ":" not in line:
+                continue
+            head = line.split(":", 1)[0].strip()
+            if head and all(c in "0123456789abcdef" for c in head):
+                addr = int(head, 16)
+                if text_addr <= addr < text_addr + text_size:
+                    starts.add(addr)
+    finally:
+        try:
+            os.unlink(out)
+        except OSError:
+            pass
+    cache[key] = starts
+    return starts
+
+
+def rip_relative_targets(blob, text_off, text_size, text_addr, starts=None):
     """扫 .text，产出 (instr_addr, target_addr)。"""
     data = blob[text_off:text_off + text_size]
     prefixes = (b"\x48\x8d", b"\x4c\x8d", b"\x48\x8b", b"\x4c\x8b")
@@ -107,8 +143,12 @@ def rip_relative_targets(blob, text_off, text_size, text_addr):
             if (modrm & 0xC7) == 0x05:  # mod=00, rm=101 → RIP 相对
                 disp = struct.unpack_from("<i", data, pos + 3)[0]
                 instr_addr = text_addr + pos
-                yield instr_addr, instr_addr + 7 + disp
+                if starts is None or instr_addr in starts:
+                    yield instr_addr, instr_addr + 7 + disp
             pos += 1
+
+
+_START_CACHE = {}
 
 
 def main():
@@ -149,7 +189,12 @@ def main():
     tx_off, tx_size, tx_addr = find_section(blob, ".text")
     hits = {k: [] for k in wanted}
     wanted_addrs = set(wanted)
-    for instr_addr, target in rip_relative_targets(blob, tx_off, tx_size, tx_addr):
+    import os as _os
+    _os.environ.setdefault("STRING_XREFS_BIN", args.binary)
+    starts = instruction_starts(blob, tx_off, tx_size, tx_addr, _START_CACHE)
+    if starts is not None:
+        print(f"[对齐] 指令起始 {len(starts)} 条（已过滤指令内部命中）", file=sys.stderr)
+    for instr_addr, target in rip_relative_targets(blob, tx_off, tx_size, tx_addr, starts):
         if target in wanted_addrs:
             hits[target].append(instr_addr)
 
