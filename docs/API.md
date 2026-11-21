@@ -249,3 +249,25 @@ JWT claims：`{token_type, user_id, role_id, username, exp, iat}`，有效期 24
 | 2 | `/api/client/add` 可用（原版 500） | 原版 bug，保留可用实现 |
 | 3 | `client/list` 的 `clientCount` 为真实总数（原版曾出现 -1） | 原版计数器语义未恢复 |
 | 4 | listener 支持 `Host/Port/ListenAddr/EncryptSalt` 入参 | 原版 Add 不接受地址；复刻端需要可指定端口（e2e 依赖） |
+
+---
+
+## 附录 A：API 路径对齐检查（R34）
+
+`scripts/api-parity.py` 从**原版前端包**（`static/assets/*.js`）提取实际请求路径，与
+`router/router.go` 注册的路由做差集。当前结果：
+
+```
+原版 API 路径: 47    复刻端: 61
+缺失 0 个，多出 14 个
+```
+
+"多出"的 14 个都是复刻端显式实现、但原版前端未直接调用的接口：
+
+| 类别 | 端点 |
+|---|---|
+| 下载（前端走 `<a>`/表单直链，不走 axios） | `/download/stageless`、`/download/stage`、`/download/shellcode`、`/download/dll`、`/download/listen`、`/download/listendll`、`/file/downloadtobrowser` |
+| 登录/用户（原版前端在 index.html 内联脚本或别处调用） | `/login`、`/logout`、`/getUserInfo`、`/getMenuList`、`/getPermCode` |
+| 长连接 | `/terminal/ws`、`/screen/ws` |
+
+结论：**原版前端用到的 API，复刻端一个不缺**。该脚本可作为后续改动的对齐守卫。

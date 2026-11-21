@@ -155,6 +155,7 @@
 | 插件执行 | 面板读文件下发；agent 落盘（0700）执行、60s 超时、清理临时目录；非法名/坏 base64/非零退出都有测试 | `agent/plugin_exec_test.go` |
 | 屏幕输入 | `screen_input move/click/scroll/key` → 解析 → xdotool argv（`screen_input_test.go` 覆盖 4 类事件与非法输入）；e2e 断言命令确实路由到 agent | `agent/screen_input.go` |
 | 通知 / OSS | 需要第三方凭证，按操作者要求**暂不实现**（字段保留、上传明确报未实现），见 `docs/GAPS.md` §F |
+| API 面 | 用 `scripts/api-parity.py` 对照原版前端包：**缺失 0 个**，多出的 14 个均为复刻端显式实现（下载直链/登录/长连接） | `scripts/api-parity.py`、`docs/API.md` 附录 A |
 | 原生 MCP | `vshell-server mcp`：13 个工具覆盖客户端/命令/文件/隧道/截图/概览；stdio JSON-RPC；登录取 JWT 规避跨进程密钥不一致 | `mcp/`、`docs/MCP.md` |
 | 巡检/维护 | `AppBackground` 现在启动健康巡检 + 维护任务（此前是死代码）；`Health` 懒初始化避免 panic | `controllers/engine.go`、`c2engine/health.go` |
 | 分块下载/进度 | agent 支持 `offset/length` 并按块回 `chunk:<total>:<b64>`；面板 1 MiB/块拉取并回填进度；e2e 用 3 MiB 文件校验字节数与 `pre:100` | `agent/main.go`、`controllers/file.go` |
