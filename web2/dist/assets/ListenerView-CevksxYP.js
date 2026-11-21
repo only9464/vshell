@@ -1,0 +1,1 @@
+import{d as a,i as n,w as r,r as e,a as s,o as c}from"./index-5qVFoHo3.js";const d=a({__name:"ListenerView",setup(_){return(p,i)=>{const t=e("a-empty"),o=e("a-card");return c(),n(o,null,{default:r(()=>[s(t,{description:"ListenerView 待移植（当前使用旧前端）"})]),_:1})}}});export{d as default};

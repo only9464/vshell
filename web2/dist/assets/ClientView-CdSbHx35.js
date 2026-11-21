@@ -1,0 +1,1 @@
+import{d as a,i as n,w as c,r as e,a as r,o as s}from"./index-5qVFoHo3.js";const l=a({__name:"ClientView",setup(_){return(p,i)=>{const t=e("a-empty"),o=e("a-card");return s(),n(o,null,{default:c(()=>[r(t,{description:"ClientView 待移植（当前使用旧前端）"})]),_:1})}}});export{l as default};

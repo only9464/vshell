@@ -38,6 +38,8 @@ func main() {
 	chrome := flag.String("chrome", "chromium", "浏览器可执行文件")
 	keep := flag.Bool("keep", false, "结束后保留浏览器进程（调试用）")
 	typeText := flag.String("type", "", "在 -script 之后向聚焦元素输入这段文本并回车（走 CDP Input 域，真实键盘事件）")
+	netlog := flag.Bool("net", false, "收集页面加载期间的网络请求（URL + 关键请求头）并打印为 JSON")
+	preload := flag.String("preload", "", "在每个新文档加载**之前**执行的 JS（Page.addScriptToEvaluateOnNewDocument），常用来自动登录 / 注入 token")
 	flag.Parse()
 
 	cmd := exec.Command(*chrome, "--headless=new", "--disable-gpu", "--no-sandbox",
@@ -70,11 +72,26 @@ func main() {
 	}
 	defer conn.Close()
 
+	_ = call(conn, 5, "Page.enable", map[string]interface{}{})
+	if *preload != "" {
+		// 在页面脚本运行前注入：SPA 读取 localStorage 时就能拿到 token/会话
+		if err := call(conn, 6, "Page.addScriptToEvaluateOnNewDocument",
+			map[string]interface{}{"source": *preload}); err != nil {
+			fail("注入 preload 失败: %v", err)
+		}
+		// 注入只对**之后**加载的文档生效，因此重新导航一次
+		_ = call(conn, 7, "Page.navigate", map[string]interface{}{"url": *url})
+	}
+
 	time.Sleep(*wait)
 
 	res, err := evaluate(conn, *script)
 	if err != nil {
 		fail("执行脚本失败: %v", err)
+	}
+	if *netlog {
+		printNet(conn, *wait)
+		return
 	}
 	if *typeText != "" {
 		// 打字前先"点一下"终端区域：页面在收到 WS 输出后会重渲染，
@@ -235,4 +252,47 @@ func call(conn *websocket.Conn, id int, method string, params map[string]interfa
 		}
 		return nil
 	}
+}
+
+// printNet 打开 Network 域，收集一段时间内的请求（URL + 请求头里的鉴权字段）。
+func printNet(conn *websocket.Conn, wait time.Duration) {
+	_ = call(conn, 20, "Network.enable", map[string]interface{}{})
+	deadline := time.Now().Add(wait)
+	type rec struct {
+		URL  string            `json:"url"`
+		Auth map[string]string `json:"auth,omitempty"`
+	}
+	var out []rec
+	// 注意：gorilla/websocket 在读到超时错误后连接即视为失败，**不能继续读**
+	// （会 panic "repeated read on failed websocket connection"）。
+	// 因此这里设一个总时限，读到错误就结束收集。
+	_ = conn.SetReadDeadline(deadline)
+	for {
+		_, data, err := conn.ReadMessage()
+		if err != nil {
+			break
+		}
+		var ev struct {
+			Method string `json:"method"`
+			Params struct {
+				Request struct {
+					URL     string            `json:"url"`
+					Headers map[string]string `json:"headers"`
+				} `json:"request"`
+			} `json:"params"`
+		}
+		if err := json.Unmarshal(data, &ev); err != nil || ev.Method != "Network.requestWillBeSent" {
+			continue
+		}
+		auth := map[string]string{}
+		for k, v := range ev.Params.Request.Headers {
+			lk := strings.ToLower(k)
+			if strings.Contains(lk, "token") || lk == "authorization" || strings.Contains(lk, "cookie") {
+				auth[k] = v
+			}
+		}
+		out = append(out, rec{URL: ev.Params.Request.URL, Auth: auth})
+	}
+	b, _ := json.MarshalIndent(out, "", "  ")
+	fmt.Println(string(b))
 }

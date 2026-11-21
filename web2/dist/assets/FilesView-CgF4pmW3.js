@@ -1,0 +1,1 @@
+import{d as a,i as n,w as s,r as e,a as c,o as r}from"./index-5qVFoHo3.js";const l=a({__name:"FilesView",setup(_){return(p,i)=>{const o=e("a-empty"),t=e("a-card");return r(),n(t,null,{default:s(()=>[c(o,{description:"FilesView 待移植（当前使用旧前端）"})]),_:1})}}});export{l as default};
