@@ -233,3 +233,21 @@ func TestDoRequestRetriesAfter401(t *testing.T) {
 		t.Fatalf("logins = %d（应重新登录）", got)
 	}
 }
+
+// 配置了密码却登录不上时，返回的错误必须带可读原因（此前会静默回落自签 token，
+// 最终只抛出一个空白错误）。这里用一个不存在的面板地址验证错误信息非空。
+func TestTokenLoginFailureIsReadable(t *testing.T) {
+	// 指向一个必然连不上的端口，且配置了密码（走真实登录分支）
+	utils.SetFullSettingsForTest(&utils.FullSettings{
+		WebIP: "127.0.0.1", WebPort: 1, WebUsername: "admin", WebPassword: "x",
+	})
+	invalidateToken()
+	_, err := token()
+	if err == nil {
+		t.Fatal("期望登录失败返回错误，实际 nil")
+	}
+	if !strings.Contains(err.Error(), "登录面板失败") {
+		t.Fatalf("错误信息不可读: %v", err)
+	}
+	invalidateToken()
+}

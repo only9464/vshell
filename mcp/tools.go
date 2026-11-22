@@ -306,19 +306,28 @@ func token() (string, error) {
 		body, _ := json.Marshal(map[string]string{"username": cfg.WebUsername, "password": cfg.WebPassword})
 		client := &http.Client{Timeout: 10 * time.Second}
 		resp, err := client.Post(baseURL()+"/login", "application/json", bytes.NewReader(body))
-		if err == nil {
-			defer resp.Body.Close()
-			var env struct {
-				Result struct {
-					Token string `json:"token"`
-				} `json:"result"`
-			}
-			if json.NewDecoder(resp.Body).Decode(&env) == nil && env.Result.Token != "" {
-				tokenValue = env.Result.Token
-				tokenExpiry = time.Now().Add(20 * time.Hour)
-				return tokenValue, nil
-			}
+		if err != nil {
+			// 配置了密码就必须真正登录成功：否则本地自签的 token 会因为
+			// JWT 密钥不同而被面板 401，最终只抛出一个空白错误，很难排查。
+			return "", fmt.Errorf("登录面板失败（%s）：%v", baseURL()+"/login", err)
 		}
+		defer resp.Body.Close()
+		var env struct {
+			Result struct {
+				Token string `json:"token"`
+			} `json:"result"`
+			Message string `json:"message"`
+		}
+		if json.NewDecoder(resp.Body).Decode(&env) == nil && env.Result.Token != "" {
+			tokenValue = env.Result.Token
+			tokenExpiry = time.Now().Add(20 * time.Hour)
+			return tokenValue, nil
+		}
+		msg := env.Message
+		if msg == "" {
+			msg = fmt.Sprintf("HTTP %d", resp.StatusCode)
+		}
+		return "", fmt.Errorf("登录面板失败（检查 conf/setting.conf 的 web_username/web_password）：%s", msg)
 	}
 
 	tok, err := utils.GenerateToken(cfg.WebUsername)
