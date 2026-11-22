@@ -271,6 +271,32 @@ JS
 FCTX_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$FCTX_JS" 2>&1)
 echo "$FCTX_OUT" | grep -q 'FCTX_OK' || fail "文件右键菜单异常: $(echo "$FCTX_OUT" | tail -c 100)"
 
+log "一键上线命令弹窗（Linux / Windows 两段命令）"
+ONELINER_JS=$(cat <<'JS'
+(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const waitFor = async (fn, ms) => { const t0=Date.now(); while(Date.now()-t0<ms){ if(fn()) return true; await sleep(300); } return false; };
+  if (document.body.innerText.includes('登录') && document.querySelectorAll('input').length >= 2) {
+    const inputs = [...document.querySelectorAll('input')];
+    const set = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles:true})); };
+    set(inputs[0], 'admin'); set(inputs[1], 'p1');
+    await sleep(300);
+    [...document.querySelectorAll('button')].find(b => b.innerText.replace(/\s/g,'') === '登录')?.click();
+    await waitFor(() => location.hash.includes('/dashboard'), 8000);
+  }
+  location.hash = '#/download/index';
+  if (!await waitFor(() => document.body.innerText.includes('客户端生成'), 10000)) return 'ONELINER_FAIL 不在生成页';
+  [...document.querySelectorAll('button')].find(b => b.innerText.replace(/\s/g,'') === '一键上线命令查看')?.click();
+  if (!await waitFor(() => !!document.querySelector('.oneliner-code'), 6000)) return 'ONELINER_FAIL 无弹窗';
+  const codes = [...document.querySelectorAll('.oneliner-code')].map(e => e.innerText.trim());
+  const ok = codes.length === 2 && codes.some(c => c.includes('curl')) && codes.some(c => c.includes('certutil'));
+  return ok ? 'ONELINER_OK' : 'ONELINER_FAIL ' + JSON.stringify(codes.map(c => c.slice(0, 30)));
+})()
+JS
+)
+ONELINER_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$ONELINER_JS" 2>&1)
+echo "$ONELINER_OUT" | grep -q 'ONELINER_OK' || fail "一键上线命令弹窗异常: $(echo "$ONELINER_OUT" | tail -c 110)"
+
 log "客户端列表列排序（4.9.3 的 sorter 列）"
 SORT_JS=$(cat <<'JS'
 (async () => {

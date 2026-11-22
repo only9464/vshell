@@ -63,6 +63,9 @@ function oneLiner(platform: 'linux' | 'windows', useWS: boolean) {
   return `(curl -fsSL -m180 ${url}||wget -T180 -q ${url})|sh`
 }
 
+const onelinerOpen = ref(false)
+function openOneLiner() { onelinerOpen.value = true }
+
 async function copyOneLiner(platform: 'linux' | 'windows', useWS = false) {
   const c = oneLiner(platform, useWS)
   try { await navigator.clipboard.writeText(c); message.success('命令已复制') }
@@ -127,7 +130,7 @@ async function copy(kind: 'stageless' | 'listen', platform: 'auto' | 'windows' |
     <a-divider />
     <a-space wrap>
       <a-button type="primary" @click="download('stageless')">下载</a-button>
-      <a-button @click="copy('stageless')">一键上线命令查看</a-button>
+      <a-button @click="openOneLiner">一键上线命令查看</a-button>
       <a-button @click="copyOneLiner('linux')">Linux 上线命令</a-button>
       <a-button @click="copyOneLiner('windows')">Windows 上线命令</a-button>
     </a-space>
@@ -169,5 +172,24 @@ async function copy(kind: 'stageless' | 'listen', platform: 'auto' | 'windows' |
       <a-button @click="copy('listen', 'windows')">Windows 上线命令</a-button>
       <a-button @click="copy('listen', 'linux')">Linux 上线命令</a-button>
     </a-space>
+    <!-- 一键上线命令查看：4.9.3 的宽 40% 弹窗，内含 Linux / Windows 两段命令 -->
+    <a-modal v-model:open="onelinerOpen" title="一键上线命令查看" :width="720" :footer="null">
+      <div class="oneliner-block">
+        <div class="oneliner-title">Linux 上线命令</div>
+        <pre class="oneliner-code">{{ oneLiner('linux', form.tp === 'ws') }}</pre>
+        <a-button size="small" @click="copyOneLiner('linux', form.tp === 'ws')">复制</a-button>
+      </div>
+      <div class="oneliner-block">
+        <div class="oneliner-title">Windows 上线命令</div>
+        <pre class="oneliner-code">{{ oneLiner('windows', form.tp === 'ws') }}</pre>
+        <a-button size="small" @click="copyOneLiner('windows', form.tp === 'ws')">复制</a-button>
+      </div>
+    </a-modal>
   </a-card>
 </template>
+
+<style scoped>
+.oneliner-block { margin-bottom: 18px; }
+.oneliner-title { font-weight: 600; margin-bottom: 6px; }
+.oneliner-code { background: rgba(0, 0, 0, 0.04); padding: 10px; border-radius: 6px; font-size: 12px; white-space: pre-wrap; word-break: break-all; margin-bottom: 8px; }
+</style>
