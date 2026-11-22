@@ -53,10 +53,26 @@ const NAME_ICON: Record<string, string> = {
   'pom.xml': 'maven', 'build.gradle': 'gradle', 'terraform.tf': 'terraform', 'chart.yaml': 'helm',
 }
 
+// 目录专属图标（按目录名），material-icon-theme 里存在的 folder-* 图标
+const FOLDER_ICON: Record<string, string> = {
+  src: 'folder-src', '.git': 'folder-git', dist: 'folder-dist', test: 'folder-test',
+  docs: 'folder-docs', config: 'folder-config', api: 'folder-api', lib: 'folder-lib',
+  public: 'folder-public', scripts: 'folder-scripts', home: 'folder-home', log: 'folder-log',
+  backup: 'folder-backup', database: 'folder-database', docker: 'folder-docker',
+  kubernetes: 'folder-kubernetes', vue: 'folder-vue', angular: 'folder-angular',
+  python: 'folder-python', go: 'folder-go', rust: 'folder-rust', java: 'folder-java',
+  theme: 'folder-theme', images: 'folder-images', font: 'folder-font',
+  download: 'folder-download', desktop: 'folder-desktop', video: 'folder-video',
+  trashes: 'folder-trash',
+}
+
 const DEFAULT_FILE_ICON = 'document'
 
 function fileIcon(r: any) {
-  if (isDir(r)) return 'material-icon-theme:folder-base'
+  if (isDir(r)) {
+    const folder = FOLDER_ICON[nameOf(r).toLowerCase()]
+    return `material-icon-theme:${folder || 'folder-base'}`
+  }
   const name = nameOf(r)
   const lower = name.toLowerCase()
   // 先按特例文件名匹配，再按扩展名

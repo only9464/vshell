@@ -132,6 +132,16 @@ web2/
 > 必须写进 `safelist`，否则不会生成 SVG。另外 presetIcons 用的是 `mask-image`
 > 而不是 `background-image`——验证时要查 `maskImage`。
 
+### 目录专属图标（R84）
+
+目录按名字取 `folder-*` 图标（没有匹配的回落 `folder-base`）：
+`src / .git / dist / test / docs / config / api / lib / public / scripts / home / log /
+backup / database / docker / kubernetes / vue / angular / python / go / rust / java /
+theme / images / font / download / desktop / video / trash`。
+
+图标名已用脚本对集合与 safelist 双向校验（29 个 folder-* 全部存在且已入 safelist）。
+实测：根目录下 `home/` 显示 `folder-home`，其余无匹配的显示 `folder-base`。
+
 ### 文件树（R83）
 
 `FilesView` 左侧是**自实现的懒加载目录树**（没用 antd Tree：试过 `a-tree` 的
