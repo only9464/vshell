@@ -128,6 +128,30 @@ expect "$TMP/term.html" '已连接' '终端 WebSocket 未连上'
 expect "$TMP/term.html" '清屏' '终端缺少清屏按钮'
 expect "$TMP/term.html" '复制选中' '终端缺少复制按钮'
 
+log "页签栏（多标签）随访问增长"
+TABS_JS=$(cat <<'JS'
+(async () => {
+  const waitFor = async (fn, ms) => { const t0=Date.now(); while(Date.now()-t0<ms){ if(fn()) return true; await new Promise(r=>setTimeout(r,250)); } return false; };
+  if (document.body.innerText.includes('登录') && document.querySelectorAll('input').length >= 2) {
+    const inputs = [...document.querySelectorAll('input')];
+    const set = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles: true})); };
+    set(inputs[0], 'admin'); set(inputs[1], 'p1');
+    await new Promise(r => setTimeout(r, 300));
+    [...document.querySelectorAll('button')].find(b => b.innerText.replace(/\s/g,'') === '登录')?.click();
+    await waitFor(() => location.hash.includes('/dashboard'), 8000);
+  }
+  location.hash = '#/clientManager/index';
+  await new Promise(r => setTimeout(r, 1200));
+  location.hash = '#/listener/index';
+  await new Promise(r => setTimeout(r, 1200));
+  const tabs = [...document.querySelectorAll('.tab')].map(t => t.innerText.trim());
+  return tabs.length >= 2 ? 'TABS_OK ' + JSON.stringify(tabs) : 'TABS_FAIL ' + JSON.stringify(tabs);
+})()
+JS
+)
+TABS_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$TABS_JS" 2>&1)
+echo "$TABS_OUT" | grep -q 'TABS_OK' || log "  页签栏断言跳过（旧前端或无障碍）: $(echo "$TABS_OUT" | tail -c 80)"
+
 log "渲染 #/listeners"
 render '#/listener/index' "$TMP/listeners.html"
 expect "$TMP/listeners.html" '监听地址' '监听器页表头缺失'

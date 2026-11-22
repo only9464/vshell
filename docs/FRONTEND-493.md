@@ -68,6 +68,16 @@ web2/
 | `/setting/index` | ✅ 完成 | 企业微信/钉钉三个字段 + 保存 |
 | `/about/index` | ✅ 完成 | 版本、许可到期、Web 端口、客户端上限 |
 
+## 4.0 布局对齐 4.9.3
+
+| 元素 | 实现 |
+|---|---|
+| 侧栏 | 深色 `#001529`（实测 rgb(0,21,41)）、宽 210px、折叠 64px、VS 圆角 logo |
+| 顶栏 | 折叠按钮 / 面包屑（首页 › 当前页）/ 主题切换 / 用户菜单，高 56px |
+| **页签栏** | vben 风格多标签：按访问顺序累积、可单个关闭、当前页高亮，存 `sessionStorage['vshell.tabs']` |
+| 暗色 | `<html data-theme="dark">` + 全局变量覆盖（body/layout/card/table/header） |
+| 按钮文案 | 关闭 antd 中文按钮自动空格（"清 屏"→"清屏"） |
+
 ## 4.1 接口约定（重要）
 
 4.9.3 的业务接口**几乎都是 POST**（`client/list`、`listener/list`、`file/ls`…），
