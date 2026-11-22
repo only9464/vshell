@@ -5,6 +5,34 @@
 
 ---
 
+## 工具一览（13 个）
+
+参数名与示例都取自 `tools/list` 的真实 schema；「必填」列即 `required`。
+
+| 工具 | 作用 | 参数（必填加粗） |
+|---|---|---|
+| `list_clients` | 列出受控端（在线状态、主机名、系统、通道、地址） | — |
+| `list_listeners` | 列出监听器（模式、监听地址、Vkey、运行状态） | — |
+| `create_listener` | 创建并自动启动监听器（mode: http/https/kcp/websocket/dns/cdn_websocket） | **mode**、**vkey**、host、port、remark、dns_domain、ping_interval |
+| `run_command` | 在客户端执行 shell 命令（同步等待，最多 20s） | **client_id**、**command** |
+| `list_files` | 列目录 | **client_id**、**path** |
+| `read_file` | 读文本文件 | **client_id**、**path** |
+| `write_file` | 写文本文件（覆盖） | **client_id**、**path**、**content** |
+| `upload_file` | 本机 → 客户端（multipart 落盘） | **client_id**、**local_path**、**remote_dir** |
+| `download_file` | 客户端 → 本机 | **client_id**、**remote_path**、**local_path** |
+| `dashboard` | 服务端概览（计数、CPU/磁盘、版本） | — |
+| `list_tunnels` | 列出隧道 | — |
+| `start_tunnel` | 建并启动隧道（服务器 port → agent → target） | **client_id**、**port**、**target**、server_addr |
+| `screenshot` | 抓客户端截图存 PNG（本机依赖，见 GAPS §E2） | **client_id**、**local_path**、quality |
+
+调用示例（stdio 一行一条 JSON）：
+
+```bash
+cd /home/kali/vshell-release
+printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"run_command","arguments":{"client_id":2,"command":"id"}}}' \
+  | ./vshell-server mcp
+```
+
 ## 1. 启动
 
 ```bash
