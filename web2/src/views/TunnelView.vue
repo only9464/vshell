@@ -9,6 +9,7 @@ const loading = ref(false)
 const open = ref(false)
 const editing = ref<number | null>(null)
 const clients = ref<any[]>([])
+const formRef = ref<any>(null)
 const form = reactive({
   clientId: 0, Port: 28001, Mode: 'tcp', Target: '127.0.0.1:22', Remark: '',
   Username: '', Password: '',
@@ -65,6 +66,7 @@ function edit(row: any) {
 }
 
 async function submit() {
+  try { await formRef.value?.validate() } catch { return }
   if (editing.value) await post('/tunnel/edit', { Id: editing.value, ...form })
   else await post('/tunnel/add', { ...form })
   message.success('已保存'); open.value = false; load()
@@ -105,8 +107,8 @@ function remove(row: any) {
     </a-table>
 
     <a-modal v-model:open="open" :title="editing ? '编辑隧道代理' : '新增隧道代理'" :width="520" @ok="submit">
-      <a-form :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
-        <a-form-item label="客户端">
+      <a-form ref="formRef" :model="form" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
+        <a-form-item label="客户端" name="clientId" :rules="[{ required: true, message: '请选择客户端' }]">
           <a-select v-model:value="form.clientId">
             <a-select-option v-for="c in clients" :key="c.Id" :value="c.Id">
               #{{ c.Id }} {{ c.HostName || c.LocalIP }}
@@ -121,8 +123,9 @@ function remove(row: any) {
             </a-radio-button>
           </a-radio-group>
         </a-form-item>
-        <a-form-item v-if="form.Mode !== 'socks5' && form.Mode !== 'http'" label="目标(IP:端口)" :help="'格式：10.1.1.99:80'">
-          <a-input v-model:value="form.Target" placeholder="10.1.1.99:80" />
+        <a-form-item v-if="form.Mode !== 'socks5' && form.Mode !== 'http'" label="目标(IP:端口)" name="Target"
+          :rules="[{ required: true, message: '请输入目标(IP:端口)' }]">
+          <a-input v-model:value="form.Target" placeholder="格式：10.1.1.99:80" />
         </a-form-item>
         <a-form-item v-if="form.Mode === 'socks5' || form.Mode === 'http'" label="用户名">
           <a-input v-model:value="form.Username" />

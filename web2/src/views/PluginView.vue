@@ -34,7 +34,7 @@ async function load() {
 onMounted(load)
 
 async function run() {
-  if (!pluginName.value) { message.warning('先选择插件'); return }
+  try { await formRef.value?.validate() } catch { return }
   loading.value = true
   output.value = ''
   try {
@@ -69,6 +69,7 @@ async function copyOut() {
 }
 
 const uploadRef = ref<HTMLInputElement>()
+const formRef = ref<any>(null)
 </script>
 
 <template>
@@ -80,7 +81,7 @@ const uploadRef = ref<HTMLInputElement>()
       <a-button type="primary" :loading="loading" @click="run">运行</a-button>
     </a-space>
 
-    <a-form :label-col="{ style: 'width: 100px' }" :wrapper-col="{ span: 14 }">
+    <a-form ref="formRef" :model="{ pluginName }" :label-col="{ style: 'width: 100px' }" :wrapper-col="{ span: 14 }">
       <a-form-item label="客户端">
         <a-input v-if="routeId" :value="clientLabel" readonly />
         <a-select v-else v-model:value="pickedId" placeholder="选择客户端">
@@ -89,7 +90,7 @@ const uploadRef = ref<HTMLInputElement>()
           </a-select-option>
         </a-select>
       </a-form-item>
-      <a-form-item label="选择插件">
+      <a-form-item label="选择插件" name="pluginName" :rules="[{ required: true, message: '请选择插件' }]">
         <a-select v-model:value="pluginName" placeholder="选择 plugins/ 下的插件">
           <a-select-option v-for="p in plugins" :key="p.name" :value="p.name">{{ p.name }}</a-select-option>
         </a-select>
