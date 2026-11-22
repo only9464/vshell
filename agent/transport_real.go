@@ -40,9 +40,9 @@ type realConn struct {
 
 // transportReal is the pooled transport (FUN_00fc7560 semantics).
 type transportReal struct {
-	mu    sync.Mutex
-	pool  *poolEntry // DAT_1e4909c8 equivalent
-	cfg   transportCfg
+	mu   sync.Mutex
+	pool *poolEntry // DAT_1e4909c8 equivalent
+	cfg  transportCfg
 }
 
 // transportCfg mirrors dialer +0x8 config (+0x30 hostname, +0x8 cfg).
@@ -72,6 +72,19 @@ func (t *transportReal) getOrCreateConnection() (*realConn, error) {
 	}
 	t.pool = &poolEntry{name: t.cfg.hostname, conn: conn, refcount: 1, next: t.pool}
 	return conn, nil
+}
+
+// resetConnection 丢弃池里的连接（服务端重启/断链后必须重建，否则会一直往
+// 已经死掉的 socket 上写，表现为 agent "还活着但永远离线"）。
+func (t *transportReal) resetConnection() {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	for e := t.pool; e != nil; e = e.next {
+		if e.conn != nil && e.conn.nc != nil {
+			_ = e.conn.nc.Close()
+		}
+	}
+	t.pool = nil
 }
 
 // connectCore mirrors FUN_00fc9de0: dial with bounded retry/backoff.
@@ -139,6 +152,9 @@ func newRealTransport(addr, verify, salt string) Transport {
 type realTransport struct {
 	inner *transportReal
 }
+
+// Reset 断开当前连接，下次 Checkin/GetTasks 会重新拨号（断线重连用）。
+func (r *realTransport) Reset() { r.inner.resetConnection() }
 
 // Checkin performs the agent check-in over the pooled connection.
 func (r *realTransport) Checkin() (*CheckinResponse, error) {

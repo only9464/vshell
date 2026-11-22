@@ -233,7 +233,10 @@ func registerTCPClient(req *CheckinRequest, remote string, listenerID int64) (*C
 // pendingTasksFor 取该客户端待执行任务（转换为 agent 侧 TaskItem 结构）。
 func pendingTasksFor(clientID int64) []map[string]interface{} {
 	eng := GetEngine()
-	tasks := eng.GetPendingTasks(clientID)
+	// 必须用"取出并标记已下发"：否则同一批任务会在每次 poll 时重复下发，
+	// agent 就会无限重复执行同一条命令（实测日志里 Task 200/201/202… 循环），
+	// 面板侧等待结果也会超时（表现为 "connection error"）。
+	tasks := eng.GetAndMarkPendingTasks(clientID)
 	out := make([]map[string]interface{}, 0, len(tasks))
 	for _, t := range tasks {
 		out = append(out, map[string]interface{}{

