@@ -9,26 +9,34 @@ const loading = ref(false)
 const open = ref(false)
 const editing = ref<number | null>(null)
 const clients = ref<any[]>([])
-const form = reactive({ clientId: 0, Port: 28001, Mode: 'tcp', Target: '127.0.0.1:22', Remark: '' })
+const form = reactive({
+  clientId: 0, Port: 28001, Mode: 'tcp', Target: '127.0.0.1:22', Remark: '',
+  Username: '', Password: '',
+})
 
 // 4.9.3 的四种隧道协议；后端目前只实现 TCP 代理，其余置灰并给出说明
+// 4.9.3 的顺序与文案：Socks5隧道 / HTTP隧道 / TCP代理 / UDP代理
+// 后端目前只实现 TCP 代理，其余置灰标注「未实现」
 const protocols = [
-  { label: 'TCP代理', value: 'tcp', disabled: false },
-  { label: 'UDP代理', value: 'udp', disabled: true },
   { label: 'Socks5隧道', value: 'socks5', disabled: true },
   { label: 'HTTP隧道', value: 'http', disabled: true },
+  { label: 'TCP代理', value: 'tcp', disabled: false },
+  { label: 'UDP代理', value: 'udp', disabled: true },
 ]
 
+// 列定义取自 4.9.3 bundle（vCTMULPY8.js）
 const columns = [
   { title: 'ID', dataIndex: 'Id', width: 70 },
-  { title: '客户端', dataIndex: 'client_id', width: 90 },
-  // 列名取自 4.9.3 locale：服务端端口 / 目标 (IP:端口) / 隧道状态
-  { title: '服务端端口', dataIndex: 'Port', width: 120 },
-  { title: '协议', dataIndex: 'Mode', width: 110 },
-  { title: '目标 (IP:端口)', dataIndex: 'Target', width: 200 },
+  { title: '客户端 ID', dataIndex: 'client_id', width: 100 },
+  { title: '备注', dataIndex: 'Remark', width: 120 },
+  { title: '模式', dataIndex: 'Mode', width: 110 },
+  { title: '端口', dataIndex: 'Port', width: 90 },
+  { title: '目标 (IP:端口)', dataIndex: 'Target', width: 190 },
+  { title: '用户名', dataIndex: 'username', width: 100 },
+  { title: '密码', dataIndex: 'password', width: 100 },
   { title: '隧道状态', dataIndex: 'RunStatus', width: 100 },
-  { title: '备注', dataIndex: 'Remark' },
-  { title: '操作', key: 'action', width: 200, fixed: 'right' },
+  { title: '客户端状态', dataIndex: 'clientOnline', width: 110 },
+  { title: '操作', key: 'action', width: 180, fixed: 'right' },
 ]
 
 async function load() {
@@ -106,14 +114,22 @@ function remove(row: any) {
           </a-select>
         </a-form-item>
         <a-form-item label="服务器端口"><a-input-number v-model:value="form.Port" :min="1" :max="65535" style="width:100%" /></a-form-item>
-        <a-form-item label="协议">
-          <a-select v-model:value="form.Mode">
-            <a-select-option v-for="p in protocols" :key="p.value" :value="p.value" :disabled="p.disabled">
+        <a-form-item label="模式">
+          <a-radio-group v-model:value="form.Mode">
+            <a-radio-button v-for="p in protocols" :key="p.value" :value="p.value" :disabled="p.disabled">
               {{ p.label }}{{ p.disabled ? '（未实现）' : '' }}
-            </a-select-option>
-          </a-select>
+            </a-radio-button>
+          </a-radio-group>
         </a-form-item>
-        <a-form-item label="目标"><a-input v-model:value="form.Target" placeholder="IP:端口" /></a-form-item>
+        <a-form-item v-if="form.Mode !== 'socks5' && form.Mode !== 'http'" label="目标(IP:端口)" :help="'格式：10.1.1.99:80'">
+          <a-input v-model:value="form.Target" placeholder="10.1.1.99:80" />
+        </a-form-item>
+        <a-form-item v-if="form.Mode === 'socks5' || form.Mode === 'http'" label="用户名">
+          <a-input v-model:value="form.Username" />
+        </a-form-item>
+        <a-form-item v-if="form.Mode === 'socks5' || form.Mode === 'http'" label="密码">
+          <a-input-password v-model:value="form.Password" />
+        </a-form-item>
         <a-form-item label="备注"><a-input v-model:value="form.Remark" /></a-form-item>
       </a-form>
     </a-modal>

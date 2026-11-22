@@ -63,7 +63,7 @@ web2/
 | ~~屏幕监控~~ | ❌ 按要求删除 | 当前环境无图形会话，功能整体移除（前后端菜单/路由/页面均删，后端 `/api/screen/ws` 保留不再被 UI 使用） |
 | `/listener/index` | ✅ 完成 | 列与表单**逐项对齐 4.9.3**：列 ID/备注/模式/监听地址/外网连接地址/超时心跳次数（次）/心跳间隔（秒）/状态；表单 模式/备注/监听地址/监听端口/外网连接地址/ws连接地址/NS域名/超时心跳次数/心跳间隔/Vkey/流量加密盐（Bucket 域名按需求不做） |
 | `/download/index` | ✅ 完成 | 选监听器 + 8 架构 + 是否UPX压缩 + **使用代理/连接代理** + stageless 下载 + **一键上线命令查看 / Windows 上线命令 / Linux 上线命令**；独立 listen 载荷（连接方式/回连地址/端口/**加密key明文内容**/**加密key加密模式**） |
-| `/tunnel/index` | ✅ 完成 | 列表 + 新建/编辑/启停/删除；协议下拉用 4.9.3 文案（TCP代理 / UDP代理 / Socks5隧道 / HTTP隧道），**目前只有 TCP代理 可用**，其余置灰标注"未实现" |
+| `/tunnel/index` | ✅ 完成 | 列顺序对齐 4.9.3（ID/客户端 ID/备注/模式/端口/目标 (IP:端口)/用户名/密码/隧道状态/客户端状态）；表单为 选择客户端/模式(RadioButtonGroup：Socks5隧道·HTTP隧道·TCP代理·UDP代理)/备注/服务端端口/目标(IP:端口)/用户名/密码（socks5·http 时显示用户名密码，其余显示目标）；**仅 TCP代理 可用**，其余置灰标注未实现 |
 | `/pluginrunner/index` | ✅ 完成 | 插件筛选、执行、输出复制/清空 |
 | `/setting/index` | ✅ 完成 | 字段与 4.9.3 **完全一致**：`钉钉 token` / `钉钉 key_word` / `微信 wx_key`（labelWidth 120），保存提示「设置成功」 |
 | `/about/index` | ✅ 完成 | 版本、许可到期、Web 端口、客户端上限 |
@@ -131,6 +131,19 @@ web2/
 > 注意：图标类名是**动态拼接**（`i-${m.icon}`），UnoCSS 静态扫描看不到，
 > 必须写进 `safelist`，否则不会生成 SVG。另外 presetIcons 用的是 `mask-image`
 > 而不是 `background-image`——验证时要查 `maskImage`。
+
+### 4.9.3 隧道页字段（R95，从 bundle 反推）
+
+`vCTMULPY8.js`：
+
+```
+列：ID / 客户端 ID / 备注 / 模式 / 端口 / 目标 (IP:端口) / 用户名 / 密码 / 隧道状态 / 客户端状态
+表单：选择客户端(ApiSelect，label 形如 "ID: 1  备注 IP: … Location: … OS: …")
+      模式(RadioButtonGroup：Socks5隧道 / HTTP隧道 / TCP代理 / UDP代理，默认 socks5)
+      备注 / 服务端端口 / 目标(IP:端口)（mode≠socks5,http 时显示）/ 用户名 / 密码（socks5,http 时显示）
+```
+
+新前端按此实现；后端目前只支持 TCP代理，其余选项置灰标注「未实现」（不假装支持）。
 
 ### 4.9.3 客户端列表列（R94，从 bundle 反推）
 
