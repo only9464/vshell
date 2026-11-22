@@ -10,6 +10,31 @@ const id = Number(route.params.id)
 const path = ref('/')
 const rows = ref<any[]>([])
 const loading = ref(false)
+// 右键菜单（4.9.3 有「拷贝路径」等动作）
+const ctxOpen = ref(false)
+const ctxRow = ref<any>(null)
+const ctxPos = ref({ x: 0, y: 0 })
+function openCtx(e: MouseEvent, row: any) {
+  e.preventDefault()
+  ctxRow.value = row
+  ctxPos.value = { x: e.clientX, y: e.clientY }
+  ctxOpen.value = true
+}
+async function copyPath(row: any) {
+  try { await navigator.clipboard.writeText(fullPath(row)); message.success('已拷贝路径') }
+  catch { message.warning('复制失败，请手动选择') }
+}
+function ctxAction(key: string) {
+  ctxOpen.value = false
+  const row = ctxRow.value
+  if (!row) return
+  if (key === 'open') openFile(row)
+  else if (key === 'download') download(row)
+  else if (key === 'rename') rename(row)
+  else if (key === 'delete') remove(row)
+  else if (key === 'copy') copyPath(row)
+}
+
 const editor = ref(false)
 const editPath = ref('')
 const editContent = ref('')
@@ -131,6 +156,7 @@ function pickDir(node: FlatNode) { load(node.path) }
 const nameOf = (r: any) => r.name ?? r.Name ?? ''
 const isDir = (r: any) => !!(r.isDir ?? r.IsDir)
 const base = () => (path.value.endsWith('/') ? path.value : path.value + '/')
+const fullPath = (r: any) => base() + nameOf(r)
 const full = (r: any) => base() + nameOf(r)
 
 async function load(p = path.value) {
@@ -255,7 +281,10 @@ async function onUpload(e: Event) {
         </a-card>
       </a-col>
       <a-col :xs="24" :lg="18">
-    <a-table :columns="columns" :data-source="rows" :loading="loading" row-key="name" size="small" :pagination="false">
+    <a-table
+      :columns="columns" :data-source="rows" :loading="loading" row-key="name" size="small" :pagination="false"
+      :custom-row="(record: any) => ({ onContextmenu: (e: MouseEvent) => openCtx(e, record) })"
+    >
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex === 'name'">
           <a @dblclick="openFile(record)" @click="enter(record)">
@@ -275,6 +304,20 @@ async function onUpload(e: Event) {
     </a-table>
       </a-col>
     </a-row>
+
+    <a-dropdown :open="ctxOpen" :trigger="[]" @openChange="(v: boolean) => (ctxOpen = v)">
+      <span :style="{ position: 'fixed', left: ctxPos.x + 'px', top: ctxPos.y + 'px', width: 1, height: 1 }" />
+      <template #overlay>
+        <a-menu @click="(e: any) => ctxAction(String(e.key))">
+          <a-menu-item key="open">{{ ctxRow && isDir(ctxRow) ? '进入目录' : '编辑' }}</a-menu-item>
+          <a-menu-item v-if="ctxRow && !isDir(ctxRow)" key="download">下载</a-menu-item>
+          <a-menu-item key="rename">重命名</a-menu-item>
+          <a-menu-item key="copy">拷贝路径</a-menu-item>
+          <a-menu-divider />
+          <a-menu-item key="delete" danger>删除文件</a-menu-item>
+        </a-menu>
+      </template>
+    </a-dropdown>
 
     <a-modal v-model:open="editor" :title="editPath" width="720px" @ok="saveFile">
       <a-textarea v-model:value="editContent" :rows="18" class="mono" />
