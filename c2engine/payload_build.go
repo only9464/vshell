@@ -456,6 +456,10 @@ func poServerURL(mode, addr string) string {
 		return ""
 	}
 	switch strings.ToLower(mode) {
+	case "tcp", "raw":
+		// 原生 TCP 监听器：地址必须带 tcp:// 前缀，否则 agent 会按 http 去连
+		// 裸 TCP 端口（表现为 checkin EOF）。
+		return "tcp://" + addr
 	case "kcp":
 		return "kcp://" + addr
 	case "dns", "doh", "dot":
