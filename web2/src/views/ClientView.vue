@@ -14,6 +14,9 @@ const online = ref(0)
 const keyword = ref('')
 const selected = ref<any>(null)
 const drawer = ref(false)
+const checkedKeys = ref<number[]>([])
+const page = ref(1)
+const pageSize = ref(20)
 
 const columns = [
   { title: 'ID', dataIndex: 'Id', width: 70 },
@@ -34,7 +37,7 @@ async function load() {
   loading.value = true
   try {
     // 注意：4.9.3 的业务接口几乎都是 POST（只有少数 GET），这里统一用 post。
-    const res: any = await post('/client/list', { page: 1, pageSize: 100, search: keyword.value })
+    const res: any = await post('/client/list', { page: page.value, pageSize: pageSize.value, search: keyword.value })
     rows.value = res?.result?.items || []
     total.value = res?.result?.total || 0
     online.value = res?.result?.clientOnlineCount || 0
@@ -52,6 +55,20 @@ async function editRemark(row: any) {
   await post('/client/editremark', { id: row.Id, remark: value })
   message.success('已保存')
   load()
+}
+
+// 批量删除（4.9.3 的列表多选 + 批量操作）
+function removeBatch() {
+  if (!checkedKeys.value.length) { message.warning('先勾选客户端'); return }
+  Modal.confirm({
+    title: `删除选中的 ${checkedKeys.value.length} 台客户端？`,
+    onOk: async () => {
+      await post('/client/dellist', { id: checkedKeys.value })
+      message.success('已删除')
+      checkedKeys.value = []
+      load()
+    },
+  })
 }
 
 function remove(row: any) {
@@ -72,11 +89,17 @@ function remove(row: any) {
       <a-input-search v-model:value="keyword" placeholder="搜索主机/用户/备注" style="width: 260px"
         allow-clear @search="load" @press-enter="load" />
       <a-button @click="load">刷新</a-button>
+      <a-button danger :disabled="!checkedKeys.length" @click="removeBatch">批量删除</a-button>
       <span class="mono hint">共 {{ total }} 台，在线 {{ online }}</span>
     </div>
 
-    <a-table :columns="columns" :data-source="rows" :loading="loading" row-key="Id" size="middle"
-      :scroll="{ x: 1400 }" :pagination="false">
+    <a-table
+      :columns="columns" :data-source="rows" :loading="loading" row-key="Id" size="middle"
+      :scroll="{ x: 1400 }"
+      :row-selection="{ selectedRowKeys: checkedKeys, onChange: (keys: number[]) => (checkedKeys = keys) }"
+      :pagination="{ current: page, pageSize, total, showSizeChanger: true, showTotal: (t: number) => `共 ${t} 台` }"
+      @change="(p: any) => { page = p.current; pageSize = p.pageSize; load() }"
+    >
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex === 'IsConnect'">
           <a-tag :color="record.IsConnect ? 'green' : 'default'">{{ record.IsConnect ? '在线' : '离线' }}</a-tag>

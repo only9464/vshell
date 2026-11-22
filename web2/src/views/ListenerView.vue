@@ -9,6 +9,7 @@ const rows = ref<any[]>([])
 const total = ref(0)
 const open = ref(false)
 const editing = ref<number | null>(null)
+const checkedKeys = ref<number[]>([])
 const form = reactive({ Mode: 'http', Vkey: '', Host: '127.0.0.1', Port: 8443, PingInterval: 1, Remark: '', EncryptSalt: '' })
 
 const modes = ['http', 'https', 'kcp', 'websocket', 'dns', 'cdn_websocket']
@@ -63,6 +64,17 @@ async function submit() {
   load()
 }
 
+function removeBatch() {
+  if (!checkedKeys.value.length) { message.warning('先勾选监听器'); return }
+  Modal.confirm({
+    title: `删除选中的 ${checkedKeys.value.length} 个监听器？`,
+    onOk: async () => {
+      await post('/listener/dellist', { id: checkedKeys.value })
+      message.success('已删除'); checkedKeys.value = []; load()
+    },
+  })
+}
+
 async function toggle(row: any) {
   await post(row.Status ? '/listener/stop' : '/listener/start', { id: row.Id })
   load()
@@ -81,10 +93,14 @@ function remove(row: any) {
     <div class="toolbar">
       <a-button type="primary" @click="create">新建监听器</a-button>
       <a-button @click="load">刷新</a-button>
+      <a-button danger :disabled="!checkedKeys.length" @click="removeBatch">批量删除</a-button>
       <span class="hint">共 {{ total }} 个</span>
     </div>
 
-    <a-table :columns="columns" :data-source="rows" :loading="loading" row-key="Id" size="middle" :pagination="false">
+    <a-table
+      :columns="columns" :data-source="rows" :loading="loading" row-key="Id" size="middle" :pagination="false"
+      :row-selection="{ selectedRowKeys: checkedKeys, onChange: (keys: number[]) => (checkedKeys = keys) }"
+    >
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex === 'Status'">
           <a-tag :color="record.Status ? 'green' : 'default'">{{ record.Status ? '运行' : '停止' }}</a-tag>

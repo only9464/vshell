@@ -106,6 +106,8 @@ log "渲染 #/clients"
 render '#/clientManager/index' "$TMP/clients.html"
 expect "$TMP/clients.html" "$(hostname)" '客户端列表没有主机名（字段契约不符？）'
 expect "$TMP/clients.html" '在线' '客户端列表没有在线状态'
+expect "$TMP/clients.html" '批量删除' '客户端页缺少批量删除'
+expect "$TMP/clients.html" 'ant-table-selection-column' '客户端页缺少多选列'
 
 log "渲染 #/files/1"
 render '#/clientManager/files/1' "$TMP/files.html"
@@ -157,6 +159,7 @@ render '#/listener/index' "$TMP/listeners.html"
 expect "$TMP/listeners.html" '监听地址' '监听器页表头缺失'
 expect "$TMP/listeners.html" 'UI-VK' '监听器页没有真实 Vkey（字段契约不符？）'
 expect "$TMP/listeners.html" '运行' '监听器页没有状态标记'
+expect "$TMP/listeners.html" '批量删除' '监听器页缺少批量删除'
 
 log "渲染 #/download"
 render '#/download/index' "$TMP/download.html"
