@@ -284,7 +284,8 @@ expect "$TMP/plugins.html" '筛选插件名' '插件页缺少筛选框'
 
 log "渲染 #/settings"
 render '#/setting/index' "$TMP/settings.html"
-expect "$TMP/settings.html" '企业微信' '设置页字段缺失'
+expect "$TMP/settings.html" '钉钉 token' '设置页缺少钉钉 token 字段'
+expect "$TMP/settings.html" '微信 wx_key' '设置页缺少微信 wx_key 字段'
 
 
 

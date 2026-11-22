@@ -65,7 +65,7 @@ web2/
 | `/download/index` | ✅ 完成 | 选监听器 + 8 架构 + 是否UPX压缩 + **使用代理/连接代理** + stageless 下载 + **一键上线命令查看 / Windows 上线命令 / Linux 上线命令**；独立 listen 载荷（连接方式/回连地址/端口/**加密key明文内容**/**加密key加密模式**） |
 | `/tunnel/index` | ✅ 完成 | 列表 + 新建/编辑/启停/删除；协议下拉用 4.9.3 文案（TCP代理 / UDP代理 / Socks5隧道 / HTTP隧道），**目前只有 TCP代理 可用**，其余置灰标注"未实现" |
 | `/pluginrunner/index` | ✅ 完成 | 插件筛选、执行、输出复制/清空 |
-| `/setting/index` | ✅ 完成 | 企业微信/钉钉三个字段 + 保存 |
+| `/setting/index` | ✅ 完成 | 字段与 4.9.3 **完全一致**：`钉钉 token` / `钉钉 key_word` / `微信 wx_key`（labelWidth 120），保存提示「设置成功」 |
 | `/about/index` | ✅ 完成 | 版本、许可到期、Web 端口、客户端上限 |
 
 ## 3.1 文案取自 4.9.3 的 locale 表
@@ -131,6 +131,22 @@ web2/
 > 注意：图标类名是**动态拼接**（`i-${m.icon}`），UnoCSS 静态扫描看不到，
 > 必须写进 `safelist`，否则不会生成 SVG。另外 presetIcons 用的是 `mask-image`
 > 而不是 `background-image`——验证时要查 `maskImage`。
+
+### 4.9.3 设置页字段（R92，从 bundle 反推）
+
+`vtg7DcMBU.js` 里的表单 schema：
+
+```js
+[{component:"Input", label:"钉钉 token",  field:"dingding_access_token"},
+ {component:"Input", label:"钉钉 key_word", field:"dingding_key_word"},
+ {component:"Input", label:"微信 wx_key",   field:"wx_key"}]
+// labelWidth: 120，showActionButtonGroup: false，成功提示「设置成功」
+```
+
+新前端按此重写（原来用的是"企业微信 key / 钉钉 access_token / 钉钉关键字"，顺序与文案都不同）。
+
+实测：三个 label 依次为 `钉钉 token / 钉钉 key_word / 微信 wx_key`；填值保存后
+`/api/setting/get` 能读回 `wx_key`（配置已持久化）。
 
 ### 4.9.3 仪表盘字段（R90，从 bundle 反推）
 
