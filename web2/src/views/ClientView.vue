@@ -15,6 +15,28 @@ const keyword = ref('')
 const selected = ref<any>(null)
 const drawer = ref(false)
 const checkedKeys = ref<number[]>([])
+// 右键菜单（4.9.3 的列表交互）
+const ctxOpen = ref(false)
+const ctxRow = ref<any>(null)
+const ctxPos = ref({ x: 0, y: 0 })
+
+function openCtx(e: MouseEvent, row: any) {
+  e.preventDefault()
+  ctxRow.value = row
+  ctxPos.value = { x: e.clientX, y: e.clientY }
+  ctxOpen.value = true
+}
+
+function ctxAction(key: string) {
+  ctxOpen.value = false
+  const row = ctxRow.value
+  if (!row) return
+  if (key === 'terminal') router.push(`/clientManager/terminal/${row.Id}`)
+  else if (key === 'files') router.push(`/clientManager/files/${row.Id}`)
+  else if (key === 'detail') open(row)
+  else if (key === 'remark') editRemark(row)
+  else if (key === 'delete') remove(row)
+}
 const page = ref(1)
 const pageSize = ref(20)
 
@@ -100,6 +122,7 @@ function remove(row: any) {
       :columns="columns" :data-source="rows" :loading="loading" row-key="Id" size="small"
       :scroll="{ x: 1400 }"
       :row-selection="{ selectedRowKeys: checkedKeys, onChange: (keys: number[]) => (checkedKeys = keys) }"
+      :custom-row="(record: any) => ({ onContextmenu: (e: MouseEvent) => openCtx(e, record) })"
       :pagination="{ current: page, pageSize, total, showSizeChanger: true, showTotal: (t: number) => `共 ${t} 台` }"
       @change="(p: any) => { page = p.current; pageSize = p.pageSize; load() }"
     >
@@ -124,6 +147,20 @@ function remove(row: any) {
         </template>
       </template>
     </a-table>
+
+    <a-dropdown :open="ctxOpen" :trigger="[]" @openChange="(v: boolean) => (ctxOpen = v)">
+      <span :style="{ position: 'fixed', left: ctxPos.x + 'px', top: ctxPos.y + 'px', width: 1, height: 1 }" />
+      <template #overlay>
+        <a-menu @click="(e: any) => ctxAction(String(e.key))">
+          <a-menu-item key="terminal"><span class="act i-material-icon-theme:console" />命令控制</a-menu-item>
+          <a-menu-item key="files"><span class="act i-grommet-icons:folder" />文件管理</a-menu-item>
+          <a-menu-item key="detail"><span class="act i-ant-design:field-time" />查看详情</a-menu-item>
+          <a-menu-item key="remark"><span class="act i-ant-design:edit-outlined" />编辑备注</a-menu-item>
+          <a-menu-divider />
+          <a-menu-item key="delete" danger><span class="act i-grommet-icons:trash" />删除主机</a-menu-item>
+        </a-menu>
+      </template>
+    </a-dropdown>
 
     <a-drawer v-model:open="drawer" title="客户端详情" width="420">
       <a-descriptions v-if="selected" :column="1" bordered size="small">

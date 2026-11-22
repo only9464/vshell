@@ -185,7 +185,11 @@ TREE_JS=$(cat <<'JS'
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
   location.hash = '#/clientManager/files/1';
-  if (!await waitFor(() => document.querySelectorAll('.tree-row').length > 0, 12000)) return 'TREE_FAIL 无节点';
+  // 先等文件页自身渲染出来（表头出现），再等树节点，避免页面还没挂载就断言
+  await waitFor(() => document.body.innerText.includes('文件名'), 12000);
+  if (!await waitFor(() => document.querySelectorAll('.tree-row').length > 0, 15000)) {
+    return 'TREE_FAIL 无节点|' + document.body.innerText.replace(/\n+/g,' ').slice(0, 120);
+  }
   const etc = [...document.querySelectorAll('.tree-row .tn')].find(e => e.innerText.trim() === 'etc');
   if (!etc) return 'TREE_FAIL 无 etc 节点';
   etc.click();
@@ -519,6 +523,31 @@ echo "$TERM_OUT" | grep -q 'UI_TYPE_OK' || fail "终端里敲命令后没有回�
 else
   log "跳过终端键入（UI_TERMINAL_TYPE=1 可开启）"
 fi
+
+log "点击级：客户端列表右键菜单"
+CTX_JS=$(cat <<'JS'
+(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const waitFor = async (fn, ms) => { const t0=Date.now(); while(Date.now()-t0<ms){ if(fn()) return true; await sleep(250); } return false; };
+  if (document.body.innerText.includes('登录') && document.querySelectorAll('input').length >= 2) {
+    const inputs = [...document.querySelectorAll('input')];
+    const set = (el, v) => { el.value = v; el.dispatchEvent(new Event('input',{bubbles:true})); };
+    set(inputs[0], 'admin'); set(inputs[1], 'p1');
+    await sleep(300);
+    [...document.querySelectorAll('button')].find(b => b.innerText.replace(/\s/g,'') === '登录')?.click();
+    await waitFor(() => location.hash.includes('/dashboard'), 8000);
+  }
+  location.hash = '#/clientManager/index';
+  if (!await waitFor(() => document.querySelectorAll('.ant-table-row').length > 0, 10000)) return 'CTX_FAIL 无行';
+  document.querySelector('.ant-table-row').dispatchEvent(new MouseEvent('contextmenu', {bubbles:true, clientX:200, clientY:200}));
+  const ok = await waitFor(() => document.querySelectorAll('.ant-dropdown-menu-item').length > 0, 5000);
+  const items = [...document.querySelectorAll('.ant-dropdown-menu-item')].map(e=>e.innerText.replace(/\s/g,''));
+  return ok && items.includes('命令控制') ? 'CTX_OK' : 'CTX_FAIL ' + JSON.stringify(items);
+})()
+JS
+)
+CTX_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$CTX_JS" 2>&1)
+echo "$CTX_OUT" | grep -q 'CTX_OK' || fail "客户端右键菜单异常: $(echo "$CTX_OUT" | tail -c 100)"
 
 log "点击级：新建监听器（表单 → 列表出现新条目）"
 LS_JS=$(cat <<'JS'
