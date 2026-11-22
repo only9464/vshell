@@ -118,6 +118,7 @@ expect "$TMP/dash.html" 'polyline' 'dashboard 趋势图未渲染（sparkline 没
 expect "$TMP/dash.html" '最近上线客户端' 'dashboard 缺少最近上线卡片'
 expect "$TMP/dash.html" '在线客户端' 'dashboard 缺少「在线客户端」卡片'
 expect "$TMP/dash.html" 'TCP 通讯 (已建立)' 'dashboard 缺少系统信息表'
+expect "$TMP/dash.html" '虚拟内存' 'dashboard 缺少系统信息进度条'
 expect "$TMP/dash.html" '配置信息' 'dashboard 缺少配置信息表'
 expect "$TMP/dash.html" '在线监听数' 'dashboard 缺少「在线监听数」副标题'
 

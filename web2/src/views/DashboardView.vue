@@ -101,6 +101,11 @@ onBeforeUnmount(() => timer && window.clearInterval(timer))
     <a-row :gutter="[16, 16]" style="margin-top: 16px">
       <a-col :xs="24" :lg="12">
         <a-card size="small" title="系统信息">
+          <!-- 4.9.3 的 SystemCard：处理器/磁盘/内存/虚拟内存 四个进度条 + S 列表 -->
+          <div class="meter"><span>处理器</span><a-progress :percent="Math.round(Number(info.cpu) || 0)" size="small" status="active" /></div>
+          <div class="meter"><span>磁盘</span><a-progress :percent="Math.round(Number(info.disk) || 0)" size="small" status="active" /></div>
+          <div class="meter"><span>内存</span><a-progress :percent="Math.round(Number(info.virtual_mem) || 0)" size="small" status="active" /></div>
+          <div class="meter"><span>虚拟内存</span><a-progress :percent="Math.round(Number(info.swap_mem) || 0)" size="small" status="active" /></div>
           <a-descriptions :column="1" size="small">
             <a-descriptions-item v-for="it in sysInfo" :key="it.key" :label="it.key">{{ it.value }}</a-descriptions-item>
           </a-descriptions>
@@ -141,6 +146,9 @@ onBeforeUnmount(() => timer && window.clearInterval(timer))
 <style scoped>
 .sub { font-size: 12px; color: rgba(0, 0, 0, 0.45); }
 .kpi { display: flex; align-items: center; gap: 12px; }
+.meter { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.meter > span:first-child { width: 64px; font-size: 13px; color: rgba(0, 0, 0, 0.45); }
+.meter :deep(.ant-progress) { flex: 1; margin: 0; }
 .kpi-label { font-size: 13px; color: rgba(0, 0, 0, 0.45); }
 .kpi-value { font-size: 24px; font-weight: 600; line-height: 1.2; }
 .ico { width: 34px; height: 34px; flex: 0 0 34px; }

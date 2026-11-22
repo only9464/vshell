@@ -292,6 +292,18 @@ ui-check 增加「文件树点击切换」断言。
 > **显式注入**；另外 `material-icon-theme` 没有 `folder`/`file`/`excel` 这几个名字，
 > 通用目录用 `folder-base`、通用文件用 `document`。
 
+### 4.9.3 的 SystemCard（R105，从 bundle 反推）
+
+`v3oBZUNJe.js` 的「系统信息」卡片由两部分组成：
+
+```
+四个进度条：处理器(cpu) / 磁盘(disk) / 内存(virtual_mem) / 虚拟内存(swap_mem)
+S 列表    ：TCP 通讯 (已建立) / UDP 通讯 (已建立) / 流出带宽 / 流入带宽
+```
+
+新前端据此在「系统信息」卡片上方补了四个 `a-progress`（百分比取
+`/api/dashboard/info` 的同名字段），实测渲染为 `处理器 9% / 磁盘 69% / 内存 82% / 虚拟内存 99%`。
+
 ### 客户端列表的两个自定义渲染（R104，从 bundle 反推）
 
 `vC4VbtdOO.js` 里注册了三个 vxe 渲染器：
