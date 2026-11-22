@@ -73,7 +73,7 @@ function remove(row: any) {
       <a-button type="primary" @click="create">新增隧道代理</a-button>
       <a-button @click="load">刷新</a-button>
     </div>
-    <a-table :columns="columns" :data-source="rows" :loading="loading" row-key="Id" size="middle" :pagination="false" :scroll="{ x: 1100 }">
+    <a-table :columns="columns" :data-source="rows" :loading="loading" row-key="Id" size="small" :pagination="false" :scroll="{ x: 1100 }">
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex === 'RunStatus'">
           <a-tag :color="record.RunStatus ? 'green' : 'default'">{{ record.RunStatus ? '运行' : '停止' }}</a-tag>

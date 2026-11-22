@@ -97,7 +97,7 @@ function remove(row: any) {
     </div>
 
     <a-table
-      :columns="columns" :data-source="rows" :loading="loading" row-key="Id" size="middle"
+      :columns="columns" :data-source="rows" :loading="loading" row-key="Id" size="small"
       :scroll="{ x: 1400 }"
       :row-selection="{ selectedRowKeys: checkedKeys, onChange: (keys: number[]) => (checkedKeys = keys) }"
       :pagination="{ current: page, pageSize, total, showSizeChanger: true, showTotal: (t: number) => `共 ${t} 台` }"
@@ -112,11 +112,14 @@ function remove(row: any) {
         </template>
         <template v-else-if="column.key === 'action'">
           <a-space size="small">
-            <a @click="router.push(`/clientManager/terminal/${record.Id}`)">终端</a>
-            <a @click="router.push(`/clientManager/files/${record.Id}`)">文件</a>
-            <a @click="open(record)">详情</a>
-            <a @click="editRemark(record)">编辑</a>
-            <a class="danger" @click="remove(record)">删除主机</a>
+            <a-tooltip title="命令控制"><a @click="router.push(`/clientManager/terminal/${record.Id}`)">
+              <span class="act i-material-icon-theme:console" />终端</a></a-tooltip>
+            <a-tooltip title="文件管理"><a @click="router.push(`/clientManager/files/${record.Id}`)">
+              <span class="act i-grommet-icons:folder" />文件</a></a-tooltip>
+            <a-tooltip title="编辑备注"><a @click="editRemark(record)">
+              <span class="act i-ant-design:edit-outlined" />编辑</a></a-tooltip>
+            <a-tooltip title="删除主机"><a class="danger" @click="remove(record)">
+              <span class="act i-grommet-icons:trash" />删除</a></a-tooltip>
           </a-space>
         </template>
       </template>
@@ -154,4 +157,5 @@ function remove(row: any) {
 .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
 .hint { color: rgba(0, 0, 0, 0.45); }
 .danger { color: #ff4d4f; }
+.act { width: 14px; height: 14px; display: inline-block; vertical-align: -2px; margin-right: 3px; }
 </style>

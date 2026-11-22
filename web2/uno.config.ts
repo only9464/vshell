@@ -1,4 +1,7 @@
 import { defineConfig, presetUno, presetAttributify, presetIcons } from 'unocss'
+// 显式注入 material-icon-theme 集合：pnpm 的 node_modules 结构下 UnoCSS
+// 的自动加载有时找不到该包（构建时报 failed to load icon），手动 import 最稳。
+import materialIconTheme from '@iconify-json/material-icon-theme/icons.json'
 
 // 4.9.3 用的是 UnoCSS + Tailwind 兼容写法：presetUno 已内含 tailwind/windi 预设。
 export default defineConfig({
@@ -6,7 +9,11 @@ export default defineConfig({
   presets: [
     presetUno(),
     presetAttributify(),
-    presetIcons({ scale: 1.2, warn: false }),
+    presetIcons({
+      scale: 1.2,
+      warn: true,
+      collections: { 'material-icon-theme': materialIconTheme as any },
+    }),
   ],
   // 菜单图标是动态拼接的类名（i-${m.icon}），UnoCSS 的静态扫描看不到，
   // 必须显式列入 safelist，否则不会生成对应的 SVG 背景。
@@ -19,6 +26,51 @@ export default defineConfig({
     'i-grommet-icons:services',
     'i-ion:settings-outline',
     'i-grommet-icons:action',
+    'i-ant-design:edit-outlined',
+    'i-ant-design:delete-outlined',
+    'i-ant-design:download-outlined',
+    'i-ant-design:enter-outlined',
+    'i-material-icon-theme:console',
+    'i-grommet-icons:trash',
+    'i-ant-design:field-time',
+    'i-grommet-icons:folder',
+    'i-material-icon-theme:folder-base',
+    'i-material-icon-theme:document',
+    'i-material-icon-theme:log',
+    'i-material-icon-theme:typescript',
+    'i-material-icon-theme:react',
+    'i-material-icon-theme:javascript',
+    'i-material-icon-theme:vue',
+    'i-material-icon-theme:json',
+    'i-material-icon-theme:markdown',
+    'i-material-icon-theme:python',
+    'i-material-icon-theme:go',
+    'i-material-icon-theme:rust',
+    'i-material-icon-theme:java',
+    'i-material-icon-theme:kotlin',
+    'i-material-icon-theme:swift',
+    'i-material-icon-theme:ruby',
+    'i-material-icon-theme:php',
+    'i-material-icon-theme:c',
+    'i-material-icon-theme:cpp',
+    'i-material-icon-theme:console',
+    'i-material-icon-theme:html',
+    'i-material-icon-theme:css',
+    'i-material-icon-theme:yaml',
+    'i-material-icon-theme:toml',
+    'i-material-icon-theme:settings',
+    'i-material-icon-theme:database',
+    'i-material-icon-theme:image',
+    'i-material-icon-theme:svg',
+    'i-material-icon-theme:pdf',
+    'i-material-icon-theme:zip',
+    'i-material-icon-theme:word',
+    'i-material-icon-theme:powerpoint',
+    'i-material-icon-theme:audio',
+    'i-material-icon-theme:video',
+    'i-material-icon-theme:lock',
+    'i-material-icon-theme:key',
+    'i-material-icon-theme:certificate',
   ],
   shortcuts: {
     'flex-col': 'flex flex-col',

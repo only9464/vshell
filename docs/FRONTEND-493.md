@@ -132,6 +132,28 @@ web2/
 > 必须写进 `safelist`，否则不会生成 SVG。另外 presetIcons 用的是 `mask-image`
 > 而不是 `background-image`——验证时要查 `maskImage`。
 
+### 文件列表按类型显示图标（R81）
+
+文件管理页对每个条目按扩展名显示 **material-icon-theme** 图标（与 Material Icons
+浏览器扩展同源的图标集，`@iconify-json/material-icon-theme`，共 1181 个图标）：
+
+| 类型 | 图标 |
+|---|---|
+| 目录 | `folder-base` |
+| 代码 | `typescript / javascript / vue / python / go / rust / java / c / cpp / php / ruby …` |
+| 文本 | `document / markdown / log / json / yaml / toml / settings` |
+| 媒体 | `image / svg / audio / video / pdf` |
+| 归档 | `zip` |
+| 其他 | `database / lock / key / certificate / console`，未知后缀回落 `document` |
+
+实测：`/tmp` 下 `demo.go → go`、`demo.md → markdown`、`demo.py → python`、`demo.zip → zip`，
+633 个条目全部渲染出图标。
+
+> 踩坑：pnpm 下 UnoCSS **自动加载**该集合会失败（`failed to load icon`），
+> 需要在 `presetIcons({ collections: { 'material-icon-theme': icons.json } })` 里
+> **显式注入**；另外 `material-icon-theme` 没有 `folder`/`file`/`excel` 这几个名字，
+> 通用目录用 `folder-base`、通用文件用 `document`。
+
 ## 4.0 布局对齐 4.9.3
 
 | 元素 | 实现 |

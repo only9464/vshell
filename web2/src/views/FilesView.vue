@@ -22,6 +22,30 @@ const columns = [
   { title: '操作', key: 'action', width: 240 },
 ]
 
+// 文件图标：用 material-icon-theme 集合（Material Icons 浏览器扩展同源图标集）
+const EXT_ICON: Record<string, string> = {
+  ts: 'typescript', tsx: 'react', js: 'javascript', jsx: 'react', mjs: 'javascript', cjs: 'javascript',
+  vue: 'vue', json: 'json', md: 'markdown', markdown: 'markdown', txt: 'document', log: 'log',
+  py: 'python', go: 'go', rs: 'rust', java: 'java', kt: 'kotlin', swift: 'swift', rb: 'ruby', php: 'php',
+  c: 'c', h: 'c', cpp: 'cpp', hpp: 'cpp', sh: 'console', bash: 'console', zsh: 'console',
+  html: 'html', htm: 'html', css: 'css', scss: 'css', less: 'css', yml: 'yaml', yaml: 'yaml',
+  toml: 'toml', ini: 'settings', conf: 'settings', env: 'settings', sql: 'database', db: 'database',
+  png: 'image', jpg: 'image', jpeg: 'image', gif: 'image', bmp: 'image', webp: 'image', svg: 'svg',
+  ico: 'image', pdf: 'pdf', zip: 'zip', gz: 'zip', tar: 'zip', xz: 'zip', '7z': 'zip', rar: 'zip',
+  doc: 'word', docx: 'word', xls: 'document', xlsx: 'document', ppt: 'powerpoint', pptx: 'powerpoint',
+  mp3: 'audio', wav: 'audio', flac: 'audio', mp4: 'video', mkv: 'video', avi: 'video', mov: 'video',
+  lock: 'lock', pem: 'key', key: 'key', crt: 'certificate', cer: 'certificate',
+}
+const DEFAULT_FILE_ICON = 'document'
+
+function fileIcon(r: any) {
+  if (isDir(r)) return 'material-icon-theme:folder-base'
+  const name = nameOf(r)
+  const ext = name.includes('.') ? name.split('.').pop()!.toLowerCase() : ''
+  const icon = EXT_ICON[ext] || DEFAULT_FILE_ICON
+  return `material-icon-theme:${icon}`
+}
+
 const nameOf = (r: any) => r.name ?? r.Name ?? ''
 const isDir = (r: any) => !!(r.isDir ?? r.IsDir)
 const base = () => (path.value.endsWith('/') ? path.value : path.value + '/')
@@ -132,10 +156,11 @@ async function onUpload(e: Event) {
       <span class="hint mono">客户端 #{{ id }}</span>
     </div>
 
-    <a-table :columns="columns" :data-source="rows" :loading="loading" row-key="name" size="middle" :pagination="false">
+    <a-table :columns="columns" :data-source="rows" :loading="loading" row-key="name" size="small" :pagination="false">
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex === 'name'">
           <a @dblclick="openFile(record)" @click="enter(record)">
+            <span class="file-ico" :class="`i-${fileIcon(record)}`" />
             {{ nameOf(record) }}{{ isDir(record) ? '/' : '' }}
           </a>
         </template>
@@ -160,4 +185,5 @@ async function onUpload(e: Event) {
 .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
 .hint { color: rgba(0, 0, 0, 0.45); font-size: 12px; }
 .danger { color: #ff4d4f; }
+.file-ico { width: 16px; height: 16px; display: inline-block; vertical-align: -3px; margin-right: 6px; }
 </style>
