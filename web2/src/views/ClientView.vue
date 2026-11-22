@@ -42,15 +42,15 @@ const pageSize = ref(20)
 
 // 列定义与顺序完全取自 4.9.3 的 bundle（viLthP3eG.js）
 const columns = [
-  { title: 'ID', dataIndex: 'Id', width: 70 },
-  { title: '备注', dataIndex: 'Remark', width: 110 },
+  { title: 'ID', dataIndex: 'Id', width: 70, sorter: (a: any, b: any) => Number(a.Id || 0) - Number(b.Id || 0) },
+  { title: '备注', dataIndex: 'Remark', width: 110, sorter: (a: any, b: any) => String(a.Remark || '').localeCompare(String(b.Remark || '')) },
   { title: '连接方式', dataIndex: 'Tp', width: 100 },
-  { title: '外网IP', dataIndex: 'Addr', width: 150 },
-  { title: '归属地', dataIndex: 'Location', width: 100 },
-  { title: '内网IP', dataIndex: 'LocalIP', width: 130 },
+  { title: '外网IP', dataIndex: 'Addr', width: 150, sorter: (a: any, b: any) => String(a.Addr || '').localeCompare(String(b.Addr || '')) },
+  { title: '归属地', dataIndex: 'Location', width: 100, sorter: (a: any, b: any) => String(a.Location || '').localeCompare(String(b.Location || '')) },
+  { title: '内网IP', dataIndex: 'LocalIP', width: 130, sorter: (a: any, b: any) => String(a.LocalIP || '').localeCompare(String(b.LocalIP || '')) },
   { title: '用户', dataIndex: 'UserName', width: 100 },
-  { title: '主机名', dataIndex: 'HostName', width: 130 },
-  { title: '系统类型', dataIndex: 'OsName', width: 100 },
+  { title: '主机名', dataIndex: 'HostName', width: 130, sorter: (a: any, b: any) => String(a.HostName || '').localeCompare(String(b.HostName || '')) },
+  { title: '系统类型', dataIndex: 'OsName', width: 100, sorter: (a: any, b: any) => String(a.OsName || '').localeCompare(String(b.OsName || '')) },
   { title: '进程名', dataIndex: 'ProcessName', width: 120 },
   { title: '状态', dataIndex: 'IsConnect', width: 90 },
   { title: '心跳', dataIndex: 'PingCheckTime', width: 160 },

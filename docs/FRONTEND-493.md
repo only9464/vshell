@@ -292,6 +292,14 @@ ui-check 增加「文件树点击切换」断言。
 > **显式注入**；另外 `material-icon-theme` 没有 `folder`/`file`/`excel` 这几个名字，
 > 通用目录用 `folder-base`、通用文件用 `document`。
 
+### 排序列（R111，从 bundle 反推）
+
+4.9.3 的列定义里带 `sorter:!0` 的字段（客户端：ID/备注/外网IP/归属地/内网IP/主机名/系统类型；
+监听：ID/备注/模式/监听地址/外网连接地址；隧道：ID/客户端ID/备注/模式/端口）在新前端
+都加上了本地排序器（字符串用 `localeCompare`，数字用差值）。
+
+实测：客户端列表 7 个表头出现排序图标（`.ant-table-column-sorter`）。
+
 ### 中文本地化与表单校验（R108）
 
 4.9.3 的 bundle 里带着 antd 的中文默认文案（`required: "请输入${label}"`、

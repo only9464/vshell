@@ -23,11 +23,11 @@ const form = reactive({
 const modes = ['http', 'https', 'kcp', 'websocket', 'dns', 'cdn_websocket']
 
 const columns = [
-  { title: 'ID', dataIndex: 'Id', width: 70, sorter: true },
-  { title: '备注', dataIndex: 'Remark', width: 120 },
-  { title: '模式', dataIndex: 'Mode', width: 130 },
-  { title: '监听地址', dataIndex: 'ListenAddr', width: 170 },
-  { title: '外网连接地址', dataIndex: 'ConnectAddr', width: 170 },
+  { title: 'ID', dataIndex: 'Id', width: 70, sorter: (a: any, b: any) => Number(a.Id || 0) - Number(b.Id || 0) },
+  { title: '备注', dataIndex: 'Remark', width: 120, sorter: (a: any, b: any) => String(a.Remark || '').localeCompare(String(b.Remark || '')) },
+  { title: '模式', dataIndex: 'Mode', width: 130, sorter: (a: any, b: any) => String(a.Mode || '').localeCompare(String(b.Mode || '')) },
+  { title: '监听地址', dataIndex: 'ListenAddr', width: 170, sorter: (a: any, b: any) => String(a.ListenAddr || '').localeCompare(String(b.ListenAddr || '')) },
+  { title: '外网连接地址', dataIndex: 'ConnectAddr', width: 170, sorter: (a: any, b: any) => String(a.ConnectAddr || '').localeCompare(String(b.ConnectAddr || '')) },
   { title: '超时心跳次数（次）', dataIndex: 'DisconnectTimeout', width: 150 },
   { title: '心跳间隔（秒）', dataIndex: 'PingInterval', width: 130 },
   { title: '状态', dataIndex: 'Status', width: 90 },

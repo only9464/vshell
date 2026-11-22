@@ -27,11 +27,11 @@ const protocols = [
 
 // 列定义取自 4.9.3 bundle（vCTMULPY8.js）
 const columns = [
-  { title: 'ID', dataIndex: 'Id', width: 70 },
-  { title: '客户端 ID', dataIndex: 'client_id', width: 100 },
-  { title: '备注', dataIndex: 'Remark', width: 120 },
-  { title: '模式', dataIndex: 'Mode', width: 110 },
-  { title: '端口', dataIndex: 'Port', width: 90 },
+  { title: 'ID', dataIndex: 'Id', width: 70, sorter: (a: any, b: any) => Number(a.Id || 0) - Number(b.Id || 0) },
+  { title: '客户端 ID', dataIndex: 'client_id', width: 100, sorter: (a: any, b: any) => Number(a.client_id || 0) - Number(b.client_id || 0) },
+  { title: '备注', dataIndex: 'Remark', width: 120, sorter: (a: any, b: any) => String(a.Remark || '').localeCompare(String(b.Remark || '')) },
+  { title: '模式', dataIndex: 'Mode', width: 110, sorter: (a: any, b: any) => String(a.Mode || '').localeCompare(String(b.Mode || '')) },
+  { title: '端口', dataIndex: 'Port', width: 90, sorter: (a: any, b: any) => Number(a.Port || 0) - Number(b.Port || 0) },
   { title: '目标 (IP:端口)', dataIndex: 'Target', width: 190 },
   { title: '用户名', dataIndex: 'username', width: 100 },
   { title: '密码', dataIndex: 'password', width: 100 },

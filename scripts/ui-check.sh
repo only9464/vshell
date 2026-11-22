@@ -271,6 +271,30 @@ JS
 FCTX_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$FCTX_JS" 2>&1)
 echo "$FCTX_OUT" | grep -q 'FCTX_OK' || fail "文件右键菜单异常: $(echo "$FCTX_OUT" | tail -c 100)"
 
+log "客户端列表列排序（4.9.3 的 sorter 列）"
+SORT_JS=$(cat <<'JS'
+(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const waitFor = async (fn, ms) => { const t0=Date.now(); while(Date.now()-t0<ms){ if(fn()) return true; await sleep(300); } return false; };
+  if (document.body.innerText.includes('登录') && document.querySelectorAll('input').length >= 2) {
+    const inputs = [...document.querySelectorAll('input')];
+    const set = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles:true})); };
+    set(inputs[0], 'admin'); set(inputs[1], 'p1');
+    await sleep(300);
+    [...document.querySelectorAll('button')].find(b => b.innerText.replace(/\s/g,'') === '登录')?.click();
+    await waitFor(() => location.hash.includes('/dashboard'), 8000);
+  }
+  location.hash = '#/clientManager/index';
+  if (!await waitFor(() => document.querySelectorAll('.ant-table-row').length > 0, 12000)) return 'SORT_FAIL 无行';
+  const ths = [...document.querySelectorAll('.ant-table-thead th')];
+  const sortable = ths.filter(t => t.querySelector('.ant-table-column-sorter')).length;
+  return sortable >= 5 ? 'SORT_OK ' + sortable : 'SORT_FAIL sortable=' + sortable;
+})()
+JS
+)
+SORT_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$SORT_JS" 2>&1)
+echo "$SORT_OUT" | grep -q 'SORT_OK' || fail "客户端列表排序列缺失: $(echo "$SORT_OUT" | tail -c 90)"
+
 log "文件列表按类型显示图标（material-icon-theme）"
 FILEICO_JS=$(cat <<'JS'
 (async () => {
