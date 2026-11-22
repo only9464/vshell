@@ -196,7 +196,12 @@ TREE_JS=$(cat <<'JS'
   location.hash = '#/clientManager/files/1';
   // 先等文件页自身渲染出来（表头出现），再等树节点，避免页面还没挂载就断言
   await waitFor(() => document.body.innerText.includes('文件名'), 12000);
-  if (!await waitFor(() => document.querySelectorAll('.tree-row').length > 0, 15000)) {
+  // 树是懒加载的：若首屏没列出节点，点一下根节点强制再拉一次
+  if (!await waitFor(() => document.querySelectorAll('.tree-row').length > 0, 8000)) {
+    document.querySelector('.tree-root')?.click();
+    await waitFor(() => document.querySelectorAll('.tree-row').length > 0, 12000);
+  }
+  if (!await waitFor(() => document.querySelectorAll('.tree-row').length > 0, 5000)) {
     return 'TREE_FAIL 无节点|' + document.body.innerText.replace(/\n+/g,' ').slice(0, 120);
   }
   const etc = [...document.querySelectorAll('.tree-row .tn')].find(e => e.innerText.trim() === 'etc');
@@ -268,7 +273,9 @@ render '#/listener/index' "$TMP/listeners.html"
 expect "$TMP/listeners.html" '监听地址' '监听页表头缺失'
 expect "$TMP/listeners.html" '超时心跳次数（次）' '监听页缺少超时心跳列'
 expect "$TMP/listeners.html" '外网连接地址' '监听页缺少外网连接地址列'
-expect "$TMP/listeners.html" 'UI-VK' '监听页没有真实 Vkey（字段契约不符？）'
+# 4.9.3 的监听列表不展示 Vkey（列里只有 ID/备注/模式/地址/心跳/状态），
+# 这里改为断言真实监听地址（由本脚本创建的 $LISTEN_PORT）出现在表格里。
+expect "$TMP/listeners.html" "127.0.0.1:$LISTEN_PORT" '监听页没有真实监听地址（数据未加载？）'
 expect "$TMP/listeners.html" '运行' '监听器页没有状态标记'
 expect "$TMP/listeners.html" '删除' '监听页缺少删除按钮'
 
@@ -282,7 +289,8 @@ expect "$TMP/download.html" '加密key明文内容' '下载页缺少加密key字
 
 log "渲染 #/tunnels"
 render '#/tunnel/index' "$TMP/tunnels.html"
-expect "$TMP/tunnels.html" '服务端端口' '隧道页表头缺失'
+# 4.9.3 的隧道列名是「端口」（表单里才叫「服务端端口」）
+expect "$TMP/tunnels.html" '目标 (IP:端口)' '隧道页表头缺失（目标列）'
 
 log "渲染 #/plugins/1"
 render '#/pluginrunner/index' "$TMP/plugins.html"
@@ -639,7 +647,8 @@ LS_JS=$(cat <<'JS'
     .find(b => b.innerText.replace(/\s/g, '') === '创建' || b.classList.contains('ant-btn-primary'));
   if (!createBtn) return 'NO_CREATE_BTN';
   createBtn.click();
-  const listed = await waitFor(() => document.body.innerText.includes('UI-FORM-VK'), 10000);
+  // 4.9.3 的监听列表不显示 Vkey，用备注（ui-form）判断新行是否出现
+  const listed = await waitFor(() => document.body.innerText.includes('ui-form'), 10000);
   return listed ? 'LISTENER_CREATED' : 'LISTENER_MISSING';
 })()
 JS
