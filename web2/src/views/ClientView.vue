@@ -19,16 +19,19 @@ const page = ref(1)
 const pageSize = ref(20)
 
 const columns = [
-  { title: 'ID', dataIndex: 'Id', width: 70 },
-  { title: '状态', dataIndex: 'IsConnect', width: 90 },
+  // 列名取自 4.9.3 locale：客户端 ID / 客户端状态 / 主机名 / 用户 / 系统类型 /
+  // 外网IP / 内网IP / 归属地 / 进程名 / 备注 / 操作
+  { title: '客户端 ID', dataIndex: 'Id', width: 100 },
+  { title: '客户端状态', dataIndex: 'IsConnect', width: 110 },
   { title: '主机名', dataIndex: 'HostName', width: 140 },
   { title: '用户', dataIndex: 'UserName', width: 110 },
-  { title: '系统', dataIndex: 'OsName', width: 100 },
+  { title: '系统类型', dataIndex: 'OsName', width: 110 },
   { title: '架构', dataIndex: 'Arch', width: 90 },
-  { title: '通道', dataIndex: 'Tp', width: 90 },
-  { title: '外网地址', dataIndex: 'Addr', width: 150 },
-  { title: '内网 IP', dataIndex: 'LocalIP', width: 130 },
-  { title: '进程', dataIndex: 'ProcessName', width: 110 },
+  { title: '连接方式', dataIndex: 'Tp', width: 100 },
+  { title: '外网IP', dataIndex: 'Addr', width: 150 },
+  { title: '内网IP', dataIndex: 'LocalIP', width: 130 },
+  { title: '归属地', dataIndex: 'Location', width: 110 },
+  { title: '进程名', dataIndex: 'ProcessName', width: 120 },
   { title: '备注', dataIndex: 'Remark' },
   { title: '操作', key: 'action', width: 260, fixed: 'right' },
 ]
@@ -89,7 +92,7 @@ function remove(row: any) {
       <a-input-search v-model:value="keyword" placeholder="搜索主机/用户/备注" style="width: 260px"
         allow-clear @search="load" @press-enter="load" />
       <a-button @click="load">刷新</a-button>
-      <a-button danger :disabled="!checkedKeys.length" @click="removeBatch">批量删除</a-button>
+      <a-button danger :disabled="!checkedKeys.length" @click="removeBatch">删除</a-button>
       <span class="mono hint">共 {{ total }} 台，在线 {{ online }}</span>
     </div>
 
@@ -112,8 +115,8 @@ function remove(row: any) {
             <a @click="router.push(`/clientManager/terminal/${record.Id}`)">终端</a>
             <a @click="router.push(`/clientManager/files/${record.Id}`)">文件</a>
             <a @click="open(record)">详情</a>
-            <a @click="editRemark(record)">备注</a>
-            <a class="danger" @click="remove(record)">删除</a>
+            <a @click="editRemark(record)">编辑</a>
+            <a class="danger" @click="remove(record)">删除主机</a>
           </a-space>
         </template>
       </template>

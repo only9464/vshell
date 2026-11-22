@@ -14,12 +14,13 @@ const form = reactive({ Mode: 'http', Vkey: '', Host: '127.0.0.1', Port: 8443, P
 
 const modes = ['http', 'https', 'kcp', 'websocket', 'dns', 'cdn_websocket']
 const columns = [
+  // 列名取自 4.9.3 locale：监听方式 / 监听地址 / 流量加密盐 / 心跳间隔（秒）…
   { title: 'ID', dataIndex: 'Id', width: 70 },
-  { title: '模式', dataIndex: 'Mode', width: 120 },
+  { title: '监听方式', dataIndex: 'Mode', width: 120 },
   { title: '状态', dataIndex: 'Status', width: 90 },
   { title: '监听地址', dataIndex: 'ListenAddr', width: 180 },
   { title: 'Vkey', dataIndex: 'Vkey', width: 140 },
-  { title: '加密盐', dataIndex: 'EncryptSalt', width: 140 },
+  { title: '流量加密盐', dataIndex: 'EncryptSalt', width: 140 },
   { title: '备注', dataIndex: 'Remark' },
   { title: '操作', key: 'action', width: 200, fixed: 'right' },
 ]
@@ -82,7 +83,7 @@ async function toggle(row: any) {
 
 function remove(row: any) {
   Modal.confirm({
-    title: `删除监听器 ${row.Id}？`,
+    title: '是否确认删除监听？',
     onOk: async () => { await post('/listener/del', { id: row.Id }); message.success('已删除'); load() },
   })
 }
@@ -91,9 +92,9 @@ function remove(row: any) {
 <template>
   <a-card :bordered="false">
     <div class="toolbar">
-      <a-button type="primary" @click="create">新建监听器</a-button>
+      <a-button type="primary" @click="create">新增监听</a-button>
       <a-button @click="load">刷新</a-button>
-      <a-button danger :disabled="!checkedKeys.length" @click="removeBatch">批量删除</a-button>
+      <a-button danger :disabled="!checkedKeys.length" @click="removeBatch">删除</a-button>
       <span class="hint">共 {{ total }} 个</span>
     </div>
 
@@ -107,7 +108,7 @@ function remove(row: any) {
         </template>
         <template v-else-if="column.key === 'action'">
           <a-space size="small">
-            <a @click="toggle(record)">{{ record.Status ? '停止' : '启动' }}</a>
+            <a @click="toggle(record)">{{ record.Status ? '停用' : '启用' }}</a>
             <a @click="edit(record)">编辑</a>
             <a class="danger" @click="remove(record)">删除</a>
           </a-space>
@@ -115,18 +116,18 @@ function remove(row: any) {
       </template>
     </a-table>
 
-    <a-modal v-model:open="open" :title="editing ? '编辑监听器' : '新建监听器'" :width="520" @ok="submit">
+    <a-modal v-model:open="open" :title="editing ? '编辑监听' : '新增监听'" :width="520" @ok="submit">
       <a-form :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
-        <a-form-item label="模式">
+        <a-form-item label="监听方式">
           <a-select v-model:value="form.Mode">
             <a-select-option v-for="m in modes" :key="m" :value="m">{{ m }}</a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item label="Vkey"><a-input v-model:value="form.Vkey" /></a-form-item>
         <a-form-item label="监听地址"><a-input v-model:value="form.Host" /></a-form-item>
-        <a-form-item label="端口"><a-input-number v-model:value="form.Port" :min="1" :max="65535" style="width: 100%" /></a-form-item>
-        <a-form-item label="心跳(秒)"><a-input-number v-model:value="form.PingInterval" :min="1" style="width: 100%" /></a-form-item>
-        <a-form-item label="加密盐"><a-input v-model:value="form.EncryptSalt" /></a-form-item>
+        <a-form-item label="监听端口"><a-input-number v-model:value="form.Port" :min="1" :max="65535" style="width: 100%" /></a-form-item>
+        <a-form-item label="心跳间隔（秒）"><a-input-number v-model:value="form.PingInterval" :min="1" style="width: 100%" /></a-form-item>
+        <a-form-item label="流量加密盐"><a-input v-model:value="form.EncryptSalt" /></a-form-item>
         <a-form-item label="备注"><a-input v-model:value="form.Remark" /></a-form-item>
       </a-form>
     </a-modal>

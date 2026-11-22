@@ -16,7 +16,7 @@ const editContent = ref('')
 const uploadRef = ref<HTMLInputElement>()
 
 const columns = [
-  { title: '名称', dataIndex: 'name', width: 300 },
+  { title: '文件名', dataIndex: 'name', width: 300 },
   { title: '大小', dataIndex: 'size', width: 110 },
   { title: '修改时间', dataIndex: 'time', width: 220 },
   { title: '操作', key: 'action', width: 240 },
@@ -64,7 +64,7 @@ async function saveFile() {
 function mkdir() {
   let name = ''
   Modal.confirm({
-    title: '新建目录',
+    title: '新建文件夹',
     content: () => h('input', {
       class: 'ant-input', style: 'width:100%',
       onInput: (e: Event) => { name = (e.target as HTMLInputElement).value },
@@ -95,7 +95,7 @@ function rename(r: any) {
 
 function remove(r: any) {
   Modal.confirm({
-    title: `删除 ${nameOf(r)}？`,
+    title: '是否确认删除？',
     onOk: async () => { await post('/file/rm', { id, path: full(r) }); message.success('已删除'); load() },
   })
 }
@@ -126,8 +126,8 @@ async function onUpload(e: Event) {
       <a-input v-model:value="path" style="width: 320px" class="mono" @press-enter="load(path)" />
       <a-button @click="load(path)">打开</a-button>
       <a-button @click="up">上级</a-button>
-      <a-button @click="mkdir">新建目录</a-button>
-      <a-button @click="uploadRef?.click()">上传</a-button>
+      <a-button @click="mkdir">新建文件夹</a-button>
+      <a-button @click="uploadRef?.click()">上传插件</a-button>
       <input ref="uploadRef" type="file" style="display:none" @change="onUpload" />
       <span class="hint mono">客户端 #{{ id }}</span>
     </div>
@@ -144,7 +144,7 @@ async function onUpload(e: Event) {
             <a @click="openFile(record)">{{ isDir(record) ? '进入' : '编辑' }}</a>
             <a v-if="!isDir(record)" @click="download(record)">下载</a>
             <a @click="rename(record)">重命名</a>
-            <a class="danger" @click="remove(record)">删除</a>
+            <a class="danger" @click="remove(record)">删除文件</a>
           </a-space>
         </template>
       </template>

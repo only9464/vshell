@@ -14,10 +14,11 @@ const form = reactive({ clientId: 0, Port: 28001, Mode: 'tcp', Target: '127.0.0.
 const columns = [
   { title: 'ID', dataIndex: 'Id', width: 70 },
   { title: '客户端', dataIndex: 'client_id', width: 90 },
-  { title: '服务器端口', dataIndex: 'Port', width: 120 },
+  // 列名取自 4.9.3 locale：服务端端口 / 目标 (IP:端口) / 隧道状态
+  { title: '服务端端口', dataIndex: 'Port', width: 120 },
   { title: '模式', dataIndex: 'Mode', width: 100 },
-  { title: '目标', dataIndex: 'Target', width: 200 },
-  { title: '状态', dataIndex: 'RunStatus', width: 90 },
+  { title: '目标 (IP:端口)', dataIndex: 'Target', width: 200 },
+  { title: '隧道状态', dataIndex: 'RunStatus', width: 100 },
   { title: '备注', dataIndex: 'Remark' },
   { title: '操作', key: 'action', width: 200, fixed: 'right' },
 ]
@@ -60,7 +61,7 @@ async function toggle(row: any) {
 
 function remove(row: any) {
   Modal.confirm({
-    title: `删除隧道 ${row.Id}？`,
+    title: '是否确认删除隧道代理？',
     onOk: async () => { await post('/tunnel/del', { id: row.Id }); message.success('已删除'); load() },
   })
 }
@@ -69,7 +70,7 @@ function remove(row: any) {
 <template>
   <a-card :bordered="false">
     <div class="toolbar">
-      <a-button type="primary" @click="create">新建隧道</a-button>
+      <a-button type="primary" @click="create">新增隧道代理</a-button>
       <a-button @click="load">刷新</a-button>
     </div>
     <a-table :columns="columns" :data-source="rows" :loading="loading" row-key="Id" size="middle" :pagination="false" :scroll="{ x: 1100 }">
@@ -79,7 +80,7 @@ function remove(row: any) {
         </template>
         <template v-else-if="column.key === 'action'">
           <a-space size="small">
-            <a @click="toggle(record)">{{ record.RunStatus ? '停止' : '启动' }}</a>
+            <a @click="toggle(record)">{{ record.RunStatus ? '停用' : '启用' }}</a>
             <a @click="edit(record)">编辑</a>
             <a class="danger" @click="remove(record)">删除</a>
           </a-space>
@@ -87,7 +88,7 @@ function remove(row: any) {
       </template>
     </a-table>
 
-    <a-modal v-model:open="open" :title="editing ? '编辑隧道' : '新建隧道'" :width="520" @ok="submit">
+    <a-modal v-model:open="open" :title="editing ? '编辑隧道代理' : '新增隧道代理'" :width="520" @ok="submit">
       <a-form :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
         <a-form-item label="客户端">
           <a-select v-model:value="form.clientId">

@@ -106,7 +106,7 @@ log "渲染 #/clients"
 render '#/clientManager/index' "$TMP/clients.html"
 expect "$TMP/clients.html" "$(hostname)" '客户端列表没有主机名（字段契约不符？）'
 expect "$TMP/clients.html" '在线' '客户端列表没有在线状态'
-expect "$TMP/clients.html" '批量删除' '客户端页缺少批量删除'
+expect "$TMP/clients.html" '删除' '客户端页缺少删除按钮'
 expect "$TMP/clients.html" 'ant-table-selection-column' '客户端页缺少多选列'
 
 log "渲染 #/files/1"
@@ -157,23 +157,23 @@ echo "$TABS_OUT" | grep -q 'TABS_OK' || log "  页签栏断言跳过（旧前端
 log "渲染 #/listeners"
 render '#/listener/index' "$TMP/listeners.html"
 expect "$TMP/listeners.html" '监听地址' '监听页表头缺失'
-expect "$TMP/listeners.html" 'UI-VK' '监听器页没有真实 Vkey（字段契约不符？）'
+expect "$TMP/listeners.html" 'UI-VK' '监听页没有真实 Vkey（字段契约不符？）'
 expect "$TMP/listeners.html" '运行' '监听器页没有状态标记'
-expect "$TMP/listeners.html" '批量删除' '监听器页缺少批量删除'
+expect "$TMP/listeners.html" '删除' '监听页缺少删除按钮'
 
 log "渲染 #/download"
 render '#/download/index' "$TMP/download.html"
-expect "$TMP/download.html" 'Stageless' '下载页缺少 Stageless 按钮'
+expect "$TMP/download.html" '客户端生成' '下载页标题缺失'
 expect "$TMP/download.html" '架构' '下载页缺架构选择'
-expect "$TMP/download.html" '复制 stageless 拉取命令' '下载页缺少复制命令按钮'
+expect "$TMP/download.html" '上线命令查看' '下载页缺少上线命令按钮'
 
 log "渲染 #/tunnels"
 render '#/tunnel/index' "$TMP/tunnels.html"
-expect "$TMP/tunnels.html" '服务器端口' '隧道页表头缺失'
+expect "$TMP/tunnels.html" '服务端端口' '隧道页表头缺失'
 
 log "渲染 #/plugins/1"
 render '#/pluginrunner/index' "$TMP/plugins.html"
-expect "$TMP/plugins.html" '服务器插件' '插件页卡片缺失'
+expect "$TMP/plugins.html" '插件运行' '插件页卡片缺失'
 expect "$TMP/plugins.html" '筛选插件名' '插件页缺少筛选框'
 
 log "渲染 #/settings"
@@ -465,9 +465,9 @@ LS_JS=$(cat <<'JS'
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
   if (!location.hash.includes('/listener')) { location.hash = '#/listener/index'; await new Promise(r => setTimeout(r, 1500)); }
-  await waitFor(() => [...document.querySelectorAll('button')].some(b => b.innerText.trim() === '新建监听器'), 8000);
+  await waitFor(() => [...document.querySelectorAll('button')].some(b => b.innerText.trim() === '新增监听'), 8000);
 
-  [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '新建监听器')?.click();
+  [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '新增监听')?.click();
   const opened = await waitFor(() => !!document.querySelector('.ant-modal-wrap, .el-dialog'), 5000);
   if (!opened) return 'NO_DIALOG';
 

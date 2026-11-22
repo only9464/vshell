@@ -51,7 +51,7 @@ async function copy(kind: 'stageless' | 'listen') {
 </script>
 
 <template>
-  <a-card :bordered="false" title="载荷下载">
+  <a-card :bordered="false" title="客户端生成">
     <a-form layout="inline" :label-col="{ span: 6 }">
       <a-form-item label="监听器">
         <a-select v-model:value="form.id" style="width: 220px">
@@ -65,18 +65,18 @@ async function copy(kind: 'stageless' | 'listen') {
           <a-select-option v-for="a in arches" :key="a" :value="a">{{ a }}</a-select-option>
         </a-select>
       </a-form-item>
-      <a-form-item label="UPX"><a-switch v-model:checked="form.upx" /></a-form-item>
+      <a-form-item label="是否UPX压缩"><a-switch v-model:checked="form.upx" /></a-form-item>
     </a-form>
 
     <a-divider />
     <a-space wrap>
-      <a-button type="primary" @click="download('stageless')">下载 Stageless</a-button>
-      <a-button @click="copy('stageless')">复制 stageless 拉取命令</a-button>
+      <a-button type="primary" @click="download('stageless')">下载</a-button>
+      <a-button @click="copy('stageless')">上线命令查看</a-button>
     </a-space>
 
-    <a-divider>独立 listen 载荷</a-divider>
+    <a-divider>正向客户端（独立 listen 载荷）</a-divider>
     <a-form layout="inline">
-      <a-form-item label="传输">
+      <a-form-item label="连接方式">
         <a-select v-model:value="form.tp" style="width: 120px">
           <a-select-option v-for="t in ['tcp', 'kcp', 'ws', 'http']" :key="t" :value="t">{{ t }}</a-select-option>
         </a-select>
@@ -84,11 +84,11 @@ async function copy(kind: 'stageless' | 'listen') {
       <a-form-item label="回连地址"><a-input v-model:value="form.host" style="width: 160px" /></a-form-item>
       <a-form-item label="端口"><a-input-number v-model:value="form.port" :min="1" :max="65535" /></a-form-item>
       <a-form-item label="Vkey"><a-input v-model:value="form.vkey" style="width: 160px" /></a-form-item>
-      <a-form-item label="加密盐"><a-input v-model:value="form.salt" style="width: 160px" /></a-form-item>
+      <a-form-item label="流量加密盐"><a-input v-model:value="form.salt" style="width: 160px" /></a-form-item>
     </a-form>
     <a-space wrap style="margin-top: 12px">
-      <a-button @click="download('listen')">下载 Listen 载荷</a-button>
-      <a-button @click="copy('listen')">复制 listen 拉取命令</a-button>
+      <a-button @click="download('listen')">下载</a-button>
+      <a-button @click="copy('listen')">上线命令查看</a-button>
     </a-space>
   </a-card>
 </template>
