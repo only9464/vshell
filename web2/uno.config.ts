@@ -123,6 +123,9 @@ export default defineConfig({
     'i-material-icon-theme:folder-desktop',
     'i-material-icon-theme:folder-video',
     'i-material-icon-theme:folder-trash',
+    'i-devicon:windows8',
+    'i-devicon:linux',
+    'i-wpf:macos',
   ],
   shortcuts: {
     'flex-col': 'flex flex-col',

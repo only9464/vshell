@@ -292,6 +292,24 @@ ui-check 增加「文件树点击切换」断言。
 > **显式注入**；另外 `material-icon-theme` 没有 `folder`/`file`/`excel` 这几个名字，
 > 通用目录用 `folder-base`、通用文件用 `document`。
 
+### 客户端列表的两个自定义渲染（R104，从 bundle 反推）
+
+`vC4VbtdOO.js` 里注册了三个 vxe 渲染器：
+
+```
+OsName        → windows_* 用 devicon:windows8；linux_* 用 devicon:linux；
+                darwin_* 用 wpf:macos，并把前缀替换成空格（"linux_ amd64"）
+IsConnect     → 在线 #1ab394 / 离线 grey
+PingCheckTime → <60 绿色，否则红色
+```
+
+新前端照此实现：系统类型列带 OS 图标 + 去前缀；状态列标签；心跳列同样用
+「<60 绿、否则红」的规则展示。
+
+> 口径差异：后端 `PingCheckTime` 是**最后一次心跳的时间戳**（Unix 秒），而 4.9.3
+> 前端比较的是"距今秒数"。这里换算成 `hbAge()`（now - ts）再套同一条颜色规则，
+> 实测在线客户端显示 `0s`（绿）、空闲过久的显示 `65s`（红）。
+
 ### 暗色主题（R102）
 
 **趋势图跟主题**：`Sparkline` 默认描边亮色 `#1677ff`、暗色 `#4096ff`，面积透明度

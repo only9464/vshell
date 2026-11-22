@@ -71,10 +71,14 @@ async function load() {
 }
 onMounted(load)
 
-function fmtTime(v: any) {
+// 心跳：后端给的是"最后一次心跳的时间戳"（Unix 秒）。4.9.3 的规则是
+// 「<60 绿色，否则红色」——这里换算成"距今多少秒"再套同一条规则。
+function hbAge(v: any): number {
   const n = Number(v)
-  if (!n) return '-'
-  return new Date(n * 1000).toLocaleString()
+  if (!n) return -1
+  const secs = n > 1e12 ? Math.floor(n / 1000) : n
+  const now = Math.floor(Date.now() / 1000)
+  return Math.max(0, now - secs)
 }
 
 function open(row: any) { selected.value = row; drawer.value = true }
@@ -132,8 +136,24 @@ function remove(row: any) {
       @change="(p: any) => { page = p.current; pageSize = p.pageSize; load() }"
     >
       <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'PingCheckTime'">
-          <span class="mono">{{ fmtTime(record.PingCheckTime) }}</span>
+        <template v-if="column.dataIndex === 'OsName'">
+          <span v-if="String(record.OsName || '').startsWith('windows')">
+            <span class="os-ico i-devicon:windows8" />{{ String(record.OsName).replace('windows_', ' ') }}
+          </span>
+          <span v-else-if="String(record.OsName || '').startsWith('linux')">
+            <span class="os-ico i-devicon:linux" />{{ String(record.OsName).replace('linux_', ' ') }}
+          </span>
+          <span v-else-if="String(record.OsName || '').startsWith('darwin')">
+            <span class="os-ico i-wpf:macos" />{{ String(record.OsName).replace('darwin_', ' ') }}
+          </span>
+          <span v-else>{{ record.OsName || '-' }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'PingCheckTime'">
+          <a-tag v-if="hbAge(record.PingCheckTime) >= 0"
+            :color="hbAge(record.PingCheckTime) < 60 ? 'green' : 'red'">
+            {{ hbAge(record.PingCheckTime) }}s
+          </a-tag>
+          <span v-else>-</span>
         </template>
         <template v-else-if="column.dataIndex === 'IsConnect'">
           <a-tag :color="record.IsConnect ? 'green' : 'default'">{{ record.IsConnect ? '在线' : '离线' }}</a-tag>
@@ -202,5 +222,6 @@ function remove(row: any) {
 .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
 .hint { color: rgba(0, 0, 0, 0.45); }
 .danger { color: #ff4d4f; }
+.os-ico { width: 16px; height: 16px; display: inline-block; vertical-align: -3px; margin-right: 4px; }
 .act { width: 14px; height: 14px; display: inline-block; vertical-align: -2px; margin-right: 3px; }
 </style>
