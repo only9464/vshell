@@ -575,6 +575,33 @@ else
   log "跳过终端键入（UI_TERMINAL_TYPE=1 可开启）"
 fi
 
+log "点击级：主题切换（暗色算法生效）"
+DARK_JS=$(cat <<'JS'
+(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const waitFor = async (fn, ms) => { const t0=Date.now(); while(Date.now()-t0<ms){ if(fn()) return true; await sleep(250); } return false; };
+  if (document.body.innerText.includes('登录') && document.querySelectorAll('input').length >= 2) {
+    const inputs = [...document.querySelectorAll('input')];
+    const set = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles:true})); };
+    set(inputs[0], 'admin'); set(inputs[1], 'p1');
+    await sleep(300);
+    [...document.querySelectorAll('button')].find(b => b.innerText.replace(/\s/g,'') === '登录')?.click();
+    await waitFor(() => location.hash.includes('/dashboard'), 8000);
+  }
+  if (!await waitFor(() => !!document.querySelector('.ant-card'), 10000)) return 'DARK_FAIL 无卡片';
+  const before = getComputedStyle(document.querySelector('.ant-card')).backgroundColor;
+  [...document.querySelectorAll('button')].find(b => /黑暗主题/.test(b.innerText))?.click();
+  await sleep(1200);
+  const attr = document.documentElement.getAttribute('data-theme');
+  const after = getComputedStyle(document.querySelector('.ant-card')).backgroundColor;
+  const dark = /rgb\((3[0-9]|[0-9]{1,2}), (3[0-9]|[0-9]{1,2})/.test(after) || after !== before;
+  return (attr === 'dark' && dark) ? 'DARK_OK ' + after : 'DARK_FAIL attr=' + attr + ' bg=' + after;
+})()
+JS
+)
+DARK_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$DARK_JS" 2>&1)
+echo "$DARK_OUT" | grep -q 'DARK_OK' || fail "暗色主题未生效: $(echo "$DARK_OUT" | tail -c 100)"
+
 log "点击级：客户端列表右键菜单"
 CTX_JS=$(cat <<'JS'
 (async () => {

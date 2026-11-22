@@ -6,6 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { CloseOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons-vue'
 import { menus } from '../router'
 import { useAuthStore } from '../stores/auth'
+import { isDark, toggleDark } from '../stores/theme'
 
 const route = useRoute()
 const router = useRouter()
@@ -60,12 +61,9 @@ const current = computed(() => menus.find((m) => route.path.startsWith(m.path.sp
 const selectedKeys = computed(() => [String(current.value.path)])
 const openKeys = computed(() => [String(current.value.path.split('/')[1])])
 
-const dark = ref(document.documentElement.getAttribute('data-theme') === 'dark')
-function toggleTheme() {
-  dark.value = !dark.value
-  document.documentElement.setAttribute('data-theme', dark.value ? 'dark' : 'light')
-  localStorage.setItem('vshell.theme', dark.value ? 'dark' : 'light')
-}
+// 主题状态放到 store，App.vue 的 config-provider 会跟着切暗色算法
+const dark = isDark
+function toggleTheme() { toggleDark() }
 
 function onUserMenu({ key }: { key: string }) {
   if (key === 'logout') {

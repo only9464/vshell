@@ -292,6 +292,17 @@ ui-check 增加「文件树点击切换」断言。
 > **显式注入**；另外 `material-icon-theme` 没有 `folder`/`file`/`excel` 这几个名字，
 > 通用目录用 `folder-base`、通用文件用 `document`。
 
+### 暗色主题（R102）
+
+4.9.3 用 `<html data-theme="dark">` 切换主题。新前端做法：
+
+- 主题状态放进 `src/stores/theme.ts`（`isDark` + `setDark/toggleDark`），同时落 `localStorage`
+- `App.vue` 的 `a-config-provider` 绑定 `:theme="{ algorithm: isDark ? darkAlgorithm : defaultAlgorithm }"`
+
+只加 `data-theme` 属性时，antd 组件仍是白底（只有自定义 CSS 会变），必须切算法才会
+出现 4.9.3 那种整体暗色。实测暗色下：`body #141414`、`card #1f1f1f`、文字
+`rgba(255,255,255,.85)`、`data-theme="dark"`；ui-check 已加断言。
+
 ## 4.0 布局对齐 4.9.3
 
 | 元素 | 实现 |
