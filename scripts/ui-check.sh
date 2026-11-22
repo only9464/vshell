@@ -261,6 +261,8 @@ echo "$FILEICO_OUT" | grep -q 'FILE_ICO_OK' || fail "文件图标未渲染: $(ec
 log "渲染 #/listeners"
 render '#/listener/index' "$TMP/listeners.html"
 expect "$TMP/listeners.html" '监听地址' '监听页表头缺失'
+expect "$TMP/listeners.html" '超时心跳次数（次）' '监听页缺少超时心跳列'
+expect "$TMP/listeners.html" '外网连接地址' '监听页缺少外网连接地址列'
 expect "$TMP/listeners.html" 'UI-VK' '监听页没有真实 Vkey（字段契约不符？）'
 expect "$TMP/listeners.html" '运行' '监听器页没有状态标记'
 expect "$TMP/listeners.html" '删除' '监听页缺少删除按钮'
