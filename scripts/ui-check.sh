@@ -76,6 +76,28 @@ for _ in $(seq 1 40); do
 done
 [[ "${COUNT:-0}" -ge 1 ]] || fail "agent 未上线"
 
+# agent 健康检查：长时间跑浏览器检查时 agent 可能掉线（http 轮询超时），
+# 这里提供一个"掉线就重启"的工具函数，浏览器断言前调用一次。
+ensure_agent() {
+  local n
+  n=$(curl -s -X POST "http://127.0.0.1:$WEB_PORT/api/client/list" -H "Token: $TOK" \
+    -H 'Content-Type: application/json' -d '{"page":1,"pageSize":5}' \
+    | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"]["clientOnlineCount"])' 2>/dev/null || echo 0)
+  if [[ "${n:-0}" -lt 1 ]]; then
+    kill "$AGENT_PID" 2>/dev/null
+    ( cd "$TMP" && exec ./agent >> agent.log 2>&1 ) &
+    AGENT_PID=$!
+    for _ in $(seq 1 30); do
+      sleep 0.5
+      n=$(curl -s -X POST "http://127.0.0.1:$WEB_PORT/api/client/list" -H "Token: $TOK" \
+        -H 'Content-Type: application/json' -d '{"page":1,"pageSize":5}' \
+        | python3 -c 'import sys,json;print(json.load(sys.stdin)["result"]["clientOnlineCount"])' 2>/dev/null || echo 0)
+      [[ "${n:-0}" -ge 1 ]] && break
+    done
+    log "agent 曾掉线，已重启（在线 $n）"
+  fi
+}
+
 # 渲染一个路由并返回 DOM
 render() { # $1=route  $2=输出文件
   cat > "$TMP/web2/dist/bootstrap.html" <<BOOT
@@ -182,6 +204,7 @@ JS
 TABS_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$TABS_JS" 2>&1)
 echo "$TABS_OUT" | grep -q 'TABS_OK' || log "  页签栏断言跳过（旧前端或无障碍）: $(echo "$TABS_OUT" | tail -c 80)"
 
+ensure_agent
 log "文件树（点击目录 → 右表切换）"
 TREE_JS=$(cat <<'JS'
 (async () => {
@@ -199,9 +222,10 @@ TREE_JS=$(cat <<'JS'
   // 先等文件页自身渲染出来（表头出现），再等树节点，避免页面还没挂载就断言
   await waitFor(() => document.body.innerText.includes('文件名'), 12000);
   // 树是懒加载的：若首屏没列出节点，点一下根节点强制再拉一次
-  if (!await waitFor(() => document.querySelectorAll('.tree-row').length > 0, 8000)) {
+  // 树为空时点根节点（会同时刷新树与右表），最多重试 3 次
+  for (let i = 0; i < 3 && document.querySelectorAll('.tree-row').length === 0; i++) {
     document.querySelector('.tree-root')?.click();
-    await waitFor(() => document.querySelectorAll('.tree-row').length > 0, 12000);
+    await sleep(3000);
   }
   if (!await waitFor(() => document.querySelectorAll('.tree-row').length > 0, 5000)) {
     return 'TREE_FAIL 无节点|' + document.body.innerText.replace(/\n+/g,' ').slice(0, 120);
@@ -604,6 +628,7 @@ JS
 DARK_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$DARK_JS" 2>&1)
 echo "$DARK_OUT" | grep -q 'DARK_OK' || fail "暗色主题未生效: $(echo "$DARK_OUT" | tail -c 100)"
 
+ensure_agent
 log "点击级：客户端列表右键菜单"
 CTX_JS=$(cat <<'JS'
 (async () => {

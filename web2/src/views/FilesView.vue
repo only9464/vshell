@@ -131,6 +131,12 @@ async function expandTree(path: string) {
   openDirs.value = { ...openDirs.value }
 }
 
+// 点根节点：既刷新右表，也重新拉一次根目录的子目录（树为空时的兜底）
+async function refreshRoot() {
+  try { await fetchDirs('/') } catch { /* 忽略：下面 load 会给出错误 */ }
+  load('/')
+}
+
 async function loadTree() {
   treeLoading.value = true
   try { await fetchDirs('/') } finally { treeLoading.value = false }
@@ -327,7 +333,7 @@ async function onUpload(e: Event) {
     <a-row :gutter="12">
       <a-col :xs="24" :lg="6">
         <a-card size="small" title="文件树" :loading="treeLoading" :body-style="{ padding: '8px', maxHeight: 'calc(100vh - 280px)', overflow: 'auto' }">
-          <div class="tree-root" @click="load('/')">/</div>
+          <div class="tree-root" @click="refreshRoot()">/</div>
           <div
             v-for="n in flatTree" :key="n.path" class="tree-row"
             :style="{ paddingLeft: 12 + n.depth * 12 + 'px' }"
