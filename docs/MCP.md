@@ -42,6 +42,17 @@ tools/call list_clients   → 客户端条目（含 Arch=amd64、HostName…）
 tools/call run_command    → {"output":"kali\nkali\n"}（真的在被控端执行了 id -un && hostname）
 ```
 
+## 2.2 鉴权（与面板同一套 JWT）
+
+- MCP 进程启动时读同一份 `conf/setting.conf`，用其中的账号密码**真正调用一次
+  `/api/login`** 拿 JWT（避免自签 token 与面板密钥不一致导致 401），缓存 20 小时。
+- 每次调用面板 API 都带 `Token: <jwt>` 头。
+- **token 失效自动恢复**（R77）：任何请求返回 401 时清空缓存并重新登录一次再重试，
+  覆盖"改了密码""面板重启换了密钥"等场景。
+- 密码为空时才回落到本地签发（仅测试用）。
+
+回归测试：`TestDoRequestRetriesAfter401`（httptest 模拟第一次 401、重登后 200）。
+
 ## 3. 协议实现
 
 | 方法 | 说明 |

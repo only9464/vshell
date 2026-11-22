@@ -54,24 +54,24 @@ func builtinTools() []Tool {
 			Name:        "create_listener",
 			Description: "创建监听器（创建后自动启动）。mode: http/https/kcp/websocket/dns/cdn_websocket。",
 			InputSchema: obj(map[string]interface{}{
-				"mode":        map[string]interface{}{"type": "string", "description": "传输模式"},
-				"vkey":        map[string]interface{}{"type": "string", "description": "监听器密钥"},
-				"host":        map[string]interface{}{"type": "string", "description": "监听地址，默认 127.0.0.1"},
-				"port":        map[string]interface{}{"type": "integer", "description": "监听端口"},
-				"remark":      map[string]interface{}{"type": "string"},
-				"dns_domain":  map[string]interface{}{"type": "string", "description": "DNS 模式的域名后缀"},
+				"mode":          map[string]interface{}{"type": "string", "description": "传输模式"},
+				"vkey":          map[string]interface{}{"type": "string", "description": "监听器密钥"},
+				"host":          map[string]interface{}{"type": "string", "description": "监听地址，默认 127.0.0.1"},
+				"port":          map[string]interface{}{"type": "integer", "description": "监听端口"},
+				"remark":        map[string]interface{}{"type": "string"},
+				"dns_domain":    map[string]interface{}{"type": "string", "description": "DNS 模式的域名后缀"},
 				"ping_interval": map[string]interface{}{"type": "integer", "description": "心跳秒数"},
 			}, "mode", "vkey"),
 			handler: func(a map[string]interface{}) (string, bool) {
 				host := str(a, "host", "127.0.0.1")
 				return apiJSON("POST", "/listener/add", map[string]interface{}{
-					"Mode":             str(a, "mode", "http"),
-					"Vkey":             str(a, "vkey", ""),
-					"Host":             host,
-					"Port":             num(a, "port", 0),
-					"Remark":           str(a, "remark", "mcp"),
-					"DNSDomain":        str(a, "dns_domain", ""),
-					"PingInterval":     num(a, "ping_interval", 1),
+					"Mode":         str(a, "mode", "http"),
+					"Vkey":         str(a, "vkey", ""),
+					"Host":         host,
+					"Port":         num(a, "port", 0),
+					"Remark":       str(a, "remark", "mcp"),
+					"DNSDomain":    str(a, "dns_domain", ""),
+					"PingInterval": num(a, "ping_interval", 1),
 				})
 			},
 		},
@@ -136,9 +136,9 @@ func builtinTools() []Tool {
 			Name:        "upload_file",
 			Description: "把本机文件上传到客户端指定目录（multipart → agent 落盘）。",
 			InputSchema: obj(map[string]interface{}{
-				"client_id":   map[string]interface{}{"type": "integer"},
-				"local_path":  map[string]interface{}{"type": "string", "description": "服务器本机文件路径"},
-				"remote_dir":  map[string]interface{}{"type": "string", "description": "客户端目标目录"},
+				"client_id":  map[string]interface{}{"type": "integer"},
+				"local_path": map[string]interface{}{"type": "string", "description": "服务器本机文件路径"},
+				"remote_dir": map[string]interface{}{"type": "string", "description": "客户端目标目录"},
 			}, "client_id", "local_path", "remote_dir"),
 			handler: func(a map[string]interface{}) (string, bool) {
 				return apiUpload(num(a, "client_id", 0), str(a, "local_path", ""), str(a, "remote_dir", "/tmp"))
@@ -148,9 +148,9 @@ func builtinTools() []Tool {
 			Name:        "download_file",
 			Description: "从客户端下载文件到服务器本机（返回保存路径与字节数）。",
 			InputSchema: obj(map[string]interface{}{
-				"client_id":  map[string]interface{}{"type": "integer"},
+				"client_id":   map[string]interface{}{"type": "integer"},
 				"remote_path": map[string]interface{}{"type": "string"},
-				"local_path": map[string]interface{}{"type": "string", "description": "保存到本机的路径"},
+				"local_path":  map[string]interface{}{"type": "string", "description": "保存到本机的路径"},
 			}, "client_id", "remote_path", "local_path"),
 			handler: func(a map[string]interface{}) (string, bool) {
 				return apiDownload(num(a, "client_id", 0), str(a, "remote_path", ""), str(a, "local_path", ""))
@@ -176,9 +176,9 @@ func builtinTools() []Tool {
 			Name:        "start_tunnel",
 			Description: "创建并启动一条隧道：服务器在 port 监听，流量经 agent 转发到 target。",
 			InputSchema: obj(map[string]interface{}{
-				"client_id":  map[string]interface{}{"type": "integer"},
-				"port":       map[string]interface{}{"type": "integer", "description": "服务器监听端口"},
-				"target":     map[string]interface{}{"type": "string", "description": "agent 侧可达的目标 host:port"},
+				"client_id":   map[string]interface{}{"type": "integer"},
+				"port":        map[string]interface{}{"type": "integer", "description": "服务器监听端口"},
+				"target":      map[string]interface{}{"type": "string", "description": "agent 侧可达的目标 host:port"},
 				"server_addr": map[string]interface{}{"type": "string", "description": "agent 拨号用的服务器地址"},
 			}, "client_id", "port", "target"),
 			handler: func(a map[string]interface{}) (string, bool) {
@@ -331,6 +331,26 @@ func token() (string, error) {
 }
 
 func doRequest(method, path string, body interface{}) (*http.Response, error) {
+	resp, err := doRequestOnce(method, path, body)
+	if err == nil && resp != nil && resp.StatusCode == http.StatusUnauthorized {
+		// 缓存的 token 失效（改密码 / 服务端换了 JWT 密钥）：清缓存重登一次
+		resp.Body.Close()
+		invalidateToken()
+		return doRequestOnce(method, path, body)
+	}
+	return resp, err
+}
+
+// invalidateToken 清掉缓存的 token（下次调用会重新登录）。
+func invalidateToken() {
+	tokenMu.Lock()
+	tokenValue = ""
+	tokenExpiry = time.Time{}
+	tokenMu.Unlock()
+}
+
+// doRequestOnce 发一次请求（不复用 401 重试逻辑）。
+func doRequestOnce(method, path string, body interface{}) (*http.Response, error) {
 	tok, err := token()
 	if err != nil {
 		return nil, err

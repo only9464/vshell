@@ -2,13 +2,16 @@ package mcp
 
 import (
 	"bytes"
-	"time"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"vshell/utils"
 )
@@ -183,5 +186,50 @@ func TestMCPResources(t *testing.T) {
 	}
 	if e, _ := resps[2]["error"].(map[string]interface{}); e == nil {
 		t.Fatalf("path traversal must be rejected: %v", resps[2])
+	}
+}
+
+// token 失效（401）时应清缓存并重新登录一次。
+func TestDoRequestRetriesAfter401(t *testing.T) {
+	var logins int32
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/login":
+			atomic.AddInt32(&logins, 1)
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintf(w, `{"code":0,"result":{"token":"tok-%d"}}`, atomic.LoadInt32(&logins))
+		case "/api/client/list":
+			if r.Header.Get("Token") == "tok-1" {
+				w.WriteHeader(http.StatusUnauthorized) // 第一次的 token 已失效
+				return
+			}
+			fmt.Fprint(w, `{"code":0,"result":{"items":[]}}`)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer ts.Close()
+
+	u, _ := url.Parse(ts.URL)
+	port, _ := strconv.Atoi(u.Port())
+	cfg := utils.GetFullSettings()
+	oldIP, oldPort, oldPass := cfg.WebIP, cfg.WebPort, cfg.WebPassword
+	cfg.WebIP, cfg.WebPort, cfg.WebPassword = "127.0.0.1", port, "p"
+	t.Cleanup(func() {
+		cfg.WebIP, cfg.WebPort, cfg.WebPassword = oldIP, oldPort, oldPass
+		invalidateToken()
+	})
+	invalidateToken()
+
+	resp, err := doRequest("POST", "/client/list", map[string]int{"page": 1})
+	if err != nil {
+		t.Fatalf("doRequest: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d（应在 401 后重登重试）", resp.StatusCode)
+	}
+	if got := atomic.LoadInt32(&logins); got < 2 {
+		t.Fatalf("logins = %d（应重新登录）", got)
 	}
 }
