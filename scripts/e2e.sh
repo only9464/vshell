@@ -710,6 +710,42 @@ echo "$TCP_OUT" | grep -q 'tcp-e2e-ok' || fail "tcp 客户端执行命令失败:
 api POST /file/ls "{\"id\":$TCP_CID,\"path\":\"/tmp\"}" | grep -q '"code":0' \
   || fail "tcp 客户端文件列表失败"
 
+# 隧道数据面（走 TCP 传输的客户端）：本地 echo → 建隧道 → 连隧道端口拿回包
+TUN_LPORT=$((28200 + RANDOM % 300))
+python3 -c "
+import socket,sys
+port=int(sys.argv[1])
+s=socket.socket(); s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+s.bind(('127.0.0.1',port)); s.listen(8)
+for _ in range(8):
+    try:
+        c,_a=s.accept(); c.sendall(b'TCP-TUNNEL-OK\n'); c.close()
+    except Exception:
+        break
+" "$TUN_LPORT" >/dev/null 2>&1 &
+ECHO_PID=$!
+sleep 1
+api POST /tunnel/add "{\"clientId\":$TCP_CID,\"Port\":$((TUN_LPORT+1)),\"Mode\":\"tcp\",\"Target\":\"127.0.0.1:$TUN_LPORT\",\"Remark\":\"tcp-e2e-tunnel\"}" \
+  | grep -q '"code":0' || fail "tcp 客户端隧道创建失败"
+TUN_ID=$(api POST /tunnel/list '{"page":1,"pageSize":100}' | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+ids=[i['Id'] for i in (d['result']['items'] or []) if i.get('Remark')=='tcp-e2e-tunnel']
+print(ids[0] if ids else '')")
+[[ -n "$TUN_ID" ]] || fail "隧道未创建"
+api POST /tunnel/start "{\"id\":$TUN_ID}" | grep -q '"code":0' || fail "隧道启动失败"
+TUN_BYTES=$(timeout 12 python3 -c "
+import socket
+try:
+    c=socket.create_connection(('127.0.0.1',$((TUN_LPORT+1))),8)
+    print(c.recv(64).decode(errors='replace').strip()); c.close()
+except Exception as e:
+    print('ERR', e)")
+echo "$TUN_BYTES" | grep -q 'TCP-TUNNEL-OK' || fail "TCP 客户端隧道转发失败: $TUN_BYTES"
+api POST /tunnel/del "{\"id\":$TUN_ID}" >/dev/null
+kill "$ECHO_PID" 2>/dev/null
+log "tcp tunnel ok (经 TCP 客户端转发拿到回包)"
+
 kill "$TCP_AGENT_PID" 2>/dev/null
 TCP_LID=$(api POST /listener/list '{"page":1,"pageSize":100}' | python3 -c "
 import sys,json
