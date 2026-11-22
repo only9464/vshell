@@ -132,7 +132,9 @@ func (c *realConn) readFrame() ([]byte, error) {
 		return nil, err
 	}
 	n := binary.LittleEndian.Uint32(hdr[:])
-	if n == 0 || n > 1<<20 {
+	// 帧上限：任务里可能带插件二进制（base64 后会膨胀 ~1.34 倍），
+	// 1MB 会让「跑插件」在大一点的二进制上直接失败（表现为任务超时）。
+	if n == 0 || n > maxTCPFrameBytes {
 		return nil, errors.New("bad frame length")
 	}
 	frame := make([]byte, n)
@@ -141,6 +143,9 @@ func (c *realConn) readFrame() ([]byte, error) {
 	}
 	return decryptFrame(frame)
 }
+
+// maxTCPFrameBytes 是单帧上限（与服务端 readTCPFrame 保持一致）。
+const maxTCPFrameBytes = 32 << 20
 
 // newRealTransport creates a pooled TCP transport (main.go "tcp"/"raw" mode).
 func newRealTransport(addr, verify, salt string) Transport {

@@ -213,3 +213,23 @@
 2. 只保留一个 agent 进程后复测：写入 `after-owner-fix` 立刻落盘 ✅。
 
 运维提醒：`agent` 不要跑重复实例；重复实例不会报错，只会让任务"随机丢"。
+
+## J: TCP 帧上限导致「跑插件」超时（R124 定位并修复）
+
+现象：在 TCP 客户端上执行插件（`POST /api/runner/runplugin`）等 75s 后返回
+`task 248 timed out`；同一个插件在 http 客户端上正常。
+
+原因：插件走的是**任务命令内联 base64**（`{"type":"plugin","data":"<b64>"}`）。
+`plugins/sysinfo.elf` 1.6MB，base64 后约 2.2MB，而 agent 的 `readFrame` 上限是
+**1MB**——帧直接被判为 `bad frame length`，任务永远拿不到结果。
+
+修复：两侧帧上限对齐到 32MB
+（`agent/transport_real.go: maxTCPFrameBytes`、`c2engine/tcp_listener.go: readTCPFrame`）。
+
+实测（TCP 客户端 #2）：
+
+```
+{"code":0,"result":{"output":"host=kali os=linux/amd64\nuser=kali uid=1000\npid=…"}}
+```
+
+`scripts/e2e.sh` §7v 已增加「TCP 客户端跑插件」断言。

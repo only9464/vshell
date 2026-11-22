@@ -721,6 +721,14 @@ print(r.get('total',0))" 2>/dev/null || echo 0)
 [[ "${TCP_TOTAL:-0}" -gt 0 ]] || fail "TCP 客户端列目录为空（total=$TCP_TOTAL）: $(echo "$TCP_LS" | head -c 120)"
 log "tcp file list ok (total=$TCP_TOTAL)"
 
+# TCP 客户端跑插件：插件二进制 base64 后 >1MB，帧上限太小会直接超时
+# （R124 就是靠这条发现的：agent 侧 1MB 限制 → "task timed out"）。
+if [[ -f plugins/sysinfo.elf ]]; then
+  PL_OUT=$(api POST /runner/runplugin "{\"id\":$TCP_CID,\"pluginName\":\"sysinfo.elf\",\"procArg\":\"\"}")
+  echo "$PL_OUT" | grep -q '"output"' || fail "TCP 客户端插件执行失败: $(echo "$PL_OUT" | head -c 160)"
+  log "tcp plugin ok"
+fi
+
 # 隧道数据面（走 TCP 传输的客户端）：本地 echo → 建隧道 → 连隧道端口拿回包
 TUN_LPORT=$((28200 + RANDOM % 300))
 python3 -c "

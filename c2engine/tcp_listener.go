@@ -196,7 +196,8 @@ func readTCPFrame(rd *bufio.Reader, salt string) ([]byte, error) {
 		return nil, err
 	}
 	n := binary.LittleEndian.Uint32(hdr[:])
-	if n == 0 || n > 8<<20 {
+	// 32MB 与服务端/agent 两侧对齐：插件二进制 base64 后可能几 MB。
+	if n == 0 || n > 32<<20 {
 		return nil, fmt.Errorf("bad frame length %d", n)
 	}
 	body := make([]byte, n)
