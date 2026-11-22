@@ -676,6 +676,49 @@ kill "$AGENT_HTTPS_PID" 2>/dev/null
 api POST /listener/del "{\"id\":$HTTPS_LID}" >/dev/null
 log "https listener ok (自签 TLS + agent 上线)"
 
+# ---------------------------------------------------------------- 7v. 原生 TCP 监听器（R73）
+log "check native tcp listener (checkin / poll / command / result)"
+TCP_PORT=$((27900 + RANDOM % 300))
+api POST /listener/add "{\"Mode\":\"tcp\",\"Vkey\":\"TCP-E2E\",\"Host\":\"127.0.0.1\",\"Port\":$TCP_PORT,\"Remark\":\"tcp\"}" \
+  | grep -q '"code":0' || fail "tcp 监听器创建失败"
+sleep 1
+# 端口必须真的在监听（此前 Mode:tcp 会打印 Unknown listener mode）
+(exec 3<>/dev/tcp/127.0.0.1/$TCP_PORT) 2>/dev/null && exec 3>&- || fail "tcp 监听器未真正监听 $TCP_PORT"
+
+# 与其它章节一致：用 exec 让 $! 就是 agent 的 PID
+( cd "$TMP" && exec ./agent -server "tcp://127.0.0.1:$TCP_PORT" -vkey TCP-E2E -salt "" > agent_tcp.log 2>&1 ) &
+TCP_AGENT_PID=$!
+sleep 1
+kill -0 "$TCP_AGENT_PID" 2>/dev/null || fail "tcp agent 未启动（见 $TMP/agent_tcp.log）"
+TCP_CID=""
+for _ in $(seq 1 40); do
+  TCP_CID=$(api POST /client/list '{"page":1,"pageSize":100}' | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+ids=[i['Id'] for i in (d['result']['items'] or []) if i.get('Tp')=='tcp']
+print(ids[0] if ids else '')" 2>/dev/null || true)
+  [[ -n "$TCP_CID" ]] && break
+  sleep 0.5
+done
+[[ -n "$TCP_CID" ]] || fail "tcp 传输的客户端未上线"
+
+# 命令执行（checkin → poll → 执行 → result 全链路）
+TCP_OUT=$(api POST /terminal/shell "{\"id\":$TCP_CID,\"command\":\"echo tcp-e2e-ok\"}")
+echo "$TCP_OUT" | grep -q 'tcp-e2e-ok' || fail "tcp 客户端执行命令失败: $(echo "$TCP_OUT" | head -c 120)"
+
+# 文件列表
+api POST /file/ls "{\"id\":$TCP_CID,\"path\":\"/tmp\"}" | grep -q '"code":0' \
+  || fail "tcp 客户端文件列表失败"
+
+kill "$TCP_AGENT_PID" 2>/dev/null
+TCP_LID=$(api POST /listener/list '{"page":1,"pageSize":100}' | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+ids=[i['Id'] for i in (d['result']['items'] or []) if i.get('Vkey')=='TCP-E2E']
+print(ids[0] if ids else '')")
+[[ -n "$TCP_LID" ]] && api POST /listener/del "{\"id\":$TCP_LID}" >/dev/null
+log "tcp listener ok (client #$TCP_CID: 命令 + 文件)"
+
 # ---------------------------------------------------------------- 8. 面板契约
 log "check /client/list field contract (B0.8)"
 LIST=$(api POST /client/list '{"page":1,"pageSize":10}')

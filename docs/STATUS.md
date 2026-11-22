@@ -36,7 +36,7 @@
 | 截图/屏幕 | 功能链路正常；本机无图形会话导致截屏工具全部失败，页面已给出安装建议（环境限制） | `web/src/views/ScreenshotView.vue`、GAPS §E2 |
 | 概览计数 | `/dashboard/info` 的在线数改用 `Engine.OnlineClientCount()`，与列表口径一致（此前因 `limit=0` 返回空切片而恒为 0） | `c2engine/engine.go`、`controllers/engine.go` |
 | 原生 MCP | `vshell-server mcp`：initialize / tools/list(13) / tools/call（dashboard、list_clients、run_command 实跑）全部通过 | `mcp/`、docs/MCP.md §2.1 |
-| TCP 监听 | `Mode: "tcp"` 可用：checkin → poll → 命令执行 → 结果回传全链路通过（客户端 `Tp=tcp`） | `c2engine/tcp_listener.go`、`PROTOCOL §2.6a` |
+| TCP 监听 | e2e §7v 固化回归：建监听器→端口探测→agent 上线→命令→文件列表；`Mode: "tcp"` 可用：checkin → poll → 命令执行 → 结果回传全链路通过（客户端 `Tp=tcp`） | `c2engine/tcp_listener.go`、`PROTOCOL §2.6a` |
 | 交付包实测 | 隧道数据面（经 agent 转发拿到回包）、上传/读取/下载/删除、插件执行均在交付包上验证通过 | `~/vshell-release`、本轮验证记录 |
 | 交付包 | `~/vshell-release`：服务端 + 前端 + 通用 agent（支持 `-server/-vkey/-salt`）+ 启停脚本 + README；实测起服务→建监听器→agent 上线可用 | `agent/main.go`、`~/vshell-release/` |
 | 前端终端/概览 | 终端控制条（字号/清屏/复制/重连）；概览页最近上线客户端（前 5 台） | `web/src/views/TerminalView.vue`、`DashboardView.vue` |
