@@ -72,6 +72,16 @@ cd agent && go build -o agent .
 
 快速开始的已知限制（监听器端口、上线失败等）见 [docs/DEV.md §8](docs/DEV.md)。
 
+## 常用命令
+
+```bash
+./scripts/release-check.sh     # 发版门禁（构建/vet/测试/竞态/agent/前端/API 对齐）
+./scripts/e2e.sh               # 端到端：HTTP/KCP/WS/DNS/TCP + 面板契约 + 载荷
+./scripts/ui-check.sh          # 前端 12 页渲染 + 12 条点击级流程
+./scripts/mcp-smoke.sh         # 原生 MCP：13 工具 + dashboard + run_command
+./scripts/make-templates.sh    # 生成载荷模板（下载功能的前置条件）
+```
+
 ## 目录结构
 
 ```
