@@ -146,6 +146,8 @@ expect "$TMP/term.html" 'xterm' '终端 xterm 未挂载'
 expect "$TMP/term.html" '已连接' '终端 WebSocket 未连上'
 expect "$TMP/term.html" '清屏' '终端缺少清屏按钮'
 expect "$TMP/term.html" '复制选中' '终端缺少复制按钮'
+expect "$TMP/term.html" '复制全部' '终端缺少复制全部按钮'
+expect "$TMP/term.html" '保存日志' '终端缺少保存日志按钮'
 
 log "页签栏（多标签）随访问增长"
 TABS_JS=$(cat <<'JS'

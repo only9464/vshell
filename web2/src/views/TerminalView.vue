@@ -69,6 +69,37 @@ async function copySelection() {
 
 function reconnect() { location.reload() }
 
+// 读取 xterm 缓冲区全部文本（用于"复制全部输出 / 保存日志"）
+function bufferText(): string {
+  if (!term) return ''
+  const buf = term.buffer.active
+  const lines: string[] = []
+  for (let i = 0; i < buf.length; i++) {
+    const line = buf.getLine(i)
+    if (line) lines.push(line.translateToString(true))
+  }
+  return lines.join('\n').replace(/\n+$/, '')
+}
+
+async function copyAll() {
+  const text = bufferText()
+  if (!text.trim()) { message.warning('终端没有输出'); return }
+  try { await navigator.clipboard.writeText(text); message.success('已复制全部输出') }
+  catch { message.warning('复制失败，请手动选择') }
+}
+
+function saveLog() {
+  const text = bufferText()
+  if (!text.trim()) { message.warning('终端没有输出'); return }
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `terminal-${route.params.id}-${Date.now()}.log`
+  a.click()
+  URL.revokeObjectURL(a.href)
+  message.success('日志已保存')
+}
+
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
   ws?.close()
@@ -87,6 +118,8 @@ onBeforeUnmount(() => {
       </a-space>
       <a-button size="small" @click="clearScreen">清屏</a-button>
       <a-button size="small" @click="copySelection">复制选中</a-button>
+      <a-button size="small" @click="copyAll">复制全部</a-button>
+      <a-button size="small" @click="saveLog">保存日志</a-button>
       <a-button size="small" :disabled="status === '已连接'" @click="reconnect">重连</a-button>
       <span class="hint mono">字号 {{ fontSize }}px</span>
     </div>
