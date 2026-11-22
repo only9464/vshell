@@ -134,6 +134,9 @@ log "渲染 #/files/1"
 render '#/clientManager/files/1' "$TMP/files.html"
 expect "$TMP/files.html" '修改时间' '文件页表头缺失'
 expect "$TMP/files.html" '重命名' '文件页缺少重命名按钮'
+expect "$TMP/files.html" '新建文件' '文件页缺少新建文件按钮'
+expect "$TMP/files.html" 'Wget下载文件' '文件页缺少 Wget 下载按钮'
+expect "$TMP/files.html" '权限' '文件页缺少权限列'
 expect "$TMP/files.html" '下载' '文件页缺少下载按钮'
 python3 - "$TMP/files.html" <<'PY' || fail "文件列表为空（file/ls 字段大小写不匹配？）"
 import re,sys
