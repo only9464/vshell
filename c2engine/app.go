@@ -32,7 +32,8 @@ type Application struct {
 	heartbeat   *HeartbeatMonitor
 
 	// Process-local counters; persistence and synchronization depend on call sites.
-	stats AppStats
+	stats        AppStats
+	tcpListeners map[int64]*TCPListener
 }
 
 // AppStats 保存应用级统计信息。
@@ -58,6 +59,7 @@ func GetApplication() *Application {
 			kcpListeners:  make(map[int64]*KCPListener),
 			dnsListeners:  make(map[int64]*DNSListener),
 		}
+		app.tcpListeners = map[int64]*TCPListener{}
 		app.connMgr = NewConnectionManager(app.engine)
 		app.healthCheck = GetHealthChecker()
 		app.maintenance = GetMaintenanceRunner()
@@ -120,6 +122,10 @@ func (a *Application) Stop() {
 		l.Stop()
 		delete(a.dnsListeners, id)
 	}
+	for id, l := range a.tcpListeners {
+		l.Stop()
+		delete(a.tcpListeners, id)
+	}
 
 	a.engine.Save()
 }
@@ -152,6 +158,16 @@ func (a *Application) StartListener(config *Listener) error {
 			return err
 		}
 		a.kcpListeners[config.ID] = kl
+
+	case "tcp", "raw":
+		if _, exists := a.tcpListeners[config.ID]; exists {
+			return nil
+		}
+		tl := NewTCPListener(config.ID, config.ListenAddr, config.VerifyKey, config.EncryptSalt)
+		if err := tl.Start(); err != nil {
+			return err
+		}
+		a.tcpListeners[config.ID] = tl
 
 	case ListenerModeDNS:
 		if _, exists := a.dnsListeners[config.ID]; exists {
