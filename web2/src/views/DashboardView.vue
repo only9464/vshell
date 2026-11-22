@@ -45,6 +45,12 @@ function fmtFlow(v: any) {
   while (x >= 1024 && i < unit.length - 1) { x /= 1024; i++ }
   return `${x.toFixed(i === 0 ? 0 : 1)}${unit[i]}B/s`
 }
+const kpis = computed(() => [
+  { title: '监听总数', value: info.value.listenerCount || 0, icon: 'flat-ui:magic' },
+  { title: '在线监听数', value: info.value.listenerOnlineCount || 0, icon: 'flat-color-icons:headset' },
+  { title: '客户端总数', value: info.value.clientCount || 0, icon: 'flat-ui:responsive' },
+  { title: '在线客户端', value: info.value.clientOnlineCount || 0, icon: 'flat-ui:pc' },
+])
 const sysInfo = computed(() => [
   { key: 'TCP 通讯 (已建立)', value: info.value.tcpCount ?? 0 },
   { key: 'UDP 通讯 (已建立)', value: info.value.udpCount ?? 0 },
@@ -69,53 +75,34 @@ onBeforeUnmount(() => timer && window.clearInterval(timer))
 
 <template>
   <a-spin :spinning="loading">
-    <!-- KPI：顺序与文案取自 4.9.3（监听总数 / 在线监听数 / 客户端总数 / 在线客户端） -->
-    <a-row :gutter="[16, 16]">
-      <a-col :xs="24" :sm="12" :lg="6">
-        <a-card size="small"><div class="kpi">
-          <span class="ico i-flat-ui:magic" />
-          <div><div class="kpi-label">监听总数</div><div class="kpi-value">{{ info.listenerCount || 0 }}</div></div>
-        </div></a-card>
-      </a-col>
-      <a-col :xs="24" :sm="12" :lg="6">
-        <a-card size="small"><div class="kpi">
-          <span class="ico i-flat-color-icons:headset" />
-          <div><div class="kpi-label">在线监听数</div><div class="kpi-value">{{ info.listenerOnlineCount || 0 }}</div></div>
-        </div></a-card>
-      </a-col>
-      <a-col :xs="24" :sm="12" :lg="6">
-        <a-card size="small"><div class="kpi">
-          <span class="ico i-flat-ui:responsive" />
-          <div><div class="kpi-label">客户端总数</div><div class="kpi-value">{{ info.clientCount || 0 }}</div></div>
-        </div></a-card>
-      </a-col>
-      <a-col :xs="24" :sm="12" :lg="6">
-        <a-card size="small"><div class="kpi">
-          <span class="ico i-flat-ui:pc" />
-          <div><div class="kpi-label">在线客户端</div><div class="kpi-value">{{ info.clientOnlineCount || 0 }}</div></div>
-        </div></a-card>
-      </a-col>
-    </a-row>
+    <!-- KPI：4.9.3 的 PortCard —— 卡片标题是统计项，卡片内「大数字在左、40px 图标在右」 -->
+    <div class="ports">
+      <a-card v-for="k in kpis" :key="k.title" size="small" :title="k.title" class="port-card">
+        <div class="port-body">
+          <h1 class="port-num">{{ k.value }}</h1>
+          <span class="port-ico" :class="`i-${k.icon}`" />
+        </div>
+      </a-card>
+    </div>
 
-    <!-- 系统信息 / 配置信息：字段与 4.9.3 的 S / a 两张表一致 -->
+    <!-- 系统信息 / 配置信息：4.9.3 的 SystemCard + ConfigCard，行内 key 左、value 右 -->
     <a-row :gutter="[16, 16]" style="margin-top: 16px">
       <a-col :xs="24" :lg="12">
         <a-card size="small" title="系统信息">
-          <!-- 4.9.3 的 SystemCard：处理器/磁盘/内存/虚拟内存 四个进度条 + S 列表 -->
           <div class="meter"><span>处理器</span><a-progress :percent="Math.round(Number(info.cpu) || 0)" size="small" status="active" /></div>
           <div class="meter"><span>磁盘</span><a-progress :percent="Math.round(Number(info.disk) || 0)" size="small" status="active" /></div>
           <div class="meter"><span>内存</span><a-progress :percent="Math.round(Number(info.virtual_mem) || 0)" size="small" status="active" /></div>
           <div class="meter"><span>虚拟内存</span><a-progress :percent="Math.round(Number(info.swap_mem) || 0)" size="small" status="active" /></div>
-          <a-descriptions :column="1" size="small">
-            <a-descriptions-item v-for="it in sysInfo" :key="it.key" :label="it.key">{{ it.value }}</a-descriptions-item>
-          </a-descriptions>
+          <div v-for="it in sysInfo" :key="it.key" class="kv-row">
+            <span>{{ it.key }}</span><span class="mono">{{ it.value }}</span>
+          </div>
         </a-card>
       </a-col>
       <a-col :xs="24" :lg="12">
         <a-card size="small" title="配置信息">
-          <a-descriptions :column="1" size="small">
-            <a-descriptions-item v-for="it in cfgInfo" :key="it.key" :label="it.key">{{ it.value }}</a-descriptions-item>
-          </a-descriptions>
+          <div v-for="it in cfgInfo" :key="it.key" class="kv-row">
+            <span>{{ it.key }}</span><span class="mono">{{ it.value }}</span>
+          </div>
         </a-card>
       </a-col>
     </a-row>
@@ -146,6 +133,13 @@ onBeforeUnmount(() => timer && window.clearInterval(timer))
 <style scoped>
 .sub { font-size: 12px; color: rgba(0, 0, 0, 0.45); }
 .kpi { display: flex; align-items: center; gap: 12px; }
+.ports { display: flex; flex-wrap: wrap; gap: 16px; }
+.port-card { flex: 1 1 220px; }
+.port-body { display: flex; align-items: center; justify-content: space-between; padding: 4px 2px; }
+.port-num { font-size: 30px; font-weight: 600; margin: 0; line-height: 1.1; }
+.port-ico { width: 40px; height: 40px; display: inline-block; background-size: contain; background-repeat: no-repeat; }
+.kv-row { display: flex; justify-content: space-between; padding: 6px 2px; font-size: 13px; border-bottom: 1px dashed rgba(0,0,0,.06); }
+.kv-row:last-child { border-bottom: none; }
 .meter { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
 .meter > span:first-child { width: 64px; font-size: 13px; color: rgba(0, 0, 0, 0.45); }
 .meter :deep(.ant-progress) { flex: 1; margin: 0; }

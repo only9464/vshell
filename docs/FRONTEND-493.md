@@ -292,6 +292,18 @@ ui-check 增加「文件树点击切换」断言。
 > **显式注入**；另外 `material-icon-theme` 没有 `folder`/`file`/`excel` 这几个名字，
 > 通用目录用 `folder-base`、通用文件用 `document`。
 
+### 4.9.3 的仪表盘三张卡片结构（R106，从 bundle 反推）
+
+```
+PortCard (4 个 KPI)：md:w-1/4 等宽，卡片 title = 统计项名称，
+                     内部 justify-between：左 text-3xl 大数字、右 40px 图标
+SystemCard：处理器/磁盘/内存/虚拟内存 4 个进度条 + key 左 / value 右 的列表
+ConfigCard：key 左 / value 右 的列表（justify-between）
+```
+
+新前端据此重排：KPI 改成「标题在卡片头、大数字在左、40px 图标在右」，
+两张信息卡改成 key/value 两端对齐的行（12 行）。
+
 ### 4.9.3 的 SystemCard（R105，从 bundle 反推）
 
 `v3oBZUNJe.js` 的「系统信息」卡片由两部分组成：
