@@ -294,6 +294,11 @@ ui-check 增加「文件树点击切换」断言。
 
 ### 暗色主题（R102）
 
+**趋势图跟主题**：`Sparkline` 默认描边亮色 `#1677ff`、暗色 `#4096ff`，面积透明度
+0.12 → 0.22（暗底上不至于看不见）。实测切主题后 polyline 的 stroke 会跟着变。
+
+
+
 4.9.3 用 `<html data-theme="dark">` 切换主题。新前端做法：
 
 - 主题状态放进 `src/stores/theme.ts`（`isDark` + `setDark/toggleDark`），同时落 `localStorage`
