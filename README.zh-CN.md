@@ -1,7 +1,8 @@
 # VShell — 复刻研究（逆向重实现）
 
-> **研究声明**：本项目是基于二进制分析对 VShell v3.0 C2 框架的独立、非官方重实现研究。
-> 与原作者无关联，不含原版许可，**不声称当前与官方版本协议互通**。仅限授权安全研究使用。
+> **研究声明**：本项目是基于二进制分析对 **VShell 4.9.3** 的独立、非官方重实现研究
+> （基准 = 本机 `http://127.0.0.1:39082` 上运行的那一份）。
+> 与原作者无关联，不含原版许可。仅限授权安全研究使用。
 
 **文档即事实来源** —— 入口：[`docs/`](docs/README.md)
 
@@ -12,7 +13,8 @@
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 模块划分、请求路径、代码地图 |
 | [docs/PROTOCOL.md](docs/PROTOCOL.md) | 线协议：传输帧、KCP 链路、DNS、24 字节记录 |
 | [docs/API.md](docs/API.md) | 面板 HTTP/WS 契约 + 前端字段契约 |
-| [docs/FRONTEND.md](docs/FRONTEND.md) | Vue3 重写方案 |
+| [docs/FRONTEND-493.md](docs/FRONTEND-493.md) | **按 4.9.3 复刻前端**：技术栈、路由/文案证据、逐页清单 |
+| [docs/FRONTEND.md](docs/FRONTEND.md) | 上一版（Element Plus）前端说明 |
 | [docs/CHECKLIST.md](docs/CHECKLIST.md) | 发版门禁与人工确认项 |
 | [docs/RELEASE.md](docs/RELEASE.md) | 部署、上线客户端、备份升级 |
 | [docs/DEV.md](docs/DEV.md) | 构建 / 运行 / 调试 / 测试 |
@@ -21,20 +23,21 @@
 
 ---
 
-## 一眼看现状（R42）
+## 一眼看现状（R88）
 
 | 维度 | 程度 | 说明 |
 |---|---|---|
-| 代码结构还原 | ✅ | 包结构、SQL schema、帧格式、记录词汇与原版逐项对照，证据见 [RE-NOTES](docs/RE-NOTES.md) |
-| 面板可用性 | ✅ | Vue3 前端 13 个页面；**61 个 API 端点**，e2e 覆盖 55 个（其余为长连接与下载直链） |
-| 端到端投递 | ✅ | **原生 TCP** / HTTP / KCP / WebSocket / DNS 五条传输 + 隧道数据面 + 插件执行 |
-| 与官方版本协议互通 | ⚠️ | 帧层/认证/任务记录**逐字节对齐**（黄金向量测试）；官方 agent 能通过认证并上报 client 记录，`main` 通道仍未打通（[GAPS A-1](docs/GAPS.md)） |
+| 前端 | ✅ | **Ant Design Vue 新前端**（`web2/`，与 4.9.3 同栈：Vue3 + UnoCSS + Tailwind + antd），12 个页面；菜单/表头/按钮文案取自 4.9.3 打包产物；深色侧栏 + 多标签页签 + 文件树 + 按类型图标 |
+| 后端 | ✅ | **原生 TCP 监听**（首选，e2e 覆盖 checkin/poll/命令/文件/隧道）+ HTTP/HTTPS/KCP/WS/DNS；**61 个 API 端点** |
+| MCP | ✅ | `vshell-server mcp`：13 个工具，JWT 鉴权（与面板同一套，401 自动重登）；可驱动 http 与 tcp 客户端 |
+| 协议互通 | ⚠️ | 帧/认证/任务记录逐字节对齐；官方 agent 认证+conf 通过，`main` 偶发成功（[GAPS A-1](docs/GAPS.md)） |
+| 交付 | ✅ | `~/vshell-release`：服务端 + 前端 + 通用 agent（`-server/-vkey/-salt`）+ 启停脚本 |
 
-**测试规模**：服务端 264 个测试函数 + agent 78 个 + e2e 129 条断言；
-CI 跑 `go build`/`go vet`/`go test`/`go test -race` + 完整 e2e。
+**测试**：服务端 264 个测试函数 + agent 78 个 + e2e 130+ 条断言 + ui-check（12 页渲染 + 7 条点击级）；
+`./scripts/release-check.sh` 一条命令跑完 9 项门禁。
 
-**已知不做的**（操作者明确）：通知（企业微信/钉钉）、OSS 上传、屏幕监控、
-屏幕截图、**许可证**（均以空占位保留）；Windows/macOS 专有功能（当前环境为 Linux）。
+**按需求不做**（空占位或已删除）：通知（企业微信/钉钉）、OSS 上传、屏幕监控、屏幕截图、许可证；
+Windows/macOS 专有功能（当前环境 Linux）。
 
 ## 快速开始
 
@@ -50,14 +53,21 @@ EOF
 ./vshell-server          # 浏览器打开 http://127.0.0.1:8082/
 ```
 
-Agent（独立 module，配置在编译期注入）：
+前端构建（新前端在 `web2/`，服务端优先托管 `web2/dist`）：
 
 ```bash
-cd agent
-go build -ldflags "\
-  -X main.ServerAddr=http://127.0.0.1:8443 \
-  -X main.VerifyKey=vk_demo \
-  -X main.EncryptSalt=salt_demo" -o agent .
+cd web2 && pnpm install && pnpm build && cd ..
+```
+
+Agent（独立 module；也支持运行时参数，无需重新编译）：
+
+```bash
+cd agent && go build -o agent .
+# 用法一：命令行参数（盐必须与监听器一致，空盐写 -salt ""）
+./agent -server http://127.0.0.1:8082 -vkey vk_demo -salt ""
+# 用法二：tcp 传输
+./agent -server tcp://127.0.0.1:8084 -vkey vk_demo -salt ""
+# 用法三：从面板「客户端生成」下载的载荷，配置已内嵌，直接运行即可
 ```
 
 快速开始的已知限制（监听器端口、上线失败等）见 [docs/DEV.md §8](docs/DEV.md)。
@@ -72,15 +82,17 @@ go build -ldflags "\
 ├── c2engine/        # C2 引擎：监听器、协议、载荷、存储、流中继
 ├── utils/           # 配置、鉴权、许可证（可删）、通知
 ├── agent/           # Agent（独立 Go module）
-├── static/          # 原版 SPA 资产（仅作参考，将由 web/ 取代）
+├── web2/            # 新前端（Ant Design Vue + UnoCSS + Tailwind，默认由 /app/ 托管）
+├── web/             # 上一版前端（Element Plus，保留作对照）
+├── static/          # 原版 4.9.3 SPA 资产（前端文案/图标取证的来源）
 ├── views/           # 遗留模板（死代码，待删）
 └── docs/            # ← 事实来源
 ```
 
 ## 路线图一句话
 
-先把链路打通（M0），再对齐协议（M1），再把载荷做真（M2），然后补能力（M3/M4）、
-补面板（M5）、重写前端（M6）。勾选清单与验收标准见 [docs/ROADMAP.md](docs/ROADMAP.md)。
+当前处于「按 4.9.3 复刻」阶段：后端（TCP 为首选传输）+ MCP + 新前端均已可用；
+剩余主要是前端细节对齐与官方 agent `main` 通道。逐轮变更见 [docs/ROADMAP.md](docs/ROADMAP.md)。
 
 ## 许可
 
