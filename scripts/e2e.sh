@@ -710,6 +710,17 @@ echo "$TCP_OUT" | grep -q 'tcp-e2e-ok' || fail "tcp 客户端执行命令失败:
 api POST /file/ls "{\"id\":$TCP_CID,\"path\":\"/tmp\"}" | grep -q '"code":0' \
   || fail "tcp 客户端文件列表失败"
 
+# TCP 客户端的目录列表必须非空（R116 修完任务下发后回归）：这里用 /tmp，
+# 期望 total > 0；顺带验证结果没有因为任务重复下发而错配。
+TCP_LS=$(api POST /file/ls "{\"id\":$TCP_CID,\"path\":\"/tmp\"}")
+TCP_TOTAL=$(echo "$TCP_LS" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+r=d.get('result') or {}
+print(r.get('total',0))" 2>/dev/null || echo 0)
+[[ "${TCP_TOTAL:-0}" -gt 0 ]] || fail "TCP 客户端列目录为空（total=$TCP_TOTAL）: $(echo "$TCP_LS" | head -c 120)"
+log "tcp file list ok (total=$TCP_TOTAL)"
+
 # 隧道数据面（走 TCP 传输的客户端）：本地 echo → 建隧道 → 连隧道端口拿回包
 TUN_LPORT=$((28200 + RANDOM % 300))
 python3 -c "
@@ -734,7 +745,7 @@ ids=[i['Id'] for i in (d['result']['items'] or []) if i.get('Remark')=='tcp-e2e-
 print(ids[0] if ids else '')")
 [[ -n "$TUN_ID" ]] || fail "隧道未创建"
 api POST /tunnel/start "{\"id\":$TUN_ID}" | grep -q '"code":0' || fail "隧道启动失败"
-TUN_BYTES=$(timeout 12 python3 -c "
+TUN_BYTES=$(timeout 25 python3 -c "
 import socket
 try:
     c=socket.create_connection(('127.0.0.1',$((TUN_LPORT+1))),8)

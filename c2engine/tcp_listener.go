@@ -18,6 +18,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"os"
 	"sync"
 	"time"
 
@@ -237,6 +238,9 @@ func pendingTasksFor(clientID int64) []map[string]interface{} {
 	// agent 就会无限重复执行同一条命令（实测日志里 Task 200/201/202… 循环），
 	// 面板侧等待结果也会超时（表现为 "connection error"）。
 	tasks := eng.GetAndMarkPendingTasks(clientID)
+	if os.Getenv("VSHELL_TCP_DEBUG") != "" {
+		log.Printf("[TCP] poll client=%d -> %d task(s)", clientID, len(tasks))
+	}
 	out := make([]map[string]interface{}, 0, len(tasks))
 	for _, t := range tasks {
 		out = append(out, map[string]interface{}{

@@ -175,24 +175,22 @@
 页面文案、列定义、表单 schema、图标名、组件结构都从这份 bundle 里读出来。
 不要用 39082 的截图/观感做对齐依据。
 
-## H: TCP 传输下的文件列表尚未打通（R116 记录）
+## H: TCP 传输下的文件列表 —— 已修复（R116 发现 / R117 确认）
 
-实测（交付包，同一台机器两个客户端）：
+**结论：上一轮的两个修复之后就通了**，本轮复核（交付包，客户端 #2 走 tcp）：
 
-| 客户端 | `/api/file/ls /tmp` |
+| 路径 | 结果 |
 |---|---|
-| #1（http 传输） | `code=0, total=1195` ✅ |
-| #2（tcp 传输） | `code=0, total=0` ❌（`/etc` 还会等到 60s 超时） |
+| `/` | `total=26` ✅ |
+| `/tmp` | `total=1198` ✅ |
+| `/etc` | `total=314` ✅ |
+| `/root` | `total=0`（无权限，符合预期） |
+| `terminal/shell` → `echo tcp-file-ok` | `{"output":"tcp-file-ok"}` ✅ |
 
-已定位并修掉的部分：
+根因就是那两个已修的 bug：
 
-1. **任务重复下发**：TCP 轮询原来用 `GetPendingTasks`（不标记），同一批任务每个
-   轮询周期都会重发，agent 日志里出现 `Task 200/201/202…` 无限循环。
-   已改为 `GetAndMarkPendingTasks`（原子标记 dispatched）。
-2. **断线不重连**：agent 的 TCP 连接池会一直复用已经死掉的 socket，服务端重启后
-   进程还在但永远离线。已加 `Reset()` + 主循环里的「poll 失败 → 重建连接 + 重新
-   checkin（1/2/4…32s 退避）」。
+1. **任务重复下发**（`GetPendingTasks` → `GetAndMarkPendingTasks`）：同一批任务每个
+   轮询周期重发，结果与等待中的任务 id 对不上，面板侧因此空结果/超时。
+2. **断线不重连**（连接池复用死 socket）：服务端重启后 agent 表面在线、实际不可用。
 
-仍未打通的部分：TCP 客户端的目录列表任务没有到达 agent（agent 日志里没有对应的
-`Task N:` 行），面板侧因此拿到空结果或超时。下轮继续查（重点：任务创建时的
-ClientID 与 TCP 轮询上报的 `client_id` 是否一致、以及 `engineRunCmd` 的等待条件）。
+回归：`scripts/e2e.sh` §7v 已增加「TCP 客户端列目录非空（total > 0）」断言。
