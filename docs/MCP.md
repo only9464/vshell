@@ -126,3 +126,22 @@ MCP 只是"另一个客户端"，不新增业务逻辑；因此面板与 MCP 的
 - `mcp/server_test.go`：握手/工具清单/错误码/登录取 token/工具打 API 五组用例
 - `scripts/e2e.sh` §7l：真实服务 + 真实 agent 下，`initialize`、
   `tools/call list_clients`（含 agent Vkey）、`resources/list` + `resources/read` 全部通过
+
+## 冒烟脚本
+
+```bash
+./scripts/mcp-smoke.sh                 # 默认对 ~/vshell-release
+./scripts/mcp-smoke.sh /path/to/dir    # 指定服务端目录
+```
+
+它一次跑完：`initialize` → `tools/list`（断言 13 个工具）→ `tools/call dashboard`
+（断言返回 clientCount）→ `tools/call run_command`（在真实客户端上回显）。
+MCP 必须与服务端读同一份 `conf/setting.conf`，所以脚本会先 `cd` 到该目录再执行。
+
+最近一次实测：
+
+```
+[ok] tools/list: 13 个工具
+[ok] dashboard 返回 clientCount
+[ok] run_command 在真实客户端上拿到回显
+```
