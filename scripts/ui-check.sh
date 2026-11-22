@@ -94,6 +94,21 @@ expect() { # $1=文件 $2=关键字 $3=说明
   grep -q -- "$2" "$1" || fail "$3（DOM 里没有 $2）"
 }
 
+log "登录页（4.9.3 占位文案：请输入账号 / 请输入密码 / 记住我 / 忘记密码?）"
+LOGINPH_JS=$(cat <<'JS'
+(async () => {
+  const waitFor = async (fn, ms) => { const t0=Date.now(); while(Date.now()-t0<ms){ if(fn()) return true; await new Promise(r=>setTimeout(r,250)); } return false; };
+  await waitFor(()=>!!document.querySelector('input'), 6000);
+  const ph = [...document.querySelectorAll('input')].map(i => i.placeholder).filter(Boolean);
+  const txt = document.body.innerText;
+  const ok = ph.includes('请输入账号') && ph.includes('请输入密码') && txt.includes('记住我');
+  return ok ? 'LOGINPH_OK' : 'LOGINPH_FAIL ' + JSON.stringify({ph, hasRemember: txt.includes('记住我')});
+})()
+JS
+)
+LOGINPH_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$LOGINPH_JS" 2>&1)
+echo "$LOGINPH_OUT" | grep -q 'LOGINPH_OK' || fail "登录页文案未对齐 4.9.3: $(echo "$LOGINPH_OUT" | tail -c 160)"
+
 log "渲染 #/dashboard"
 render '#/dashboard/index' "$TMP/dash.html"
 expect "$TMP/dash.html" '运行信息' 'dashboard 未渲染'
