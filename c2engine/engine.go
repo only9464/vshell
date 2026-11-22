@@ -1105,3 +1105,29 @@ func (e *Engine) OnlineClientCount() int64 {
 	}
 	return n
 }
+
+// ConnStats 返回"已建立连接"的统计，用于仪表盘的 TCP/UDP 通讯数。
+//
+// 口径：
+//   - tcp：每个在线客户端至少一条连接（HTTP 轮询型客户端的 NowConn 常为 0，
+//     这里按 1 计，否则面板永远显示 0）；有 NowConn 的按实际值累加。
+//   - udp：Type 为 dns 的客户端各按 1 计（DNS 信道走 UDP）。
+func (e *Engine) ConnStats() (tcp int, udp int) {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	for _, c := range e.clients {
+		if !clientOnline(c) {
+			continue
+		}
+		n := c.NowConn
+		if n < 1 {
+			n = 1
+		}
+		if c.Type == "dns" {
+			udp += n
+			continue
+		}
+		tcp += n
+	}
+	return tcp, udp
+}

@@ -496,6 +496,7 @@ func engineGetAppInfo() map[string]interface{} {
 	_, clientTotal := eng.GetClientList(0, 0, "", "", "", "", 0)
 	// 在线数用引擎侧统一判定（Status || NowConn>0），与客户端列表保持一致
 	online := eng.OnlineClientCount()
+	tcpConns, udpConns := eng.ConnStats()
 	listeners := eng.GetListenerList()
 	listenerOnline := 0
 	for _, l := range listeners {
@@ -539,9 +540,9 @@ func engineGetAppInfo() map[string]interface{} {
 		"swap_mem":            m.SwapMem,
 		"tcp":                 m.TCP,
 		"tcpC":                0,
-		"tcpCount":            0,
+		"tcpCount":            tcpConns,
 		"udp":                 m.UDP,
-		"udpCount":            0,
+		"udpCount":            udpConns,
 		"version":             "4.9.3",
 		"vip":                 false,
 		"virtual_mem":         m.VirtualMem,

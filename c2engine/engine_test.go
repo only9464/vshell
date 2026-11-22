@@ -89,3 +89,23 @@ func TestGetClientListLimitZeroMeansAll(t *testing.T) {
 		t.Fatalf("OnlineClientCount=%d（应为 1）", got)
 	}
 }
+
+// 仪表盘的 TCP/UDP 通讯数：在线客户端至少计 1 条连接；dns 客户端计入 UDP。
+func TestConnStats(t *testing.T) {
+	e := &Engine{
+		clients: map[int64]*Client{
+			1: {ID: 1, Status: true, Type: "http", NowConn: 0},
+			2: {ID: 2, Status: true, Type: "tcp", NowConn: 3},
+			3: {ID: 3, Status: true, Type: "dns", NowConn: 0},
+			4: {ID: 4, Status: false, Type: "http"},
+		},
+		listeners: map[int64]*Listener{},
+		tunnels:   map[int64]*Tunnel{},
+		hosts:     map[int64]*Host{},
+		tasks:     map[int64]*Task{},
+	}
+	tcp, udp := e.ConnStats()
+	if tcp != 4 || udp != 1 {
+		t.Fatalf("ConnStats = (%d,%d)，期望 (4,1)", tcp, udp)
+	}
+}
