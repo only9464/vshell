@@ -287,7 +287,8 @@ expect "$TMP/tunnels.html" '服务端端口' '隧道页表头缺失'
 log "渲染 #/plugins/1"
 render '#/pluginrunner/index' "$TMP/plugins.html"
 expect "$TMP/plugins.html" '插件运行' '插件页卡片缺失'
-expect "$TMP/plugins.html" '筛选插件名' '插件页缺少筛选框'
+expect "$TMP/plugins.html" '选择插件' '插件页缺少「选择插件」字段'
+expect "$TMP/plugins.html" '上传插件' '插件页缺少上传按钮'
 
 log "渲染 #/settings"
 render '#/setting/index' "$TMP/settings.html"

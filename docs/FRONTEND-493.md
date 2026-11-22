@@ -64,7 +64,7 @@ web2/
 | `/listener/index` | ✅ 完成 | 列与表单**逐项对齐 4.9.3**：列 ID/备注/模式/监听地址/外网连接地址/超时心跳次数（次）/心跳间隔（秒）/状态；表单 模式/备注/监听地址/监听端口/外网连接地址/ws连接地址/NS域名/超时心跳次数/心跳间隔/Vkey/流量加密盐（Bucket 域名按需求不做） |
 | `/download/index` | ✅ 完成 | 选监听器 + 8 架构 + 是否UPX压缩 + **使用代理/连接代理** + stageless 下载 + **一键上线命令查看 / Windows 上线命令 / Linux 上线命令**；独立 listen 载荷（连接方式/回连地址/端口/**加密key明文内容**/**加密key加密模式**） |
 | `/tunnel/index` | ✅ 完成 | 列顺序对齐 4.9.3（ID/客户端 ID/备注/模式/端口/目标 (IP:端口)/用户名/密码/隧道状态/客户端状态）；表单为 选择客户端/模式(RadioButtonGroup：Socks5隧道·HTTP隧道·TCP代理·UDP代理)/备注/服务端端口/目标(IP:端口)/用户名/密码（socks5·http 时显示用户名密码，其余显示目标）；**仅 TCP代理 可用**，其余置灰标注未实现 |
-| `/pluginrunner/index` | ✅ 完成 | 插件筛选、执行、输出复制/清空 |
+| `/pluginrunner/index` | ✅ 完成 | 按 4.9.3 布局：顶部「上传插件 / 运行」，表单 客户端 / 选择插件 / 参数，下方输出区（复制/清空）；上传支持 `.exe .net .elf .dll .so .dylib`（最多 6 个） |
 | `/setting/index` | ✅ 完成 | 字段与 4.9.3 **完全一致**：`钉钉 token` / `钉钉 key_word` / `微信 wx_key`（labelWidth 120），保存提示「设置成功」 |
 | `/about/index` | ✅ 完成 | 版本、许可到期、Web 端口、客户端上限 |
 
@@ -131,6 +131,19 @@ web2/
 > 注意：图标类名是**动态拼接**（`i-${m.icon}`），UnoCSS 静态扫描看不到，
 > 必须写进 `safelist`，否则不会生成 SVG。另外 presetIcons 用的是 `mask-image`
 > 而不是 `background-image`——验证时要查 `maskImage`。
+
+### 4.9.3 插件运行页（R97，从 bundle 反推）
+
+`vCmx9UE-E.js` / `vD-pDrbd4.js`：
+
+```
+顶部按钮：上传插件（accept: exe/net/elf/dll/so/dylib，maxSize 500，maxNumber 6）、运行
+表单：客户端（ApiSelect，label 形如 "ID: 1  备注 IP: … Location: … OS: …"）
+      选择插件（ApiSelect，来自 /runner/list 的 name）
+      参数（Input，mimikatz.x64.exe 时有预置命令）
+```
+
+新前端按此实现；带 `:id` 时客户端只读展示，不带时页内下拉选择。
 
 ### 4.9.3 文件管理页（R96，从 bundle 反推）
 
