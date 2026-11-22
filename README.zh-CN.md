@@ -42,6 +42,8 @@
 | 命令执行 | ✅ | `echo tcp-alive` → `{"output":"tcp-alive"}` |
 | 文件列表 | ✅ | `/`=26、`/tmp`=1198、`/etc`=314（面板与浏览器都验过） |
 | 文件树导航 | ✅ | 浏览器打开 TCP 客户端的文件页：树 17 节点，点 `/etc` 得 314 行 |
+| 上传（面板 → 目标机） | ✅ | `/api/file/upload` → 目标机 `/tmp/tcp-up.txt` 落盘 28B，列表可见 |
+| 下载（目标机 → 浏览器） | ✅ | `/api/file/downloadtobrowser` 取 `/etc/hostname` → 5B `kali` |
 | 隧道端口转发 | ✅ | e2e §7v `tcp tunnel ok` |
 | 断线自动重连 | ✅ | 服务端重启后 TCP agent 自动回线（`Reset()` + 重新 checkin） |
 

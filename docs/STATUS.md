@@ -37,7 +37,7 @@
 | 概览连接数 | `tcpCount`/`udpCount` 改为真实统计（`Engine.ConnStats`：在线客户端每条连接计 1，dns 客户端计入 UDP） | `c2engine/engine.go`、`controllers/engine.go` |
 | 概览计数 | `/dashboard/info` 的在线数改用 `Engine.OnlineClientCount()`，与列表口径一致（此前因 `limit=0` 返回空切片而恒为 0） | `c2engine/engine.go`、`controllers/engine.go` |
 | 原生 MCP | `vshell-server mcp`：initialize / tools/list(13) / tools/call（dashboard、list_clients、run_command 实跑，含 **TCP 客户端**）全部通过 | `mcp/`、docs/MCP.md §2.1 |
-| TCP 监听 | e2e §7v 固化回归：建监听器→端口探测→agent 上线→命令→**文件列表（total>0 断言）**→**隧道转发**；另已验证**断线自动重连**与浏览器端文件树导航（`/`=26、`/etc`=314）；`Mode: "tcp"` 可用：checkin → poll → 命令执行 → 结果回传全链路通过（客户端 `Tp=tcp`） | `c2engine/tcp_listener.go`、`PROTOCOL §2.6a` |
+| TCP 监听 | e2e §7v 固化回归：建监听器→端口探测→agent 上线→命令→**文件列表（total>0 断言）**→**隧道转发**；另已验证**断线自动重连**、浏览器端文件树导航（`/`=26、`/etc`=314）、**上传**（`/api/file/upload` → 目标机落盘 28B、列表可见）与**下载**（`downloadtobrowser` 取 `/etc/hostname` → 5B `kali`）；`Mode: "tcp"` 可用：checkin → poll → 命令执行 → 结果回传全链路通过（客户端 `Tp=tcp`） | `c2engine/tcp_listener.go`、`PROTOCOL §2.6a` |
 | 交付包实测 | 隧道数据面（经 agent 转发拿到回包）、上传/读取/下载/删除、插件执行均在交付包上验证通过 | `~/vshell-release`、本轮验证记录 |
 | 交付包 | `~/vshell-release`：服务端 + 前端 + 通用 agent（支持 `-server/-vkey/-salt`）+ 启停脚本 + README；实测起服务→建监听器→agent 上线可用 | `agent/main.go`、`~/vshell-release/` |
 | 前端终端/概览 | 终端控制条（字号/清屏/复制/重连）；概览页最近上线客户端（前 5 台） | `web/src/views/TerminalView.vue`、`DashboardView.vue` |
