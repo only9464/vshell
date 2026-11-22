@@ -292,6 +292,22 @@ ui-check 增加「文件树点击切换」断言。
 > **显式注入**；另外 `material-icon-theme` 没有 `folder`/`file`/`excel` 这几个名字，
 > 通用目录用 `folder-base`、通用文件用 `document`。
 
+### 中文本地化与表单校验（R108）
+
+4.9.3 的 bundle 里带着 antd 的中文默认文案（`required: "请输入${label}"`、
+空状态 `暂无数据`、`（可选）` 后缀等）。新前端此前没挂 locale，所以表格空态显示
+英文 `No data`、校验提示也是英文。
+
+两处修正：
+
+1. `a-config-provider` 增加 `:locale="zhCN"`（`ant-design-vue/es/locale/zh_CN`）
+   → 空状态变「暂无数据」、分页/日期/下拉全部中文
+2. 监听表单的必填项加 `name` + `rules`，并把 4.9.3 的 `helpMessage` 从 `help`
+   挪到 `placeholder`：**`help` 会占用 explain 区域**，导致 `请输入Vkey` 这类
+   校验文案显示不出来（踩过一次）
+
+实测：提交空 Vkey → 行内提示 `请输入Vkey`；隧道页空列表 → `暂无数据`。
+
 ### 4.9.3 的仪表盘三张卡片结构（R106，从 bundle 反推）
 
 ```

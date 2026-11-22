@@ -9,6 +9,7 @@ const loading = ref(false)
 const rows = ref<any[]>([])
 const total = ref(0)
 const open = ref(false)
+const formRef = ref<any>(null)
 const editing = ref<number | null>(null)
 const checkedKeys = ref<number[]>([])
 
@@ -69,6 +70,12 @@ function edit(row: any) {
 }
 
 async function submit() {
+  // 走 antd 表单校验：必填项的提示文案由 zh_CN locale 提供（「请输入Vkey」）
+  try {
+    await formRef.value?.validate()
+  } catch {
+    return
+  }
   if (!form.Vkey) { message.warning('Vkey 必填'); return }
   const body: any = {
     Mode: form.Mode, Vkey: form.Vkey, EncryptSalt: form.EncryptSalt, Remark: form.Remark,
@@ -140,14 +147,14 @@ function removeBatch() {
     </a-table>
 
     <a-modal v-model:open="open" :title="editing ? '编辑监听' : '新增监听'" :width="560" @ok="submit">
-      <a-form :label-col="{ style: 'width: 130px' }" :wrapper-col="{ span: 15 }">
+      <a-form ref="formRef" :model="form" :label-col="{ style: 'width: 130px' }" :wrapper-col="{ span: 15 }">
         <a-form-item label="模式">
           <a-select v-model:value="form.Mode">
             <a-select-option v-for="m in modes" :key="m" :value="m">{{ m }}</a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item label="备注"><a-input v-model:value="form.Remark" /></a-form-item>
-        <a-form-item label="监听地址">
+        <a-form-item label="监听地址" name="Host" :rules="[{ required: true, message: '请输入监听地址' }]">
           <a-input v-model:value="form.Host" placeholder="监听 IP，如 0.0.0.0" />
         </a-form-item>
         <a-form-item label="监听端口">
@@ -168,8 +175,10 @@ function removeBatch() {
         <a-form-item label="心跳间隔">
           <a-input-number v-model:value="form.PingInterval" :min="1" style="width: 100%" />
         </a-form-item>
-        <a-form-item label="Vkey" :help="'通信凭证，通信的校验密码'">
-          <a-input-password v-model:value="form.Vkey" />
+        <!-- 4.9.3 的 helpMessage 是「通信凭证，通信的校验密码」；这里放进 placeholder，
+             否则 help 会占掉 explain 区域，必填校验文案显示不出来 -->
+        <a-form-item label="Vkey" name="Vkey" :rules="[{ required: true, message: '请输入Vkey' }]">
+          <a-input-password v-model:value="form.Vkey" placeholder="通信凭证，通信的校验密码" />
         </a-form-item>
         <a-form-item label="流量加密盐">
           <a-input-password v-model:value="form.EncryptSalt" />
