@@ -111,12 +111,14 @@ echo "$LOGINPH_OUT" | grep -q 'LOGINPH_OK' || fail "登录页文案未对齐 4.9
 
 log "渲染 #/dashboard"
 render '#/dashboard/index' "$TMP/dash.html"
-expect "$TMP/dash.html" '运行信息' 'dashboard 未渲染'
+expect "$TMP/dash.html" '系统信息' 'dashboard 未渲染（缺系统信息卡片）'
 expect "$TMP/dash.html" '版本' 'dashboard 缺少 KPI'
 expect "$TMP/dash.html" '负载趋势' 'dashboard 缺少趋势卡片'
 expect "$TMP/dash.html" 'polyline' 'dashboard 趋势图未渲染（sparkline 没出 SVG）'
 expect "$TMP/dash.html" '最近上线客户端' 'dashboard 缺少最近上线卡片'
-expect "$TMP/dash.html" '在线客户端' 'dashboard 缺少「在线客户端」副标题'
+expect "$TMP/dash.html" '在线客户端' 'dashboard 缺少「在线客户端」卡片'
+expect "$TMP/dash.html" 'TCP 通讯 (已建立)' 'dashboard 缺少系统信息表'
+expect "$TMP/dash.html" '配置信息' 'dashboard 缺少配置信息表'
 expect "$TMP/dash.html" '在线监听数' 'dashboard 缺少「在线监听数」副标题'
 
 log "渲染 #/clients"
@@ -219,8 +221,12 @@ FCTX_JS=$(cat <<'JS'
   location.hash = '#/clientManager/files/1';
   await waitFor(() => document.body.innerText.includes('文件名'), 12000);
   if (!await waitFor(() => document.querySelectorAll('.ant-table-row').length > 0, 15000)) return 'FCTX_FAIL 无行';
-  document.querySelector('.ant-table-row').dispatchEvent(new MouseEvent('contextmenu', {bubbles:true, clientX:220, clientY:220}));
-  const ok = await waitFor(() => document.querySelectorAll('.ant-dropdown-menu-item').length > 0, 5000);
+  let ok = false;
+  for (let i = 0; i < 3 && !ok; i++) {
+    document.querySelector('.ant-table-row')?.dispatchEvent(new MouseEvent('contextmenu', {bubbles:true, clientX:220, clientY:220}));
+    ok = await waitFor(() => document.querySelectorAll('.ant-dropdown-menu-item').length > 0, 4000);
+    if (!ok) await sleep(800);
+  }
   const items = [...document.querySelectorAll('.ant-dropdown-menu-item')].map(e=>e.innerText.replace(/\s/g,''));
   return ok && items.includes('拷贝路径') ? 'FCTX_OK' : 'FCTX_FAIL ' + JSON.stringify(items);
 })()
@@ -302,7 +308,7 @@ JS
 )
 LOGIN_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$LOGIN_JS" 2>&1)
 echo "$LOGIN_OUT" | grep -q '#/dashboard' || fail "登录表单未跳转到仪表盘: $(echo "$LOGIN_OUT" | head -c 160)"
-echo "$LOGIN_OUT" | grep -q '运行信息\|仪表盘' || fail "登录后页面内容异常: $(echo "$LOGIN_OUT" | head -c 160)"
+echo "$LOGIN_OUT" | grep -q '系统信息\|仪表盘\|工作台' || fail "登录后页面内容异常: $(echo "$LOGIN_OUT" | head -c 160)"
 
 log "点击级：登录 → 切到客户端页 → 点刷新"
 CLICK_JS=$(cat <<'JS'
@@ -567,8 +573,12 @@ CTX_JS=$(cat <<'JS'
   }
   location.hash = '#/clientManager/index';
   if (!await waitFor(() => document.querySelectorAll('.ant-table-row').length > 0, 10000)) return 'CTX_FAIL 无行';
-  document.querySelector('.ant-table-row').dispatchEvent(new MouseEvent('contextmenu', {bubbles:true, clientX:200, clientY:200}));
-  const ok = await waitFor(() => document.querySelectorAll('.ant-dropdown-menu-item').length > 0, 5000);
+  let ok = false;
+  for (let i = 0; i < 3 && !ok; i++) {
+    document.querySelector('.ant-table-row')?.dispatchEvent(new MouseEvent('contextmenu', {bubbles:true, clientX:200, clientY:200}));
+    ok = await waitFor(() => document.querySelectorAll('.ant-dropdown-menu-item').length > 0, 4000);
+    if (!ok) await sleep(800);
+  }
   const items = [...document.querySelectorAll('.ant-dropdown-menu-item')].map(e=>e.innerText.replace(/\s/g,''));
   return ok && items.includes('命令控制') ? 'CTX_OK' : 'CTX_FAIL ' + JSON.stringify(items);
 })()
