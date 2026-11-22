@@ -145,10 +145,13 @@ function onUserMenu({ key }: { key: string }) {
 .crumb { margin-left: 4px; }
 .spacer { flex: 1; }
 .user { color: rgba(0, 0, 0, 0.85); }
-.tabs { display: flex; gap: 6px; padding: 6px 12px 0; background: #fff; border-bottom: 1px solid #f0f0f0; overflow-x: auto; }
-.tab { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 12px; border: 1px solid #e5e7eb; border-bottom: none; border-radius: 4px 4px 0 0; background: #fafafa; cursor: pointer; white-space: nowrap; }
-.tab.active { background: #fff; color: #1677ff; border-color: #1677ff; }
-.tab-close { font-size: 10px; opacity: .5; }
-.tab-close:hover { opacity: 1; }
+/* 页签栏对齐 vben：28px 高、激活项浅蓝底 + 蓝字、hover 深一档 */
+.tabs { display: flex; gap: 6px; padding: 6px 12px; background: var(--ant-color-bg-container, #fff); border-bottom: 1px solid var(--ant-color-border-split, #f0f0f0); overflow-x: auto; }
+.tab { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; font-size: 12px; border: 1px solid var(--ant-color-border, #e5e7eb); border-radius: 4px; background: transparent; cursor: pointer; white-space: nowrap; transition: all .15s; }
+.tab:hover { color: #1677ff; border-color: #1677ff; }
+.tab.active { background: rgba(22, 119, 255, .1); color: #1677ff; border-color: #1677ff; }
+.tab-close { font-size: 10px; opacity: .35; }
+.tab:hover .tab-close, .tab.active .tab-close { opacity: .8; }
+.tab-close:hover { opacity: 1; color: #ff4d4f; }
 .content { padding: 16px; overflow: auto; background: #f5f5f5; }
 </style>

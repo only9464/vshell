@@ -164,3 +164,13 @@
 | UI 自动化 | 只有无头 Chromium 的渲染检查，没有点击级 E2E（需 Playwright） |
 | ~~`go test ./...` 偶发 FAIL~~ | **已定位并修复（R23）**：`TestProtocolHTTPCheckinFlow` 用固定 listener ID 99，与全局引擎单例/DB 里的监听器冲突，导致 handler 反查到的 salt 与加密用 salt 不一致 → 偶发 400。改为唯一 ID 并在每次调用前重新登记。连续 30 次单测 + 5 次全量套件均通过 |
 | 提取模板体积 | `template-extract/` 约 265MB，未入库（`.gitignore`） |
+
+## G: 本机 4.9.3 实例的可用性边界
+
+`http://127.0.0.1:39082`（admin/123456，需 HTTP Basic）**只能用于 API 探测**：
+其 SPA 在本环境渲染不出界面（DOM 里只有 `<svg id="__svg__icons__dom__">` 与一个
+`%` 文本，`#/login` 路由已生效但页面内容为空，多次等待 8s 无变化）。
+
+因此前端还原的**唯一可信来源**是仓库里的 `static/assets/*.js`（原版打包产物）：
+页面文案、列定义、表单 schema、图标名、组件结构都从这份 bundle 里读出来。
+不要用 39082 的截图/观感做对齐依据。
