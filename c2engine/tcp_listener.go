@@ -27,19 +27,23 @@ import (
 
 // TCPListener 监听裸 TCP 端口，按帧协议处理 agent 消息。
 type TCPListener struct {
-	ID     int64
-	Addr   string
-	Vkey   string
-	Salt   string
-	ln     net.Listener
-	mu     sync.Mutex
-	conns  map[net.Conn]bool
+	ID    int64
+	Addr  string
+	Vkey  string
+	Salt  string
+	ln    net.Listener
+	mu    sync.Mutex
+	conns map[net.Conn]bool
+	// owner 记录"每个客户端当前生效的那条连接"：同一 vkey 的重复 agent 进程
+	// 会各自 checkin 成同一个 client，任务被两边抢着 poll，表现是"面板说成功但
+	// 目标机没变化"。新连接接管时关掉旧连接，保证同一时刻只有一个执行者。
+	owner  map[int64]net.Conn
 	closed bool
 }
 
 // NewTCPListener 创建 TCP 监听器。
 func NewTCPListener(id int64, addr, vkey, salt string) *TCPListener {
-	return &TCPListener{ID: id, Addr: addr, Vkey: vkey, Salt: salt, conns: map[net.Conn]bool{}}
+	return &TCPListener{ID: id, Addr: addr, Vkey: vkey, Salt: salt, conns: map[net.Conn]bool{}, owner: map[int64]net.Conn{}}
 }
 
 // Start 开始监听。
@@ -143,6 +147,12 @@ func (l *TCPListener) handleConn(conn net.Conn) {
 				return
 			}
 			clientID = cl.ID
+			l.mu.Lock()
+			if old := l.owner[cl.ID]; old != nil && old != conn {
+				_ = old.Close() // 旧连接接管结束：避免同一 client 有两个执行者
+			}
+			l.owner[cl.ID] = conn
+			l.mu.Unlock()
 			_ = writeTCPFrame(conn, l.Salt, map[string]interface{}{
 				"status":     "ok",
 				"client_id":  cl.ID,

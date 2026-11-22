@@ -194,3 +194,22 @@
 2. **断线不重连**（连接池复用死 socket）：服务端重启后 agent 表面在线、实际不可用。
 
 回归：`scripts/e2e.sh` §7v 已增加「TCP 客户端列目录非空（total > 0）」断言。
+
+## I: 同一 vkey 跑多个 agent → "面板说成功但目标机没变化"（R120 定位并加固）
+
+现象：`POST /api/file/edit`（写文件）返回 `save success`，但目标机上文件没出现。
+
+排查：机器上同时跑着 **3 个** `agent -server tcp://…:8084`（我自己重启时留下的重复进程），
+它们都用同一个 vkey checkin 成同一个 client #2。于是：
+
+- 每次 poll 由「谁先连上」决定，任务被不同进程轮流取走；
+- `dispatchCmd` 是**投递即返回**（不等结果），所以面板无论如何都回 `save success`；
+- 结果就是"看起来成功、实际没人执行完"。
+
+修法与验证：
+
+1. **服务端加单执行者约束**（`tcp_listener.go`）：`owner map[clientID]net.Conn`，
+   新的 checkin 接管时关闭旧连接，保证同一 client 只有一个活跃执行者。
+2. 只保留一个 agent 进程后复测：写入 `after-owner-fix` 立刻落盘 ✅。
+
+运维提醒：`agent` 不要跑重复实例；重复实例不会报错，只会让任务"随机丢"。
