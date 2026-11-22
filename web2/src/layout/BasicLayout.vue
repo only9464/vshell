@@ -64,6 +64,7 @@ function closeTab(path: string) {
   }
 }
 
+// 子页面（/clientManager/terminal/:id、/clientManager/files/:id）也要让"客户端"菜单保持高亮
 const current = computed(() => menus.find((m) => route.path.startsWith(m.path.split('/').slice(0, 2).join('/'))) || menus[0])
 const selectedKeys = computed(() => [String(current.value.path)])
 const openKeys = computed(() => [String(current.value.path.split('/')[1])])

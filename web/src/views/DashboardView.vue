@@ -57,7 +57,7 @@ onBeforeUnmount(() => {
         <div class="sub mono">{{ info.load }}</div></div></el-card></el-col>
       <el-col :span="6"><el-card><div class="kpi"><div class="label">版本</div>
         <div class="value">{{ info.version }}</div>
-        <div class="sub">许可 {{ info.licTime }}</div></div></el-card></el-col>
+        <div class="sub">复刻研究版</div></div></el-card></el-col>
     </el-row>
     <el-card style="margin-top: 12px">
       <template #header>负载趋势（每 2 秒采样，保留最近 30 个点）</template>
@@ -105,7 +105,6 @@ onBeforeUnmount(() => {
         <el-descriptions-item label="Web 端口">{{ info.web_port }}</el-descriptions-item>
         <el-descriptions-item label="Basic Auth">{{ info.web_basic_auth ? '开' : '关' }}</el-descriptions-item>
         <el-descriptions-item label="日志级别">{{ info.logLevel }}</el-descriptions-item>
-        <el-descriptions-item label="客户端上限">{{ info.clientNum }}</el-descriptions-item>
       </el-descriptions>
     </el-card>
   </div>

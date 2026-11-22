@@ -78,8 +78,7 @@ onBeforeUnmount(() => timer && window.clearInterval(timer))
             <a-descriptions-item label="TCP/UDP">{{ info.tcp }}/{{ info.udp }}</a-descriptions-item>
             <a-descriptions-item label="Web 端口">{{ info.web_port }}</a-descriptions-item>
             <a-descriptions-item label="日志级别">{{ info.logLevel }}</a-descriptions-item>
-            <a-descriptions-item label="客户端上限">{{ info.clientNum }}</a-descriptions-item>
-            <a-descriptions-item label="许可到期">{{ info.licTime }}</a-descriptions-item>
+
             <a-descriptions-item label="IO 收/发">{{ info.io_recv }}/{{ info.io_send }}</a-descriptions-item>
           </a-descriptions>
         </a-card>

@@ -505,11 +505,11 @@ func engineGetAppInfo() map[string]interface{} {
 	}
 	hosts := eng.GetHostList()
 
-	lic := utils.GetLicenseStatus()
+	// 许可证相关按需求放弃复刻：clientNum / licTime / vip 一律返回空占位。
 
 	return map[string]interface{}{
 		"clientCount":         clientTotal,
-		"clientNum":           itoa(lic.MaxClients),
+		"clientNum":           "",
 		"clientOnlineCount":   online,
 		"cpu":                 m.CPU,
 		"disk":                m.Disk,
@@ -526,7 +526,7 @@ func engineGetAppInfo() map[string]interface{} {
 		"io_send":             m.IOSend,
 		"ip":                  0,
 		"ipLimit":             "",
-		"licTime":             lic.EndTime,
+		"licTime":             "",
 		"listenerCount":       len(listeners),
 		"listenerOnlineCount": listenerOnline,
 		"load":                m.Load,
@@ -543,7 +543,7 @@ func engineGetAppInfo() map[string]interface{} {
 		"udp":                 m.UDP,
 		"udpCount":            0,
 		"version":             "4.9.3",
-		"vip":                 lic.Advanced,
+		"vip":                 false,
 		"virtual_mem":         m.VirtualMem,
 		"web_basic_auth":      cfg.WebBasicAuth,
 		"web_port":            itoa(cfg.WebPort),
