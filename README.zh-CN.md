@@ -33,6 +33,18 @@
 | 协议互通 | ⚠️ | 帧/认证/任务记录逐字节对齐；官方 agent 认证+conf 通过，`main` 偶发成功（[GAPS A-1](docs/GAPS.md)） |
 | 交付 | ✅ | `~/vshell-release`：服务端 + 前端 + 通用 agent（`-server/-vkey/-salt`）+ 启停脚本 |
 
+### TCP 传输能力矩阵（首选传输）
+
+| 能力 | 状态 | 证据 |
+|---|---|---|
+| 上线（checkin） | ✅ | e2e §7v |
+| 任务下发（只下发一次） | ✅ | `GetAndMarkPendingTasks`，日志 `poll client=2 -> 1 task(s)` |
+| 命令执行 | ✅ | `echo tcp-alive` → `{"output":"tcp-alive"}` |
+| 文件列表 | ✅ | `/`=26、`/tmp`=1198、`/etc`=314（面板与浏览器都验过） |
+| 文件树导航 | ✅ | 浏览器打开 TCP 客户端的文件页：树 17 节点，点 `/etc` 得 314 行 |
+| 隧道端口转发 | ✅ | e2e §7v `tcp tunnel ok` |
+| 断线自动重连 | ✅ | 服务端重启后 TCP agent 自动回线（`Reset()` + 重新 checkin） |
+
 **测试**：服务端 264 个测试函数 + agent 78 个 + e2e 130+ 条断言 + ui-check（12 页渲染 + 7 条点击级）；
 `./scripts/release-check.sh` 一条命令跑完 9 项门禁。
 
