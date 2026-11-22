@@ -285,7 +285,9 @@ ONELINER_JS=$(cat <<'JS'
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
   location.hash = '#/download/index';
-  if (!await waitFor(() => document.body.innerText.includes('客户端生成'), 10000)) return 'ONELINER_FAIL 不在生成页';
+  // 「客户端生成」也是侧栏菜单文案，不能用来判断页面；用生成页独有的「是否UPX压缩」
+  if (!await waitFor(() => document.body.innerText.includes('是否UPX压缩'), 12000)) return 'ONELINER_FAIL 不在生成页';
+  await sleep(600);
   [...document.querySelectorAll('button')].find(b => b.innerText.replace(/\s/g,'') === '一键上线命令查看')?.click();
   if (!await waitFor(() => !!document.querySelector('.oneliner-code'), 6000)) return 'ONELINER_FAIL 无弹窗';
   const codes = [...document.querySelectorAll('.oneliner-code')].map(e => e.innerText.trim());
