@@ -113,6 +113,25 @@ web2/
 | CPU | `i-flat-ui:responsive` |
 | 版本 | `i-flat-ui:magic` |
 
+### 侧栏菜单图标（R80）
+
+4.9.3 bundle 里出现的 iconify 图标共 61 个，菜单用到的对不上语义的部分按同集合选择：
+
+| 菜单 | 图标 |
+|---|---|
+| 工作台 | `ant-design:home-outlined` |
+| 客户端列表 | `fa6-solid:desktop` |
+| 监听列表 | `fa6-solid:headphones` |
+| 客户端生成 | `fa6-solid:download` |
+| 隧道代理 | `ant-design:swap-outlined` |
+| 插件运行 | `grommet-icons:services` |
+| 系统设置 | `ion:settings-outline` |
+| 关于 | `grommet-icons:action` |
+
+> 注意：图标类名是**动态拼接**（`i-${m.icon}`），UnoCSS 静态扫描看不到，
+> 必须写进 `safelist`，否则不会生成 SVG。另外 presetIcons 用的是 `mask-image`
+> 而不是 `background-image`——验证时要查 `maskImage`。
+
 ## 4.0 布局对齐 4.9.3
 
 | 元素 | 实现 |

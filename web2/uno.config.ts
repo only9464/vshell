@@ -8,6 +8,18 @@ export default defineConfig({
     presetAttributify(),
     presetIcons({ scale: 1.2, warn: false }),
   ],
+  // 菜单图标是动态拼接的类名（i-${m.icon}），UnoCSS 的静态扫描看不到，
+  // 必须显式列入 safelist，否则不会生成对应的 SVG 背景。
+  safelist: [
+    'i-ant-design:home-outlined',
+    'i-fa6-solid:desktop',
+    'i-fa6-solid:headphones',
+    'i-fa6-solid:download',
+    'i-ant-design:swap-outlined',
+    'i-grommet-icons:services',
+    'i-ion:settings-outline',
+    'i-grommet-icons:action',
+  ],
   shortcuts: {
     'flex-col': 'flex flex-col',
     'flex-center': 'flex items-center justify-center',

@@ -5,15 +5,16 @@ import { TOKEN_KEY } from '../api/http'
 // 4.9.3 的 getMenuList 返回 404，说明路由是前端静态定义；这里同样静态定义。
 // 菜单文案取自 4.9.3 前端 locale（static/assets/vB2dXDAOV.js）：
 // 客户端列表/监听列表/命令控制/隧道代理/插件运行/文件管理/系统设置/客户端生成
+// 菜单图标也用 4.9.3 bundle 里出现过的 iconify 图标（ant-design / fa6-solid / ion / grommet-icons）
 export const menus = [
-  { path: '/dashboard/index', name: 'Dashboard', title: '工作台', icon: 'DashboardOutlined' },
-  { path: '/clientManager/index', name: 'ClientManager', title: '客户端列表', icon: 'DesktopOutlined' },
-  { path: '/listener/index', name: 'Listener', title: '监听列表', icon: 'ApiOutlined' },
-  { path: '/download/index', name: 'Download', title: '客户端生成', icon: 'DownloadOutlined' },
-  { path: '/tunnel/index', name: 'Tunnel', title: '隧道代理', icon: 'SwapOutlined' },
-  { path: '/pluginrunner/index', name: 'PluginRunner', title: '插件运行', icon: 'AppstoreOutlined' },
-  { path: '/setting/index', name: 'Setting', title: '系统设置', icon: 'SettingOutlined' },
-  { path: '/about/index', name: 'About', title: '关于', icon: 'InfoCircleOutlined' },
+  { path: '/dashboard/index', name: 'Dashboard', title: '工作台', icon: 'ant-design:home-outlined' },
+  { path: '/clientManager/index', name: 'ClientManager', title: '客户端列表', icon: 'fa6-solid:desktop' },
+  { path: '/listener/index', name: 'Listener', title: '监听列表', icon: 'fa6-solid:headphones' },
+  { path: '/download/index', name: 'Download', title: '客户端生成', icon: 'fa6-solid:download' },
+  { path: '/tunnel/index', name: 'Tunnel', title: '隧道代理', icon: 'ant-design:swap-outlined' },
+  { path: '/pluginrunner/index', name: 'PluginRunner', title: '插件运行', icon: 'grommet-icons:services' },
+  { path: '/setting/index', name: 'Setting', title: '系统设置', icon: 'ion:settings-outline' },
+  { path: '/about/index', name: 'About', title: '关于', icon: 'grommet-icons:action' },
 ]
 
 const routes = [

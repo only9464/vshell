@@ -3,11 +3,7 @@
 // 深色 Sider（#001529，可折叠）+ Header（折叠/面包屑/主题/用户）+ 页签栏 + 内容区。
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import {
-  ApiOutlined, AppstoreOutlined, CloseOutlined, DashboardOutlined, DesktopOutlined,
-  DownloadOutlined, InfoCircleOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
-  SettingOutlined, SwapOutlined,
-} from '@ant-design/icons-vue'
+import { CloseOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons-vue'
 import { menus } from '../router'
 import { useAuthStore } from '../stores/auth'
 
@@ -19,11 +15,6 @@ const collapsed = ref(localStorage.getItem('vshell.nav') === 'collapsed')
 function toggleNav() {
   collapsed.value = !collapsed.value
   localStorage.setItem('vshell.nav', collapsed.value ? 'collapsed' : 'expanded')
-}
-
-const iconMap: Record<string, any> = {
-  DashboardOutlined, DesktopOutlined, ApiOutlined, DownloadOutlined,
-  SwapOutlined, AppstoreOutlined, SettingOutlined, InfoCircleOutlined,
 }
 
 // ---- 页签栏（vben 的多标签页）：按访问顺序记录，可关闭 ----
@@ -100,7 +91,7 @@ function onUserMenu({ key }: { key: string }) {
         :style="{ background: 'transparent' }" @click="(e: any) => router.push(String(e.key))"
       >
         <a-menu-item v-for="m in menus" :key="m.path">
-          <component :is="iconMap[m.icon]" />
+          <span class="menu-ico" :class="`i-${m.icon}`" />
           <span>{{ m.title }}</span>
         </a-menu-item>
       </a-menu>
@@ -148,6 +139,7 @@ function onUserMenu({ key }: { key: string }) {
 <style scoped>
 .sider { overflow: auto; }
 .logo { height: 56px; display: flex; align-items: center; gap: 8px; padding: 0 16px; color: #fff; }
+.menu-ico { width: 16px; height: 16px; display: inline-block; margin-right: 8px; vertical-align: -3px; }
 .logo-mark { width: 26px; height: 26px; border-radius: 6px; background: #1677ff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
 .logo-text { font-weight: 600; letter-spacing: 1px; white-space: nowrap; }
 .header { display: flex; align-items: center; gap: 12px; background: var(--vshell-header-bg, #fff); padding: 0 16px; height: 56px; line-height: 56px; border-bottom: 1px solid #f0f0f0; }
