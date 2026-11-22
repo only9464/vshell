@@ -231,7 +231,9 @@ log "渲染 #/download"
 render '#/download/index' "$TMP/download.html"
 expect "$TMP/download.html" '客户端生成' '下载页标题缺失'
 expect "$TMP/download.html" '架构' '下载页缺架构选择'
-expect "$TMP/download.html" '上线命令查看' '下载页缺少上线命令按钮'
+expect "$TMP/download.html" '一键上线命令查看' '下载页缺少一键上线命令按钮'
+expect "$TMP/download.html" 'Windows 上线命令' '下载页缺少 Windows 上线命令'
+expect "$TMP/download.html" '加密key明文内容' '下载页缺少加密key字段'
 
 log "渲染 #/tunnels"
 render '#/tunnel/index' "$TMP/tunnels.html"
