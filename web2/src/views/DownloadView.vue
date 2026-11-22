@@ -72,17 +72,26 @@ async function copyOneLiner(platform: 'linux' | 'windows', useWS = false) {
 // 4.9.3 的「正向客户端」(Windows dll 监听模式) 与「ebpf 正向客户端」(Linux ebpf 监听)
 function downloadForward(ebpf = false) {
   if (!form.vkey) { message.warning('加密key明文内容（Vkey）必填'); return }
-  const u = downloadURL('/download/listen', {
-    arch: form.arch, tp: form.tp, host: form.host, port: form.port,
-    vkey: form.vkey, salt: form.salt, upx: String(form.upx), ebpf: String(ebpf),
-  })
+  // 4.9.3 原文：
+  //   正向客户端    → /download/listendll?arch=&tp=&host=&port=&vkey=&salt=&upx=
+  //   ebpf 正向客户端 → /download/listen?arch=&tp=&host=0.0.0.0&port=49319&upx=
+  //                    &vkey=&salt=&listen=true&ebpf=true
+  const u = ebpf
+    ? downloadURL('/download/listen', {
+        arch: form.arch, tp: form.tp, host: form.host || '0.0.0.0', port: form.port || 49319,
+        upx: String(form.upx), vkey: form.vkey, salt: form.salt, listen: 'true', ebpf: 'true',
+      })
+    : downloadURL('/download/listendll', {
+        arch: form.arch, tp: form.tp, host: form.host, port: form.port,
+        vkey: form.vkey, salt: form.salt, upx: String(form.upx),
+      })
   location.href = u
 }
 
 // 自定义 Stage：4.9.3 文案「利用Stage接口，可以很方便的自己编写阶段性加载器」
 function downloadStage() {
   if (!form.id) { message.warning('先选择监听器'); return }
-  location.href = downloadURL('/download/stage', { id: form.id, arch: form.arch })
+  location.href = downloadURL('/download/stage', { id: form.id, arch: form.arch, tp: form.tp })
 }
 
 async function copy(kind: 'stageless' | 'listen', platform: 'auto' | 'windows' | 'linux' = 'auto') {
