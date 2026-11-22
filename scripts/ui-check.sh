@@ -285,6 +285,8 @@ SORT_JS=$(cat <<'JS'
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
   location.hash = '#/clientManager/index';
+  // 先确认真的在客户端列表（表头「归属地」是这一页独有的），否则可能在文件页数到 0 个排序器
+  if (!await waitFor(() => document.body.innerText.includes('归属地'), 12000)) return 'SORT_FAIL 不在客户端列表';
   if (!await waitFor(() => document.querySelectorAll('.ant-table-row').length > 0, 12000)) return 'SORT_FAIL 无行';
   const ths = [...document.querySelectorAll('.ant-table-thead th')];
   const sortable = ths.filter(t => t.querySelector('.ant-table-column-sorter')).length;
