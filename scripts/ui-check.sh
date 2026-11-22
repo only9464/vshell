@@ -125,6 +125,8 @@ log "渲染 #/clients"
 render '#/clientManager/index' "$TMP/clients.html"
 expect "$TMP/clients.html" "$(hostname)" '客户端列表没有主机名（字段契约不符？）'
 expect "$TMP/clients.html" '在线' '客户端列表没有在线状态'
+expect "$TMP/clients.html" '心跳' '客户端列表缺少心跳列'
+expect "$TMP/clients.html" '归属地' '客户端列表缺少归属地列'
 expect "$TMP/clients.html" '删除' '客户端页缺少删除按钮'
 expect "$TMP/clients.html" 'ant-table-selection-column' '客户端页缺少多选列'
 

@@ -40,22 +40,21 @@ function ctxAction(key: string) {
 const page = ref(1)
 const pageSize = ref(20)
 
+// 列定义与顺序完全取自 4.9.3 的 bundle（viLthP3eG.js）
 const columns = [
-  // 列名取自 4.9.3 locale：客户端 ID / 客户端状态 / 主机名 / 用户 / 系统类型 /
-  // 外网IP / 内网IP / 归属地 / 进程名 / 备注 / 操作
-  { title: '客户端 ID', dataIndex: 'Id', width: 100 },
-  { title: '客户端状态', dataIndex: 'IsConnect', width: 110 },
-  { title: '主机名', dataIndex: 'HostName', width: 140 },
-  { title: '用户', dataIndex: 'UserName', width: 110 },
-  { title: '系统类型', dataIndex: 'OsName', width: 110 },
-  { title: '架构', dataIndex: 'Arch', width: 90 },
+  { title: 'ID', dataIndex: 'Id', width: 70 },
+  { title: '备注', dataIndex: 'Remark', width: 110 },
   { title: '连接方式', dataIndex: 'Tp', width: 100 },
   { title: '外网IP', dataIndex: 'Addr', width: 150 },
+  { title: '归属地', dataIndex: 'Location', width: 100 },
   { title: '内网IP', dataIndex: 'LocalIP', width: 130 },
-  { title: '归属地', dataIndex: 'Location', width: 110 },
+  { title: '用户', dataIndex: 'UserName', width: 100 },
+  { title: '主机名', dataIndex: 'HostName', width: 130 },
+  { title: '系统类型', dataIndex: 'OsName', width: 100 },
   { title: '进程名', dataIndex: 'ProcessName', width: 120 },
-  { title: '备注', dataIndex: 'Remark' },
-  { title: '操作', key: 'action', width: 260, fixed: 'right' },
+  { title: '状态', dataIndex: 'IsConnect', width: 90 },
+  { title: '心跳', dataIndex: 'PingCheckTime', width: 160 },
+  { title: '操作', key: 'action', width: 240, fixed: 'right' },
 ]
 
 async function load() {
@@ -71,6 +70,12 @@ async function load() {
   }
 }
 onMounted(load)
+
+function fmtTime(v: any) {
+  const n = Number(v)
+  if (!n) return '-'
+  return new Date(n * 1000).toLocaleString()
+}
 
 function open(row: any) { selected.value = row; drawer.value = true }
 
@@ -127,7 +132,10 @@ function remove(row: any) {
       @change="(p: any) => { page = p.current; pageSize = p.pageSize; load() }"
     >
       <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'IsConnect'">
+        <template v-if="column.dataIndex === 'PingCheckTime'">
+          <span class="mono">{{ fmtTime(record.PingCheckTime) }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'IsConnect'">
           <a-tag :color="record.IsConnect ? 'green' : 'default'">{{ record.IsConnect ? '在线' : '离线' }}</a-tag>
         </template>
         <template v-else-if="column.dataIndex === 'HostName'">
