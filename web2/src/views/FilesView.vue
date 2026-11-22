@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 文件管理：列表 + 进入目录 + 编辑 + 上传 + 下载 + 重命名 + 新建目录 + 删除
-import { h, onMounted, ref } from 'vue'
+import { computed, h, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import { downloadURL, post } from '../api/http'
@@ -66,6 +66,52 @@ function fileIcon(r: any) {
   return `material-icon-theme:${EXT_ICON[ext] || DEFAULT_FILE_ICON}`
 }
 
+// ---- 左侧文件树（自实现：懒加载 + 点击进入）----
+const treeLoading = ref(false)
+const dirs = ref<Record<string, string[]>>({})   // path -> 子目录名
+const openDirs = ref<Record<string, boolean>>({ '/': true })
+
+function joinPath(parent: string, name: string) {
+  return (parent.endsWith('/') ? parent : parent + '/') + name
+}
+
+async function fetchDirs(path: string) {
+  const res: any = await post('/file/ls', { id, path })
+  const items: any[] = res?.result?.items || []
+  dirs.value[path] = items.filter((i) => isDir(i)).map((i) => nameOf(i))
+  dirs.value = { ...dirs.value }
+}
+
+async function expandTree(path: string) {
+  if (!dirs.value[path]) await fetchDirs(path)
+  openDirs.value[path] = !openDirs.value[path]
+  openDirs.value = { ...openDirs.value }
+}
+
+async function loadTree() {
+  treeLoading.value = true
+  try { await fetchDirs('/') } finally { treeLoading.value = false }
+}
+
+// 拍平成一维列表渲染（depth 控制缩进），避免递归组件
+type FlatNode = { path: string; name: string; depth: number; hasChildren: boolean; open: boolean }
+const flatTree = computed<FlatNode[]>(() => {
+  const out: FlatNode[] = []
+  const walk = (path: string, depth: number) => {
+    const list = dirs.value[path] || []
+    for (const name of list) {
+      const full = joinPath(path, name)
+      const open = !!openDirs.value[full]
+      out.push({ path: full, name, depth, hasChildren: true, open })
+      if (open && dirs.value[full]) walk(full, depth + 1)
+    }
+  }
+  walk('/', 0)
+  return out
+})
+
+function pickDir(node: FlatNode) { load(node.path) }
+
 const nameOf = (r: any) => r.name ?? r.Name ?? ''
 const isDir = (r: any) => !!(r.isDir ?? r.IsDir)
 const base = () => (path.value.endsWith('/') ? path.value : path.value + '/')
@@ -73,15 +119,17 @@ const full = (r: any) => base() + nameOf(r)
 
 async function load(p = path.value) {
   loading.value = true
+  path.value = p            // 先更新路径：即便列目录失败，界面也应停在目标目录
   try {
     const res: any = await post('/file/ls', { id, path: p })
     rows.value = res?.result?.items || []
-    path.value = p
+  } catch {
+    rows.value = []
   } finally {
     loading.value = false
   }
 }
-onMounted(() => load('/'))
+onMounted(() => { load('/'); loadTree() })
 
 function enter(r: any) { if (isDir(r)) load(full(r)) }
 function up() {
@@ -176,6 +224,21 @@ async function onUpload(e: Event) {
       <span class="hint mono">客户端 #{{ id }}</span>
     </div>
 
+    <a-row :gutter="12">
+      <a-col :xs="24" :lg="6">
+        <a-card size="small" title="文件树" :loading="treeLoading" :body-style="{ padding: '8px', maxHeight: 'calc(100vh - 280px)', overflow: 'auto' }">
+          <div class="tree-root" @click="load('/')">/</div>
+          <div
+            v-for="n in flatTree" :key="n.path" class="tree-row"
+            :style="{ paddingLeft: 12 + n.depth * 12 + 'px' }"
+          >
+            <span class="tw" @click.stop="expandTree(n.path)">{{ n.open ? '▾' : '▸' }}</span>
+            <span class="tn" :class="{ active: path === n.path }" @click.stop="pickDir(n)">{{ n.name }}</span>
+          </div>
+          <div v-if="!flatTree.length" class="hint">（无子目录）</div>
+        </a-card>
+      </a-col>
+      <a-col :xs="24" :lg="18">
     <a-table :columns="columns" :data-source="rows" :loading="loading" row-key="name" size="small" :pagination="false">
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex === 'name'">
@@ -194,6 +257,8 @@ async function onUpload(e: Event) {
         </template>
       </template>
     </a-table>
+      </a-col>
+    </a-row>
 
     <a-modal v-model:open="editor" :title="editPath" width="720px" @ok="saveFile">
       <a-textarea v-model:value="editContent" :rows="18" class="mono" />
@@ -204,6 +269,11 @@ async function onUpload(e: Event) {
 <style scoped>
 .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
 .hint { color: rgba(0, 0, 0, 0.45); font-size: 12px; }
+.tree-root { cursor: pointer; font-family: ui-monospace, monospace; font-size: 12px; padding: 2px 0; }
+.tree-row { display: flex; align-items: center; gap: 4px; font-size: 12px; line-height: 20px; }
+.tw { width: 12px; color: rgba(0,0,0,.45); cursor: pointer; user-select: none; }
+.tn { cursor: pointer; font-family: ui-monospace, monospace; }
+.tn.active { color: #1677ff; }
 .danger { color: #ff4d4f; }
 .file-ico { width: 16px; height: 16px; display: inline-block; vertical-align: -3px; margin-right: 6px; }
 </style>

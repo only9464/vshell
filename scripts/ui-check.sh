@@ -171,6 +171,32 @@ JS
 TABS_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$TABS_JS" 2>&1)
 echo "$TABS_OUT" | grep -q 'TABS_OK' || log "  页签栏断言跳过（旧前端或无障碍）: $(echo "$TABS_OUT" | tail -c 80)"
 
+log "文件树（点击目录 → 右表切换）"
+TREE_JS=$(cat <<'JS'
+(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const waitFor = async (fn, ms) => { const t0=Date.now(); while(Date.now()-t0<ms){ if(fn()) return true; await sleep(250); } return false; };
+  if (document.body.innerText.includes('登录') && document.querySelectorAll('input').length >= 2) {
+    const inputs = [...document.querySelectorAll('input')];
+    const set = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles:true})); };
+    set(inputs[0], 'admin'); set(inputs[1], 'p1');
+    await sleep(300);
+    [...document.querySelectorAll('button')].find(b => b.innerText.replace(/\s/g,'') === '登录')?.click();
+    await waitFor(() => location.hash.includes('/dashboard'), 8000);
+  }
+  location.hash = '#/clientManager/files/1';
+  if (!await waitFor(() => document.querySelectorAll('.tree-row').length > 0, 12000)) return 'TREE_FAIL 无节点';
+  const etc = [...document.querySelectorAll('.tree-row .tn')].find(e => e.innerText.trim() === 'etc');
+  if (!etc) return 'TREE_FAIL 无 etc 节点';
+  etc.click();
+  const ok = await waitFor(() => document.body.innerText.includes('passwd'), 12000);
+  return ok ? 'TREE_OK' : 'TREE_FAIL 未切换到 /etc';
+})()
+JS
+)
+TREE_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$TREE_JS" 2>&1)
+echo "$TREE_OUT" | grep -q 'TREE_OK' || fail "文件树异常: $(echo "$TREE_OUT" | tail -c 120)"
+
 log "文件列表按类型显示图标（material-icon-theme）"
 FILEICO_JS=$(cat <<'JS'
 (async () => {
