@@ -101,6 +101,8 @@ expect "$TMP/dash.html" '版本' 'dashboard 缺少 KPI'
 expect "$TMP/dash.html" '负载趋势' 'dashboard 缺少趋势卡片'
 expect "$TMP/dash.html" 'polyline' 'dashboard 趋势图未渲染（sparkline 没出 SVG）'
 expect "$TMP/dash.html" '最近上线客户端' 'dashboard 缺少最近上线卡片'
+expect "$TMP/dash.html" '在线客户端' 'dashboard 缺少「在线客户端」副标题'
+expect "$TMP/dash.html" '在线监听数' 'dashboard 缺少「在线监听数」副标题'
 
 log "渲染 #/clients"
 render '#/clientManager/index' "$TMP/clients.html"

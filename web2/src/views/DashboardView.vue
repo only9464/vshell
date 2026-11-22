@@ -46,20 +46,40 @@ onBeforeUnmount(() => timer && window.clearInterval(timer))
   <a-spin :spinning="loading">
     <a-row :gutter="[16, 16]">
       <a-col :xs="24" :sm="12" :lg="6">
-        <a-card size="small"><a-statistic title="客户端总数" :value="info.clientCount || 0">
-          <template #suffix><span class="sub">在线 {{ info.clientOnlineCount || 0 }}</span></template>
-        </a-statistic></a-card>
+        <a-card size="small">
+          <div class="kpi">
+            <span class="ico i-flat-ui:pc" />
+            <a-statistic title="客户端总数" :value="info.clientCount || 0" />
+          </div>
+          <div class="sub">在线客户端 {{ info.clientOnlineCount || 0 }}</div>
+        </a-card>
       </a-col>
       <a-col :xs="24" :sm="12" :lg="6">
-        <a-card size="small"><a-statistic title="监听总数" :value="info.listenerCount || 0">
-          <template #suffix><span class="sub">运行 {{ info.listenerOnlineCount || 0 }}</span></template>
-        </a-statistic></a-card>
+        <a-card size="small">
+          <div class="kpi">
+            <span class="ico i-flat-color-icons:headset" />
+            <a-statistic title="监听总数" :value="info.listenerCount || 0" />
+          </div>
+          <div class="sub">在线监听数 {{ info.listenerOnlineCount || 0 }}</div>
+        </a-card>
       </a-col>
       <a-col :xs="24" :sm="12" :lg="6">
-        <a-card size="small"><a-statistic title="CPU" :value="info.cpu || 0" suffix="%" /></a-card>
+        <a-card size="small">
+          <div class="kpi">
+            <span class="ico i-flat-ui:responsive" />
+            <a-statistic title="CPU" :value="info.cpu || 0" suffix="%" />
+          </div>
+          <div class="sub">磁盘 {{ info.disk || 0 }}%</div>
+        </a-card>
       </a-col>
       <a-col :xs="24" :sm="12" :lg="6">
-        <a-card size="small"><a-statistic title="版本" :value="info.version || '-'" /></a-card>
+        <a-card size="small">
+          <div class="kpi">
+            <span class="ico i-flat-ui:magic" />
+            <a-statistic title="版本" :value="info.version || '-'" />
+          </div>
+          <div class="sub">复刻研究版</div>
+        </a-card>
       </a-col>
     </a-row>
 
@@ -98,7 +118,9 @@ onBeforeUnmount(() => timer && window.clearInterval(timer))
 </template>
 
 <style scoped>
-.sub { font-size: 12px; color: rgba(0, 0, 0, 0.45); margin-left: 6px; }
+.sub { font-size: 12px; color: rgba(0, 0, 0, 0.45); }
+.kpi { display: flex; align-items: center; gap: 12px; }
+.ico { width: 34px; height: 34px; flex: 0 0 34px; }
 .chart-row { display: flex; gap: 32px; flex-wrap: wrap; }
 .label { font-size: 12px; color: rgba(0, 0, 0, 0.45); margin-bottom: 4px; }
 </style>

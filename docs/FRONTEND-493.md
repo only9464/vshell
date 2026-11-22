@@ -93,6 +93,19 @@ web2/
 | 客户端生成 | 是否UPX压缩 / 连接方式 / 流量加密盐 / 上线命令查看 / 正向客户端 | ✅ |
 | 文件管理 | 文件名 / 修改时间；按钮 新建文件夹、上传插件、重命名、删除文件 | ✅ |
 
+## 3.3 图标（与 4.9.3 同款 iconify 集合）
+
+4.9.3 的仪表盘用 iconify：`flat-ui:pc`、`flat-color-icons:headset`、`flat-ui:responsive`、
+`flat-ui:magic`。新前端通过 UnoCSS `presetIcons` + `@iconify-json/flat-ui`、
+`@iconify-json/flat-color-icons` 使用**同一套图标**（构建时内联成 SVG data URI，无运行时请求）：
+
+| KPI 卡 | 图标 |
+|---|---|
+| 客户端总数 | `i-flat-ui:pc` |
+| 监听总数 | `i-flat-color-icons:headset` |
+| CPU | `i-flat-ui:responsive` |
+| 版本 | `i-flat-ui:magic` |
+
 ## 4.0 布局对齐 4.9.3
 
 | 元素 | 实现 |

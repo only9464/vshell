@@ -20,6 +20,8 @@
     "vue-router": "^4.5.0"
   },
   "devDependencies": {
+    "@iconify-json/flat-color-icons": "^1.2.3",
+    "@iconify-json/flat-ui": "^1.2.3",
     "@vitejs/plugin-vue": "^5.2.1",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.2",
