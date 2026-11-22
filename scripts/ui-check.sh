@@ -171,6 +171,29 @@ JS
 TABS_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$TABS_JS" 2>&1)
 echo "$TABS_OUT" | grep -q 'TABS_OK' || log "  页签栏断言跳过（旧前端或无障碍）: $(echo "$TABS_OUT" | tail -c 80)"
 
+log "文件列表按类型显示图标（material-icon-theme）"
+FILEICO_JS=$(cat <<'JS'
+(async () => {
+  const waitFor = async (fn, ms) => { const t0=Date.now(); while(Date.now()-t0<ms){ if(fn()) return true; await new Promise(r=>setTimeout(r,250)); } return false; };
+  if (document.body.innerText.includes('登录') && document.querySelectorAll('input').length >= 2) {
+    const inputs = [...document.querySelectorAll('input')];
+    const set = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles:true})); };
+    set(inputs[0], 'admin'); set(inputs[1], 'p1');
+    await new Promise(r => setTimeout(r, 300));
+    [...document.querySelectorAll('button')].find(b => b.innerText.replace(/\s/g,'') === '登录')?.click();
+    await waitFor(() => location.hash.includes('/dashboard'), 8000);
+  }
+  location.hash = '#/clientManager/files/1';
+  await waitFor(() => document.querySelectorAll('.file-ico').length > 0, 10000);
+  const all = [...document.querySelectorAll('.file-ico')];
+  const rendered = all.filter(e => getComputedStyle(e).backgroundImage !== 'none').length;
+  return rendered > 0 && rendered === all.length ? 'FILE_ICO_OK ' + rendered : 'FILE_ICO_FAIL ' + rendered + '/' + all.length;
+})()
+JS
+)
+FILEICO_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$FILEICO_JS" 2>&1)
+echo "$FILEICO_OUT" | grep -q 'FILE_ICO_OK' || fail "文件图标未渲染: $(echo "$FILEICO_OUT" | tail -c 120)"
+
 log "渲染 #/listeners"
 render '#/listener/index' "$TMP/listeners.html"
 expect "$TMP/listeners.html" '监听地址' '监听页表头缺失'

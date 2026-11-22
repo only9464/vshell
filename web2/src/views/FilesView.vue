@@ -31,19 +31,39 @@ const EXT_ICON: Record<string, string> = {
   html: 'html', htm: 'html', css: 'css', scss: 'css', less: 'css', yml: 'yaml', yaml: 'yaml',
   toml: 'toml', ini: 'settings', conf: 'settings', env: 'settings', sql: 'database', db: 'database',
   png: 'image', jpg: 'image', jpeg: 'image', gif: 'image', bmp: 'image', webp: 'image', svg: 'svg',
-  ico: 'image', pdf: 'pdf', zip: 'zip', gz: 'zip', tar: 'zip', xz: 'zip', '7z': 'zip', rar: 'zip',
+  ico: 'image', pdf: 'pdf', zip: 'zip', gz: 'zip', tar: 'zip', xz: 'zip', rar: 'zip',
   doc: 'word', docx: 'word', xls: 'document', xlsx: 'document', ppt: 'powerpoint', pptx: 'powerpoint',
   mp3: 'audio', wav: 'audio', flac: 'audio', mp4: 'video', mkv: 'video', avi: 'video', mov: 'video',
   lock: 'lock', pem: 'key', key: 'key', crt: 'certificate', cer: 'certificate',
 }
+// 特例文件名（Dockerfile / Makefile / .gitignore 等）单独映射
+const NAME_ICON: Record<string, string> = {
+  dockerfile: 'docker', 'docker-compose.yml': 'docker', 'docker-compose.yaml': 'docker',
+  makefile: 'makefile', 'cmakelists.txt': 'cmake',
+  '.gitignore': 'git', '.gitattributes': 'git', '.gitmodules': 'git',
+  'package.json': 'npm', 'package-lock.json': 'npm', 'pnpm-lock.yaml': 'npm', 'yarn.lock': 'npm',
+  'tsconfig.json': 'tsconfig', 'vite.config.ts': 'vite', 'vite.config.js': 'vite',
+  'webpack.config.js': 'webpack', '.babelrc': 'babel', '.eslintrc': 'eslint',
+  '.eslintrc.js': 'eslint', '.eslintrc.json': 'eslint', '.prettierrc': 'prettier',
+  '.editorconfig': 'editorconfig', 'go.mod': 'go', 'go.sum': 'go',
+  'cargo.toml': 'rust', 'cargo.lock': 'rust', 'requirements.txt': 'python', 'pyproject.toml': 'python',
+  'readme.md': 'readme', readme: 'readme', license: 'license', 'license.md': 'license',
+  changelog: 'changelog', 'changelog.md': 'changelog',
+  'nginx.conf': 'nginx', 'jenkinsfile': 'jenkins', '.gitlab-ci.yml': 'gitlab',
+  'pom.xml': 'maven', 'build.gradle': 'gradle', 'terraform.tf': 'terraform', 'chart.yaml': 'helm',
+}
+
 const DEFAULT_FILE_ICON = 'document'
 
 function fileIcon(r: any) {
   if (isDir(r)) return 'material-icon-theme:folder-base'
   const name = nameOf(r)
-  const ext = name.includes('.') ? name.split('.').pop()!.toLowerCase() : ''
-  const icon = EXT_ICON[ext] || DEFAULT_FILE_ICON
-  return `material-icon-theme:${icon}`
+  const lower = name.toLowerCase()
+  // 先按特例文件名匹配，再按扩展名
+  const byName = NAME_ICON[lower]
+  if (byName) return `material-icon-theme:${byName}`
+  const ext = lower.includes('.') ? lower.split('.').pop()! : ''
+  return `material-icon-theme:${EXT_ICON[ext] || DEFAULT_FILE_ICON}`
 }
 
 const nameOf = (r: any) => r.name ?? r.Name ?? ''

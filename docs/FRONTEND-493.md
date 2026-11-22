@@ -146,6 +146,22 @@ web2/
 | 归档 | `zip` |
 | 其他 | `database / lock / key / certificate / console`，未知后缀回落 `document` |
 
+**特例文件名**（R82）：按名字优先匹配，再按扩展名——
+
+| 文件名 | 图标 |
+|---|---|
+| `Dockerfile` / `docker-compose.yml` | `docker` |
+| `Makefile` / `CMakeLists.txt` | `makefile` / `cmake` |
+| `.gitignore` / `.gitattributes` | `git` |
+| `package.json` / `pnpm-lock.yaml` / `yarn.lock` | `npm` |
+| `tsconfig.json` / `vite.config.*` / `webpack.config.js` | `tsconfig` / `vite` / `webpack` |
+| `go.mod` / `Cargo.toml` / `requirements.txt` / `pyproject.toml` | `go` / `rust` / `python` |
+| `README.md` / `LICENSE` / `CHANGELOG.md` | `readme` / `license` / `changelog` |
+| `nginx.conf` / `Jenkinsfile` / `.gitlab-ci.yml` | `nginx` / `jenkins` / `gitlab` |
+| `pom.xml` / `build.gradle` / `Chart.yaml` | `maven` / `gradle` / `helm` |
+
+映射表里的图标名已用脚本对 `material-icon-theme` 集合与 UnoCSS safelist 双向校验（59 个图标全部存在且已列入 safelist）。
+
 实测：`/tmp` 下 `demo.go → go`、`demo.md → markdown`、`demo.py → python`、`demo.zip → zip`，
 633 个条目全部渲染出图标。
 
