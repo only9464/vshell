@@ -156,7 +156,7 @@ echo "$TABS_OUT" | grep -q 'TABS_OK' || log "  页签栏断言跳过（旧前端
 
 log "渲染 #/listeners"
 render '#/listener/index' "$TMP/listeners.html"
-expect "$TMP/listeners.html" '监听地址' '监听器页表头缺失'
+expect "$TMP/listeners.html" '监听地址' '监听页表头缺失'
 expect "$TMP/listeners.html" 'UI-VK' '监听器页没有真实 Vkey（字段契约不符？）'
 expect "$TMP/listeners.html" '运行' '监听器页没有状态标记'
 expect "$TMP/listeners.html" '批量删除' '监听器页缺少批量删除'
@@ -275,7 +275,7 @@ DARKBG_JS=$(cat <<'JS'
     [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
-  const btn = [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '暗色');
+  const btn = [...document.querySelectorAll('button')].find(b => /黑暗主题|暗色/.test(b.innerText.trim()));
   if (btn) { btn.click(); await new Promise(r => setTimeout(r, 600)); }
   const bg = getComputedStyle(document.body).backgroundColor;
   // 暗色下 body 背景应是深色（rgb 各分量都小于 60）
@@ -301,7 +301,7 @@ THEME_JS=$(cat <<'JS'
     [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
-  const btn = [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '暗色');
+  const btn = [...document.querySelectorAll('button')].find(b => /黑暗主题|暗色/.test(b.innerText.trim()));
   if (!btn) return 'NO_THEME_BTN';
   btn.click();
   await new Promise(r => setTimeout(r, 600));

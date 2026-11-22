@@ -46,12 +46,12 @@ onBeforeUnmount(() => timer && window.clearInterval(timer))
   <a-spin :spinning="loading">
     <a-row :gutter="[16, 16]">
       <a-col :xs="24" :sm="12" :lg="6">
-        <a-card size="small"><a-statistic title="客户端" :value="info.clientCount || 0">
+        <a-card size="small"><a-statistic title="客户端总数" :value="info.clientCount || 0">
           <template #suffix><span class="sub">在线 {{ info.clientOnlineCount || 0 }}</span></template>
         </a-statistic></a-card>
       </a-col>
       <a-col :xs="24" :sm="12" :lg="6">
-        <a-card size="small"><a-statistic title="监听器" :value="info.listenerCount || 0">
+        <a-card size="small"><a-statistic title="监听总数" :value="info.listenerCount || 0">
           <template #suffix><span class="sub">运行 {{ info.listenerOnlineCount || 0 }}</span></template>
         </a-statistic></a-card>
       </a-col>

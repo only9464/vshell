@@ -80,7 +80,7 @@ onBeforeUnmount(() => {
   <a-card :bordered="false" :body-style="{ padding: '12px' }">
     <div class="toolbar">
       <a-tag :color="status === '已连接' ? 'green' : 'default'">{{ status }}</a-tag>
-      <span class="mono">客户端 #{{ route.params.id }}</span>
+      <span class="mono">命令控制 · 客户端 #{{ route.params.id }}</span>
       <a-space size="small">
         <a-button size="small" @click="applyFont(fontSize - 1)">A-</a-button>
         <a-button size="small" @click="applyFont(fontSize + 1)">A+</a-button>

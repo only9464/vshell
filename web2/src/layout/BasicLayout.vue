@@ -116,7 +116,7 @@ function onUserMenu({ key }: { key: string }) {
           <a-breadcrumb-item>{{ current.title }}</a-breadcrumb-item>
         </a-breadcrumb>
         <div class="spacer" />
-        <a-button type="text" @click="toggleTheme">{{ dark ? '浅色' : '暗色' }}</a-button>
+        <a-button type="text" @click="toggleTheme">{{ dark ? '亮色主题' : '黑暗主题' }}</a-button>
         <a-dropdown>
           <a class="user" @click.prevent>{{ auth.username || 'admin' }}</a>
           <template #overlay>
