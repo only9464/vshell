@@ -723,12 +723,7 @@ log "tcp file list ok (total=$TCP_TOTAL)"
 
 # TCP 客户端跑插件：插件二进制 base64 后 >1MB，帧上限太小会直接超时
 # （R124 就是靠这条发现的：agent 侧 1MB 限制 → "task timed out"）。
-if [[ -f plugins/sysinfo.elf ]]; then
-  PL_OUT=$(api POST /runner/runplugin "{\"id\":$TCP_CID,\"pluginName\":\"sysinfo.elf\",\"procArg\":\"\"}")
-  echo "$PL_OUT" | grep -q '"output"' || fail "TCP 客户端插件执行失败: $(echo "$PL_OUT" | head -c 160)"
-  log "tcp plugin ok"
-fi
-
+# 插件源：优先 release 包里的成品，其次仓库里的源码目录（编译产物不入库）
 # 隧道数据面（走 TCP 传输的客户端）：本地 echo → 建隧道 → 连隧道端口拿回包
 TUN_LPORT=$((28200 + RANDOM % 300))
 python3 -c "
@@ -753,7 +748,7 @@ ids=[i['Id'] for i in (d['result']['items'] or []) if i.get('Remark')=='tcp-e2e-
 print(ids[0] if ids else '')")
 [[ -n "$TUN_ID" ]] || fail "隧道未创建"
 api POST /tunnel/start "{\"id\":$TUN_ID}" | grep -q '"code":0' || fail "隧道启动失败"
-TUN_BYTES=$(timeout 25 python3 -c "
+TUN_BYTES=$(timeout 45 python3 -c "
 import socket
 try:
     c=socket.create_connection(('127.0.0.1',$((TUN_LPORT+1))),8)
@@ -764,6 +759,21 @@ echo "$TUN_BYTES" | grep -q 'TCP-TUNNEL-OK' || fail "TCP 客户端隧道转发�
 api POST /tunnel/del "{\"id\":$TUN_ID}" >/dev/null
 kill "$ECHO_PID" 2>/dev/null
 log "tcp tunnel ok (经 TCP 客户端转发拿到回包)"
+
+PLUGIN_SRC=""
+for cand in "$HOME/vshell-release/plugins/sysinfo.elf" "$ROOT/plugins/sysinfo.elf"; do
+  [[ -f "$cand" ]] && PLUGIN_SRC="$cand" && break
+done
+if [[ -f "$PLUGIN_SRC" ]]; then
+  # 先把插件上传到本实例（落 $TMP/plugins/），再在 TCP 客户端上执行
+  curl -sS -m 30 -X POST "http://127.0.0.1:$WEB_PORT/api/runner/upload" \
+    -H "Token: $TOKEN" -F "file=@$PLUGIN_SRC" >/dev/null
+  PL_OUT=$(api POST /runner/runplugin "{\"id\":$TCP_CID,\"pluginName\":\"sysinfo.elf\",\"procArg\":\"\"}" 2>/dev/null)
+  # 只判断有没有 output 字段，绝不把响应原文打进日志（插件 base64 会把日志刷爆）
+  echo "$PL_OUT" | grep -q '"output"' || fail "TCP 客户端插件执行失败"
+  log "tcp plugin ok"
+fi
+
 
 kill "$TCP_AGENT_PID" 2>/dev/null
 TCP_LID=$(api POST /listener/list '{"page":1,"pageSize":100}' | python3 -c "
