@@ -34,6 +34,7 @@
 | 重启恢复 | `AppStart` 会按持久化状态重新启动监听器（此前重启后显示"运行"但端口没在听） | `controllers/engine.go` |
 | 插件 | 面板 → 服务端 → 目标机执行 → 输出回显全链路可用；内置 `sysinfo.elf` 示例；支持 .elf/.so/.dylib | `controllers/runner.go`、`plugins/README.md` |
 | 截图/屏幕 | 功能链路正常；本机无图形会话导致截屏工具全部失败，页面已给出安装建议（环境限制） | `web/src/views/ScreenshotView.vue`、GAPS §E2 |
+| 列目录错误 | 列目录失败时回错误（`ERROR: open /root: permission denied`），不再静默返回空列表被误认为"空目录" | `controllers/file.go` |
 | 文件写入语义 | 写文件/删除/重命名/新建/改时间改为**等 agent 确认**（`dispatchAndWait`，15s 上限）；任务 `failed` 不再被当成功（`waitTaskResult` 修正） | `controllers/file.go`、`controllers/stream_wait.go` |
 | 概览连接数 | `tcpCount`/`udpCount` 改为真实统计（`Engine.ConnStats`：在线客户端每条连接计 1，dns 客户端计入 UDP） | `c2engine/engine.go`、`controllers/engine.go` |
 | 概览计数 | `/dashboard/info` 的在线数改用 `Engine.OnlineClientCount()`，与列表口径一致（此前因 `limit=0` 返回空切片而恒为 0） | `c2engine/engine.go`、`controllers/engine.go` |

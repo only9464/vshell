@@ -140,7 +140,11 @@ func (c *FileController) Ls() {
 	if !c.requireClient(id) {
 		return
 	}
-	items, total := engineListDir(id, path, field, order)
+	items, total, errMsg := engineListDir(id, path, field, order)
+	if errMsg != "" {
+		c.JsonErr(errMsg)
+		return
+	}
 	c.JsonOkResult(map[string]interface{}{
 		"total": total,
 		"items": items,
@@ -567,7 +571,7 @@ type listEntry struct {
 //	比较器只做 < 比较，因此 descend 是严格反向（相同大小不保持稳定顺序）。
 //
 // 响应固定为 {"total": <条目数>, "items": <条目数组>}（FUN_00412ae0 的两个键）。
-func engineListDir(id int64, path, field, order string) ([]listEntry, int64) {
+func engineListDir(id int64, path, field, order string) ([]listEntry, int64, string) {
 	if path == "" {
 		path = engineDefaultDir(id)
 	}
@@ -577,7 +581,9 @@ func engineListDir(id int64, path, field, order string) ([]listEntry, int64) {
 	req, _ := json.Marshal(map[string]string{"type": "filelist", "path": path})
 	out, errMsg := engineRunCmd(id, string(req), lsCmdTimeout)
 	if errMsg != "" {
-		return []listEntry{}, 0
+		// 列目录失败必须让调用方知道：以前这里静默返回空列表，
+		// 面板会把它显示成"空目录"，与"目标机真的没有文件"无法区分。
+		return []listEntry{}, 0, errMsg
 	}
 	entries := parseFileListJSON(out)
 	if len(entries) == 0 {
@@ -585,7 +591,7 @@ func engineListDir(id int64, path, field, order string) ([]listEntry, int64) {
 		entries = parseLsReply(out)
 	}
 	sortListEntries(entries, field, order)
-	return entries, int64(len(entries))
+	return entries, int64(len(entries)), ""
 }
 
 // parseFileListJSON 解析 agent 的 JSON 目录列表：

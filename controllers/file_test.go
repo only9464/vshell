@@ -119,7 +119,7 @@ func TestSortListEntries(t *testing.T) {
 // the panel's {total, items} shape. A client that is not connected fails the
 // command, which yields an empty list rather than an error to the panel.
 func TestEngineListDirUnreachableClient(t *testing.T) {
-	items, total := engineListDir(4242, "/tmp", "name", "ascend")
+	items, total, _ := engineListDir(4242, "/tmp", "name", "ascend")
 	if total != 0 || len(items) != 0 {
 		t.Fatalf("items=%+v total=%d, want empty list", items, total)
 	}

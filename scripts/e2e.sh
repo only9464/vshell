@@ -710,6 +710,11 @@ echo "$TCP_OUT" | grep -q 'tcp-e2e-ok' || fail "tcp 客户端执行命令失败:
 api POST /file/ls "{\"id\":$TCP_CID,\"path\":\"/tmp\"}" | grep -q '"code":0' \
   || fail "tcp 客户端文件列表失败"
 
+# 列目录失败要能报错，而不是假装"空目录"（R125）
+LS_ERR=$(api POST /file/ls "{\"id\":$TCP_CID,\"path\":\"/root\"}")
+echo "$LS_ERR" | grep -q '"code":0' && fail "无权限目录居然返回成功: $(echo "$LS_ERR" | head -c 120)"
+log "ls error surfaces ok"
+
 # TCP 客户端的目录列表必须非空（R116 修完任务下发后回归）：这里用 /tmp，
 # 期望 total > 0；顺带验证结果没有因为任务重复下发而错配。
 TCP_LS=$(api POST /file/ls "{\"id\":$TCP_CID,\"path\":\"/tmp\"}")
