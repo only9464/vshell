@@ -164,7 +164,10 @@ func (l *TCPListener) handleConn(conn net.Conn) {
 			if old := l.owner[cl.ID]; old != nil && old != conn {
 				idle := time.Since(l.lastSeen[cl.ID])
 				sameProc := probe.PID > 0 && probe.PID == l.ownerPID[cl.ID]
-				if idle < 60*time.Second && !sameProc {
+				// probe.PID 在某些版本/传输上可能缺失（0）：这时不能判 duplicate，
+				// 否则客户端一旦重连就永远被拒（实测：整条 TCP 链路彻底不可用）。
+				unknownPID := probe.PID <= 0 || l.ownerPID[cl.ID] == 0
+				if idle < 60*time.Second && !sameProc && !unknownPID {
 					// 已有活跃执行者：拒绝这条新连接，避免双方互踢（重复 agent 场景）
 					l.mu.Unlock()
 					_ = writeTCPFrame(conn, l.Salt, map[string]interface{}{
