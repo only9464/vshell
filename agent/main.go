@@ -3235,6 +3235,11 @@ func main() {
 	for {
 		resp, err := transport.Checkin()
 		if err != nil {
+			// 连接可能已经死了（服务端重启/被拒绝）：先丢弃再重试，
+			// 否则会一直往同一个 broken pipe 上写。
+			if r, ok := transport.(interface{ Reset() }); ok {
+				r.Reset()
+			}
 			if backoff == 0 {
 				backoff = 1 * time.Second
 			} else {

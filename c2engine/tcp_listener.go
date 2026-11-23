@@ -37,13 +37,16 @@ type TCPListener struct {
 	// owner 记录"每个客户端当前生效的那条连接"：同一 vkey 的重复 agent 进程
 	// 会各自 checkin 成同一个 client，任务被两边抢着 poll，表现是"面板说成功但
 	// 目标机没变化"。新连接接管时关掉旧连接，保证同一时刻只有一个执行者。
-	owner  map[int64]net.Conn
-	closed bool
+	owner map[int64]net.Conn
+	// lastSeen 记录该客户端最近一次活动时间：owner 连接还活着就不要让新连接接管，
+	// 否则"同一 vkey 跑两个 agent"会互相踢连接（实测 6 秒一次 EOF 死循环）。
+	lastSeen map[int64]time.Time
+	closed   bool
 }
 
 // NewTCPListener 创建 TCP 监听器。
 func NewTCPListener(id int64, addr, vkey, salt string) *TCPListener {
-	return &TCPListener{ID: id, Addr: addr, Vkey: vkey, Salt: salt, conns: map[net.Conn]bool{}, owner: map[int64]net.Conn{}}
+	return &TCPListener{ID: id, Addr: addr, Vkey: vkey, Salt: salt, conns: map[net.Conn]bool{}, owner: map[int64]net.Conn{}, lastSeen: map[int64]time.Time{}}
 }
 
 // Start 开始监听。
@@ -130,6 +133,12 @@ func (l *TCPListener) handleConn(conn net.Conn) {
 			return
 		}
 
+		if clientID > 0 {
+			l.mu.Lock()
+			l.lastSeen[clientID] = time.Now()
+			l.mu.Unlock()
+		}
+
 		// 1) checkin：没有 type 字段、但带 verify_key + hostname
 		if probe.Type == "" && probe.HostName != "" {
 			if l.Vkey != "" && probe.VerifyKey != l.Vkey {
@@ -149,9 +158,21 @@ func (l *TCPListener) handleConn(conn net.Conn) {
 			clientID = cl.ID
 			l.mu.Lock()
 			if old := l.owner[cl.ID]; old != nil && old != conn {
-				_ = old.Close() // 旧连接接管结束：避免同一 client 有两个执行者
+				idle := time.Since(l.lastSeen[cl.ID])
+				if idle < 60*time.Second {
+					// 已有活跃执行者：拒绝这条新连接，避免双方互踢（重复 agent 场景）
+					l.mu.Unlock()
+					_ = writeTCPFrame(conn, l.Salt, map[string]interface{}{
+						"status": "error", "message": "duplicate agent for this client",
+					})
+					_ = conn.Close()
+					log.Printf("[TCP:%d] duplicate agent for client %d rejected (idle %v)", l.ID, cl.ID, idle.Round(time.Second))
+					return
+				}
+				_ = old.Close() // 旧的确实没了：让新连接接管
 			}
 			l.owner[cl.ID] = conn
+			l.lastSeen[cl.ID] = time.Now()
 			l.mu.Unlock()
 			_ = writeTCPFrame(conn, l.Salt, map[string]interface{}{
 				"status":     "ok",
