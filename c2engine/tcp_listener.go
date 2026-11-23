@@ -41,12 +41,15 @@ type TCPListener struct {
 	// lastSeen 记录该客户端最近一次活动时间：owner 连接还活着就不要让新连接接管，
 	// 否则"同一 vkey 跑两个 agent"会互相踢连接（实测 6 秒一次 EOF 死循环）。
 	lastSeen map[int64]time.Time
+	// ownerPID 记录当前执行者的进程号（checkin 报文里的 pid）：
+	// 同一进程重连要允许接管；不同进程（重复 agent）才拒绝。
+	ownerPID map[int64]int64
 	closed   bool
 }
 
 // NewTCPListener 创建 TCP 监听器。
 func NewTCPListener(id int64, addr, vkey, salt string) *TCPListener {
-	return &TCPListener{ID: id, Addr: addr, Vkey: vkey, Salt: salt, conns: map[net.Conn]bool{}, owner: map[int64]net.Conn{}, lastSeen: map[int64]time.Time{}}
+	return &TCPListener{ID: id, Addr: addr, Vkey: vkey, Salt: salt, conns: map[net.Conn]bool{}, owner: map[int64]net.Conn{}, lastSeen: map[int64]time.Time{}, ownerPID: map[int64]int64{}}
 }
 
 // Start 开始监听。
@@ -127,6 +130,7 @@ func (l *TCPListener) handleConn(conn net.Conn) {
 			CommandID int64  `json:"command_id"`
 			Result    string `json:"result"`
 			Status    string `json:"status"`
+			PID       int64  `json:"pid"`
 		}
 		if err := json.Unmarshal(plain, &probe); err != nil {
 			log.Printf("[TCP:%d] %s bad json: %v", l.ID, remote, err)
@@ -159,7 +163,8 @@ func (l *TCPListener) handleConn(conn net.Conn) {
 			l.mu.Lock()
 			if old := l.owner[cl.ID]; old != nil && old != conn {
 				idle := time.Since(l.lastSeen[cl.ID])
-				if idle < 60*time.Second {
+				sameProc := probe.PID > 0 && probe.PID == l.ownerPID[cl.ID]
+				if idle < 60*time.Second && !sameProc {
 					// 已有活跃执行者：拒绝这条新连接，避免双方互踢（重复 agent 场景）
 					l.mu.Unlock()
 					_ = writeTCPFrame(conn, l.Salt, map[string]interface{}{
@@ -172,6 +177,7 @@ func (l *TCPListener) handleConn(conn net.Conn) {
 				_ = old.Close() // 旧的确实没了：让新连接接管
 			}
 			l.owner[cl.ID] = conn
+			l.ownerPID[cl.ID] = probe.PID
 			l.lastSeen[cl.ID] = time.Now()
 			l.mu.Unlock()
 			_ = writeTCPFrame(conn, l.Salt, map[string]interface{}{
