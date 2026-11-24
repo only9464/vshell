@@ -730,7 +730,10 @@ CTX_JS=$(cat <<'JS'
     if (!ok) await sleep(800);
   }
   const items = [...document.querySelectorAll('.ant-dropdown-menu-item')].map(e=>e.innerText.replace(/\s/g,''));
-  return ok && items.includes('命令控制') ? 'CTX_OK' : 'CTX_FAIL ' + JSON.stringify(items);
+  // 4.9.3 的客户端右键菜单是：主机管理 / 隧道代理 / 删除文件 / 删除主机
+  const want = ['主机管理', '隧道代理', '删除文件', '删除主机'];
+  const hit = want.filter(w => items.includes(w)).length;
+  return ok && hit === want.length ? 'CTX_OK' : 'CTX_FAIL ' + JSON.stringify(items);
 })()
 JS
 )

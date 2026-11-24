@@ -28,6 +28,8 @@ const routes = [
       { path: 'clientManager/index', component: () => import('../views/ClientView.vue') },
       { path: 'clientManager/terminal/:id', component: () => import('../views/TerminalView.vue') },
       { path: 'clientManager/files/:id', component: () => import('../views/FilesView.vue') },
+      // 4.9.3 的「主机管理」入口：/clientManager/:id
+      { path: 'clientManager/:id', component: () => import('../views/FilesView.vue') },
       // 4.9.3 的独立路由：/filemanager、/terminal（我们历史上把它们挂在
       // clientManager 下）。这里加别名，两种 URL 都能进同一个页面。
       { path: 'filemanager/:id', component: () => import('../views/FilesView.vue') },
@@ -37,6 +39,8 @@ const routes = [
       { path: 'listener/index', component: () => import('../views/ListenerView.vue') },
       { path: 'download/index', component: () => import('../views/DownloadView.vue') },
       { path: 'tunnel/index', component: () => import('../views/TunnelView.vue') },
+      // 4.9.3 的 /tunnel/:id：隧道页并预选该客户端
+      { path: 'tunnel/:id', component: () => import('../views/TunnelView.vue') },
       { path: 'pluginrunner/index', component: () => import('../views/PluginView.vue') },
       { path: 'setting/index', component: () => import('../views/SettingView.vue') },
       { path: 'about/index', component: () => import('../views/AboutView.vue') },

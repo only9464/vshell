@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // 隧道：列表 + 新建/编辑 + 启停/删除
 import { onMounted, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import { post } from '../api/http'
 
@@ -9,9 +10,10 @@ const loading = ref(false)
 const open = ref(false)
 const editing = ref<number | null>(null)
 const clients = ref<any[]>([])
+const route = useRoute()
 const formRef = ref<any>(null)
 const form = reactive({
-  clientId: 0, Port: 28001, Mode: 'tcp', Target: '127.0.0.1:22', Remark: '',
+  clientId: Number(route.params.id) || 0, Port: 28001, Mode: 'tcp', Target: '127.0.0.1:22', Remark: '',
   Username: '', Password: '',
 })
 

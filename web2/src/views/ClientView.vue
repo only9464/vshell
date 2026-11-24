@@ -31,11 +31,32 @@ function ctxAction(key: string) {
   ctxOpen.value = false
   const row = ctxRow.value
   if (!row) return
-  if (key === 'terminal') router.push(`/clientManager/terminal/${row.Id}`)
-  else if (key === 'files') router.push(`/clientManager/files/${row.Id}`)
-  else if (key === 'detail') open(row)
-  else if (key === 'remark') editRemark(row)
-  else if (key === 'delete') remove(row)
+  if (key === 'manage') {
+    // 4.9.3：跳 /clientManager/:id（主机管理，即文件 + 终端入口）
+    router.push(`/clientManager/files/${row.Id}`)
+  } else if (key === 'tunnel') {
+    // 4.9.3：跳 /tunnel/:id
+    router.push(`/tunnel/${row.Id}`)
+  } else if (key === 'delfile') {
+    Modal.confirm({
+      title: '温馨提示',
+      content: `是否确认删除 ID:${row.Id} 客户端进程文件`,
+      onOk: async () => {
+        try { await post('/client/delfile', { id: row.Id }); message.success('删除进程文件成功') }
+        catch { message.error('删除进程文件失败') }
+      },
+    })
+  } else if (key === 'delhost') {
+    Modal.confirm({
+      title: '温馨提示',
+      content: `是否确认下线 ID:${row.Id} 客户端`,
+      onOk: async () => {
+        try { await post('/client/delprocess', { id: row.Id }); message.success('下线成功') }
+        catch { message.error('下线失败') }
+        load()
+      },
+    })
+  }
 }
 const page = ref(1)
 const pageSize = ref(20)
@@ -176,16 +197,24 @@ function remove(row: any) {
       </template>
     </a-table>
 
+    <!-- 右键菜单：文案 / 图标 / 顺序 / 确认框文本全部照 4.9.3 的
+         vBWgKrY3R.js（主机管理 / 隧道 / 删除文件 / 删除主机，前三项仅在线显示） -->
     <a-dropdown :open="ctxOpen" :trigger="[]" @openChange="(v: boolean) => (ctxOpen = v)">
       <span :style="{ position: 'fixed', left: ctxPos.x + 'px', top: ctxPos.y + 'px', width: 1, height: 1 }" />
       <template #overlay>
         <a-menu @click="(e: any) => ctxAction(String(e.key))">
-          <a-menu-item key="terminal"><span class="act i-material-icon-theme:console" />命令控制</a-menu-item>
-          <a-menu-item key="files"><span class="act i-grommet-icons:folder" />文件管理</a-menu-item>
-          <a-menu-item key="detail"><span class="act i-ant-design:field-time" />查看详情</a-menu-item>
-          <a-menu-item key="remark"><span class="act i-ant-design:edit-outlined" />编辑备注</a-menu-item>
-          <a-menu-divider />
-          <a-menu-item key="delete" danger><span class="act i-grommet-icons:trash" />删除主机</a-menu-item>
+          <a-menu-item v-if="ctxRow && ctxRow.IsConnect" key="manage">
+            <span class="act i-grommet-icons:drag" />主机管理
+          </a-menu-item>
+          <a-menu-item v-if="ctxRow && ctxRow.IsConnect" key="tunnel">
+            <span class="act i-fa6-solid:globe" />隧道代理
+          </a-menu-item>
+          <a-menu-item v-if="ctxRow && ctxRow.IsConnect" key="delfile">
+            <span class="act i-grommet-icons:trash" />删除文件
+          </a-menu-item>
+          <a-menu-item key="delhost">
+            <span class="act i-grommet-icons:close" />删除主机
+          </a-menu-item>
         </a-menu>
       </template>
     </a-dropdown>
