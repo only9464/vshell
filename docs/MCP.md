@@ -33,6 +33,29 @@ printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"r
   | ./vshell-server mcp
 ```
 
+## 工具实测矩阵（R137）
+
+本机对着**交付包**（客户端 #1 http / #2 tcp 均在线）逐个调用过：
+
+| 工具 | 结果 |
+|---|---|
+| `dashboard` | 返回 `clientCount/clientNum/...` 全字段 ✅ |
+| `list_clients` | 列出两个客户端（含 vkey/在线状态）✅ |
+| `list_listeners` | 返回监听器（ListenAddr/DisconnectTimeout 等）✅ |
+| `create_listener` | `mode=tcp` 创建并自动启动，端口在听 ✅ |
+| `run_command` | http 与 tcp 客户端都拿到回显（`tcp-alive` / `mcp-tcp-ok`）✅ |
+| `list_files` | `/tmp` 返回真实条目 ✅ |
+| `read_file` | 读回写入内容 `written-by-mcp` ✅ |
+| `write_file` | 目标机落盘，内容一致 ✅ |
+| `upload_file` | `uploaded → /tmp/mcp-up.txt` ✅ |
+| `download_file` | `saved 15 bytes`，内容 `hello-mcp-file` ✅ |
+| `list_tunnels` | 列出隧道配置 ✅ |
+| `start_tunnel` | 建 `:28711 → echo`，连接一次拿到 `ECHO-28437` ✅ |
+| `screenshot` | **环境限制**：`spectacle: exit status 1（Wayland 下无 KWin 混合器）`（见 GAPS §E2）|
+
+13 个工具里 **12 个可用**；`screenshot` 受本机图形会话限制（不是实现问题），
+且错误是原样透传的。
+
 ## 1. 启动
 
 ```bash
