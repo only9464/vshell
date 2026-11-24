@@ -286,3 +286,14 @@ e2e §7v 的隧道与插件断言恢复为**硬失败**（不再是 KNOWN-ISSUE�
 `pending` 且没有 `waiting` 连接时），把"首连刚好撞上客户端重连"这类偶发情况兜住。
 
 复测：`start_tunnel` 之后立刻连 `:28711` → 一次成功拿到 `ECHO-28437`。
+
+### MCP `screenshot` 在本机的实测表现（R137）
+
+调用 `screenshot(client_id=2, local_path=/tmp/mcp-shot.png)` 的实际返回：
+
+```
+screenshot failed: {"code":-1,"message":"ERROR: screenshot failed: spectacle: exit status 1
+（在 Wayland 环境下，Spectacle 需要调用 KDE Plasma 的 KWin 显示特效混合器，但它并不可用…）"}
+```
+
+错误是**原样透传**的（不是被吞掉），所以使用者能立刻看出是环境问题而非工具坏了。
