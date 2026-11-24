@@ -28,6 +28,12 @@ const routes = [
       { path: 'clientManager/index', component: () => import('../views/ClientView.vue') },
       { path: 'clientManager/terminal/:id', component: () => import('../views/TerminalView.vue') },
       { path: 'clientManager/files/:id', component: () => import('../views/FilesView.vue') },
+      // 4.9.3 的独立路由：/filemanager、/terminal（我们历史上把它们挂在
+      // clientManager 下）。这里加别名，两种 URL 都能进同一个页面。
+      { path: 'filemanager/:id', component: () => import('../views/FilesView.vue') },
+      { path: 'filemanager', redirect: '/clientManager/index' },
+      { path: 'terminal/:id', component: () => import('../views/TerminalView.vue') },
+      { path: 'client/:id', redirect: (to: any) => `/clientManager/index` },
       { path: 'listener/index', component: () => import('../views/ListenerView.vue') },
       { path: 'download/index', component: () => import('../views/DownloadView.vue') },
       { path: 'tunnel/index', component: () => import('../views/TunnelView.vue') },
