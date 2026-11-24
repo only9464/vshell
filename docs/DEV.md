@@ -162,3 +162,20 @@ go vet ./...
 | 客户端表格空白 | 字段大小写不符 | R1 已修（输出大写契约字段） |
 | KCP agent 连上但命令没回显 | 帧头未剥/键名不一致 | R1 已修（`decryptWire` + `hsString`）；见 `docs/PROTOCOL.md` §2.2 |
 | `go build ./...` 在 agent 目录留下 `agent` 二进制 | Go 的默认行为 | 用 `go build -o /tmp/agent .` |
+
+## 一条命令跑完全部回归
+
+```bash
+./scripts/full-check.sh          # 门禁 + e2e + ui-check + MCP 冒烟（约 6 分钟）
+FAST=1 ./scripts/full-check.sh   # 只跑门禁 + MCP 冒烟（约 1 分钟）
+REL=/path/to/release ./scripts/full-check.sh   # 指定 MCP 冒烟用的服务端目录
+```
+
+最近一次实测（总耗时 379s）：
+
+```
+release-check  ok   54s
+e2e            ok  155s
+ui-check       ok  169s
+mcp-smoke      ok    1s
+```

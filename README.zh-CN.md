@@ -90,6 +90,8 @@ cd agent && go build -o agent .
 ## 常用命令
 
 ```bash
+./scripts/full-check.sh        # 一条命令跑完全部回归（门禁 + e2e + ui-check + MCP）
+FAST=1 ./scripts/full-check.sh # 只跑门禁与 MCP 冒烟（约 1 分钟）
 ./scripts/release-check.sh     # 发版门禁（构建/vet/测试/竞态/agent/前端/API 对齐）
 ./scripts/e2e.sh               # 端到端：HTTP/KCP/WS/DNS/TCP + 面板契约 + 载荷
 ./scripts/ui-check.sh          # 前端 12 页渲染 + 12 条点击级流程
