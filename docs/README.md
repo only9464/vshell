@@ -12,6 +12,7 @@
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 模块划分、进程结构、数据流、代码地图 | 新加入的开发 |
 | [PROTOCOL.md](PROTOCOL.md) | 线协议：传输帧、KCP 链路、DNS 信道、任务/结果记录 | 改协议、写 agent、做互通测试 |
 | [API.md](API.md) | 面板 HTTP/WS API 契约 + 前端字段契约 | 后端与前端开发者 |
+| [FRONTEND-493-SPEC.md](FRONTEND-493-SPEC.md) | 4.9.3 前端规格自动提取（菜单/路由/列/表单/按钮/接口） |
 | [FRONTEND-493.md](FRONTEND-493.md) | **复刻 4.9.3 前端**：技术栈核实、路由表、web2 结构、逐页移植清单 |
 | [FRONTEND.md](FRONTEND.md) | Vue3 重开发方案（技术选型、目录、页面、联调） | 前端开发者 |
 | [DEV.md](DEV.md) | 构建、运行、调试、测试、端到端联调 | 所有人 |

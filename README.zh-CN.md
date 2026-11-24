@@ -13,6 +13,7 @@
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 模块划分、请求路径、代码地图 |
 | [docs/PROTOCOL.md](docs/PROTOCOL.md) | 线协议：传输帧、KCP 链路、DNS、24 字节记录 |
 | [docs/API.md](docs/API.md) | 面板 HTTP/WS 契约 + 前端字段契约 |
+| [docs/FRONTEND-493-SPEC.md](docs/FRONTEND-493-SPEC.md) | 4.9.3 前端规格（自动提取：菜单/路由/列/表单/按钮/接口） |
 | [docs/FRONTEND-493.md](docs/FRONTEND-493.md) | **按 4.9.3 复刻前端**：技术栈、路由/文案证据、逐页清单 |
 | [docs/FRONTEND.md](docs/FRONTEND.md) | 上一版（Element Plus）前端说明 |
 | [docs/CHECKLIST.md](docs/CHECKLIST.md) | 发版门禁与人工确认项 |
