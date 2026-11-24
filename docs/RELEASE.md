@@ -33,7 +33,7 @@ release-dir/
 ## 1. 构建
 
 ```bash
-# 服务端（内含面板静态资源，前端构建产物在 web/dist）
+# 服务端（内含面板静态资源；新前端产物在 web2/dist，服务端优先托管它）
 (cd web && pnpm install && pnpm build)
 go build -o vshell-server .
 
@@ -42,7 +42,8 @@ go build -o vshell-server .
 ```
 
 > 前端构建产物会随服务端一起被嵌入/托管在 `/app/`（见 `router/router.go`），
-> 因此部署时**只需要带上 `vshell-server`、`web/dist`、`static/`、`conf/`、`db/`**。
+> 因此部署时**只需要带上 `vshell-server`、`web2/dist`（或回退 `web/dist`）、`static/`、`conf/`、`db/`**，
+> 以及下载功能所需的 `stageless/` 模板（`scripts/make-templates.sh` 生成）。
 
 ## 2. 首次启动
 
@@ -88,7 +89,7 @@ CONF
 | 看服务端日志 | 前台运行即可；后台运行时重定向到文件 |
 | 改设置 | 面板「设置」，或直接改 `conf/setting.conf` 后重启 |
 | 备份 | 备份 `conf/`（配置）与 `db/`（SQLite + `tunnels.json`） |
-| 升级 | 替换 `vshell-server`、`web/dist`、`static/`，保留 `conf/` 与 `db/` |
+| 升级 | 替换 `vshell-server`、`web2/dist`（或 `web/dist`）、`static/`、`stageless/`，保留 `conf/` 与 `db/` |
 | 健康检查 | `curl -sk https://127.0.0.1:<port>/health`（HTTP 监听器） |
 | MCP 接入 | `./vshell-server mcp`，见 [MCP.md](MCP.md) |
 

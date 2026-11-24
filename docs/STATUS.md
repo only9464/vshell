@@ -30,27 +30,27 @@
 |---|---|---|
 | 登录 + JWT | ✅ 已实现 | `controllers/login.go:19-53`、`utils/auth.go:192-208`；响应 `{token,userInfo}` 与 SPA 的 `const {token}=a` 匹配 |
 | 注销 | ⚠️ 形式 | JWT 无状态，`engineDelToken` 空实现 |
-| 前端文件页 | 下载（附件直链）/重命名（mv）/新建目录/上传/wget/编辑/删除；空状态用 `el-empty`；mkd​ir 与重命名走 ElMessageBox | `web/src/views/FilesView.vue` |
+| 前端文件页 | 下载（附件直链）/重命名（mv）/新建目录/上传/wget/编辑/删除；空状态用 `el-empty`；mkd​ir 与重命名走 ElMessageBox | `web2/src/views/FilesView.vue`（新前端；`web/` 为上一版对照） |
 | 重启恢复 | `AppStart` 会按持久化状态重新启动监听器（此前重启后显示"运行"但端口没在听） | `controllers/engine.go` |
 | 插件 | 面板 → 服务端 → 目标机执行 → 输出回显全链路可用；内置 `sysinfo.elf` 示例；支持 .elf/.so/.dylib | `controllers/runner.go`、`plugins/README.md` |
-| 截图/屏幕 | 功能链路正常；本机无图形会话导致截屏工具全部失败，页面已给出安装建议（环境限制） | `web/src/views/ScreenshotView.vue`、GAPS §E2 |
+| 截图/屏幕 | 功能链路正常；本机无图形会话导致截屏工具全部失败，页面已给出安装建议（环境限制） | `web2/`（该页已按需求移除）、GAPS §E2 |
 | 列目录错误 | 列目录失败时回错误（`ERROR: open /root: permission denied`），不再静默返回空列表被误认为"空目录" | `controllers/file.go` |
 | 文件写入语义 | 写文件/删除/重命名/新建/改时间改为**等 agent 确认**（`dispatchAndWait`，15s 上限）；任务 `failed` 不再被当成功（`waitTaskResult` 修正） | `controllers/file.go`、`controllers/stream_wait.go` |
 | 概览连接数 | `tcpCount`/`udpCount` 改为真实统计（`Engine.ConnStats`：在线客户端每条连接计 1，dns 客户端计入 UDP） | `c2engine/engine.go`、`controllers/engine.go` |
 | 概览计数 | `/dashboard/info` 的在线数改用 `Engine.OnlineClientCount()`，与列表口径一致（此前因 `limit=0` 返回空切片而恒为 0） | `c2engine/engine.go`、`controllers/engine.go` |
 | 原生 MCP | `vshell-server mcp`：initialize / tools/list(13) / tools/call（dashboard、list_clients、run_command 实跑，含 **TCP 客户端**）全部通过 | `mcp/`、docs/MCP.md §2.1 |
-| TCP 监听 | e2e §7v 固化回归：建监听器→端口探测→agent 上线→命令→**文件列表（total>0 断言）**→**隧道转发**；另已验证**断线自动重连**、浏览器端文件树导航（`/`=26、`/etc`=314）、**上传**（`/api/file/upload` → 目标机落盘 28B、列表可见）与**下载**（`downloadtobrowser` 取 `/etc/hostname` → 5B `kali`）；`Mode: "tcp"` 可用：checkin → poll → 命令执行 → 结果回传全链路通过（客户端 `Tp=tcp`） | `c2engine/tcp_listener.go`、`PROTOCOL §2.6a` |
+| TCP 监听 | **无已知缺陷**（R129 起）：e2e §7v 固化回归：建监听器→端口探测→agent 上线→命令→**文件列表（total>0 断言）**→**隧道转发**；另已验证**断线自动重连**、浏览器端文件树导航（`/`=26、`/etc`=314）、**上传**（`/api/file/upload` → 目标机落盘 28B、列表可见）与**下载**（`downloadtobrowser` 取 `/etc/hostname` → 5B `kali`）；`Mode: "tcp"` 可用：checkin → poll（含丢失重投）→ 命令 → 结果回传 → 隧道 → 插件全链路通过（客户端 `Tp=tcp`） | `c2engine/tcp_listener.go`、`PROTOCOL §2.6a` |
 | 交付包实测 | 隧道数据面（经 agent 转发拿到回包）、上传/读取/下载/删除、插件执行均在交付包上验证通过 | `~/vshell-release`、本轮验证记录 |
 | 交付包 | `~/vshell-release`：服务端 + 前端 + 通用 agent（支持 `-server/-vkey/-salt`）+ 启停脚本 + README；实测起服务→建监听器→agent 上线可用 | `agent/main.go`、`~/vshell-release/` |
-| 前端终端/概览 | 终端控制条（字号/清屏/复制/重连）；概览页最近上线客户端（前 5 台） | `web/src/views/TerminalView.vue`、`DashboardView.vue` |
-| 前端下载/插件页 | 下载页「复制拉取命令」+8 种架构；插件页筛选/空态/输出复制与清空 | `web/src/views/DownloadView.vue`、`PluginView.vue` |
-| 前端仪表盘 | KPI + 运行信息 + 纯 SVG 趋势图（每 2s 采样，保留 30 点）；暗色下 body 背景跟随 | `web/src/views/DashboardView.vue`、`components/Sparkline.vue` |
+| 前端终端/概览 | 终端控制条（字号/清屏/复制/重连）；概览页最近上线客户端（前 5 台） | `web2/src/views/TerminalView.vue`、`DashboardView.vue` |
+| 前端下载/插件页 | 下载页「复制拉取命令」+8 种架构；插件页筛选/空态/输出复制与清空 | `web2/src/views/DownloadView.vue`、`PluginView.vue` |
+| 前端仪表盘 | 与 4.9.3 同构：4 个 KPI（监听总数/在线监听数/客户端总数/在线客户端）+ 系统信息（4 进度条 + TCP/UDP/带宽）+ 配置信息 + 纯 SVG 趋势图（1s 采样，暗色自动换色） | `web2/src/views/DashboardView.vue`、`components/Sparkline.vue` |
 | 前端布局 | 侧边栏可折叠并持久化（窄屏默认折叠）；列表页统一 `#empty` 空态 | `web/src/layouts/BasicLayout.vue`、各列表页 |
-| 前端详情/主题 | 客户端详情抽屉（13 字段 + 在线 + 心跳 + 快捷入口）；暗色主题切换并持久化 | `web/src/views/ClientListView.vue`、`layouts/BasicLayout.vue` |
+| 前端详情/主题 | 客户端详情抽屉 + 列表 OS 图标/心跳着色 + 右键菜单；暗色主题联动 antd `darkAlgorithm` 并持久化 | `web2/src/views/ClientView.vue`、`layout/BasicLayout.vue`、`stores/theme.ts` |
 | 前端表单 | 监听器新建走完整表单流程（label 定位输入框），断言列表出现新 Vkey 且后端存在 | `scripts/ui-check.sh` |
 | 前端终端 | CDP 真实键入 `echo UI_TYPE_OK` 并断言 xterm 回显；验证浏览器↔WebSocket↔agent shell 全链路 | `tools/uiprobe/main.go`、`scripts/ui-check.sh` |
-| 前端点击级 | `tools/uiprobe`（CDP 执行器）+ ui-check.sh：真实填表单登录、点刷新；11 个页面渲染断言 | `tools/uiprobe/main.go`、`scripts/ui-check.sh` |
-| 前端渲染 | `scripts/ui-check.sh`：无头 Chromium 真渲染 dashboard/clients/files/terminal 并断言数据；修掉 files 页字段大小写不匹配（列表整列空白） | `web/src/views/FilesView.vue`、`scripts/ui-check.sh` |
+| 前端点击级 | `tools/uiprobe`（CDP 执行器）+ ui-check.sh：真实填表单登录、点刷新、右键菜单、暗色切换、一键上线弹窗、排序列；**12 个页面渲染断言 + 13 条点击级 + 46 条静态断言** | `tools/uiprobe/main.go`、`scripts/ui-check.sh` |
+| 前端渲染 | `scripts/ui-check.sh`：无头 Chromium 真渲染 12 个页面并断言数据；文件页含文件树、类型图标、右键菜单 | `web2/src/views/FilesView.vue`、`scripts/ui-check.sh` |
 | https 监听器 | 自签证书生成正常；agent 侧补上 `InsecureSkipVerify` 后可上线（e2e §7u） | `agent/main.go`、`scripts/e2e.sh` |
 | 重启持久化 | e2e §7t：建监听器+隧道 → 重启 → 两者仍在（含隧道备注）；`TestAddTunnelKeepsRemark` 覆盖备注回填 | `scripts/e2e.sh`、`controllers/engine.go` |
 | 并发/边界 | e2e §7s：10 并发 list + 5 并发命令、上传 2MiB 成功 / 33MiB 拒绝；CI 增加 `-race` 步骤 | `scripts/e2e.sh`、`.github/workflows/test.yml` |

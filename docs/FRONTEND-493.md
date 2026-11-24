@@ -48,7 +48,7 @@ web2/
 │   └── views/            # 逐页移植（见 §4）
 ```
 
-构建产物由 Go 服务端在 `/app/` 托管（`router/router.go` 读 `web/dist`；
+构建产物由 Go 服务端在 `/app/` 托管（`router/router.go` 优先读 `web2/dist`，回退 `web/dist`；
 切换时把 `web2/dist` 放到该位置，或改指向）。
 
 ## 4. 逐页移植清单

@@ -28,7 +28,7 @@
 | 维度 | 程度 | 说明 |
 |---|---|---|
 | 前端 | ✅ | **Ant Design Vue 新前端**（`web2/`，与 4.9.3 同栈：Vue3 + UnoCSS + Tailwind + antd），12 个页面；菜单/表头/按钮文案取自 4.9.3 打包产物；深色侧栏 + 多标签页签 + 文件树 + 按类型图标 |
-| 后端 | ✅ | **原生 TCP 监听**（首选，e2e 覆盖 checkin/poll/命令/文件/隧道）+ HTTP/HTTPS/KCP/WS/DNS；**61 个 API 端点** |
+| 后端 | ✅ | **原生 TCP 监听**（首选；e2e 覆盖 checkin/poll/命令/文件列表/隧道/插件）+ HTTP/HTTPS/KCP/WS/DNS；**61 个 API 端点**（原版 47 个全部覆盖，另多 14 个复刻端自用） |
 | MCP | ✅ | `vshell-server mcp`：13 个工具，JWT 鉴权（与面板同一套，401 自动重登）；可驱动 http 与 tcp 客户端 |
 | 协议互通 | ⚠️ | 帧/认证/任务记录逐字节对齐；官方 agent 认证+conf 通过，`main` 偶发成功（[GAPS A-1](docs/GAPS.md)） |
 | 交付 | ✅ | `~/vshell-release`：服务端 + 前端 + 通用 agent（`-server/-vkey/-salt`）+ 启停脚本 |
@@ -48,7 +48,7 @@
 | 隧道端口转发 | ✅ | e2e §7v `tcp tunnel ok` |
 | 断线自动重连 | ✅ | 服务端重启后 TCP agent 自动回线（`Reset()` + 重新 checkin） |
 
-**测试**：服务端 264 个测试函数 + agent 78 个 + e2e 130+ 条断言 + ui-check（12 页渲染 + 7 条点击级）；
+**测试**：服务端 194 个测试函数 + agent 78 个 + e2e 150 处断言 + ui-check（12 页渲染 + 13 条点击级 + 46 条静态断言）；
 `./scripts/release-check.sh` 一条命令跑完 9 项门禁。
 
 **按需求不做**（空占位或已删除）：通知（企业微信/钉钉）、OSS 上传、屏幕监控、屏幕截图、许可证；

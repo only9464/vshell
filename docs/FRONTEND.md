@@ -7,7 +7,8 @@
 构建产物由 Go 服务端托管在 **`/app/`**（与原版 SPA `static/` 并存）。
 
 ```bash
-cd web && pnpm install && pnpm build   # 产物 web/dist
+cd web2 && pnpm install && pnpm build   # 产物 web2/dist（当前默认前端）
+cd web  && pnpm install && pnpm build   # 上一版（Element Plus）对照
 go build -o vshell-server . && ./vshell-server
 # 浏览器打开 http://<host>:<port>/app/
 ```
