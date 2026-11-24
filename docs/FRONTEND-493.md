@@ -293,6 +293,21 @@ ui-check 增加「文件树点击切换」断言。
 > **显式注入**；另外 `material-icon-theme` 没有 `folder`/`file`/`excel` 这几个名字，
 > 通用目录用 `folder-base`、通用文件用 `document`。
 
+### 搜索区与行内编辑（R140，按 4.9.3 原文）
+
+`vBWgKrY3R.js` 里的 `searchFormSchema` 与列定义：
+
+```
+搜索表单：关键词(search, Input) + 状态(status, Select：在线=1 / 离线=2)
+列定义：  备注 Remark 带 edit:!0 → 行内编辑，提交到 /client/editremark
+```
+
+复刻端已按此实现：左侧「关键词」输入框 + 「状态」下拉（在线/离线，选中即查询），
+备注列显示虚线下划线、点击弹输入框改名（走 `/client/editremark`）。
+
+实测：`status=1` → total 2（online 2）；`status=2` → total 0；
+`editremark(id=2, "tcp-演示机")` 后列表里能看到该备注。
+
 ### 客户端列表右键菜单（R139，按 4.9.3 原文重做）
 
 来源：`vBWgKrY3R.js`（行 `onContextmenu` → 菜单项数组）。4.9.3 的菜单是**四项**，

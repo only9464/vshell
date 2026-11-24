@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 客户端管理：对齐 4.9.3 的表格列与操作（Ant Design Vue 实现）。
 // 列：ID / 状态 / 主机名 / 用户 / 系统 / 通道 / 外网地址 / 内网 IP / 进程 / 备注 / 操作
-import { onMounted, ref } from 'vue'
+import { h, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import { post } from '../api/http'
@@ -12,6 +12,8 @@ const rows = ref<any[]>([])
 const total = ref(0)
 const online = ref(0)
 const keyword = ref('')
+// 4.9.3 的搜索表单（vBWgKrY3R.js / searchFormSchema）：关键词 + 状态（在线/离线）
+const status = ref<string | undefined>(undefined)
 const selected = ref<any>(null)
 const drawer = ref(false)
 const checkedKeys = ref<number[]>([])
@@ -78,11 +80,31 @@ const columns = [
   { title: '操作', key: 'action', width: 170, fixed: 'right' },
 ]
 
+// 行内编辑备注（4.9.3 的 Remark 列 edit:!0 → /client/editremark）
+function inlineEditRemark(row: any) {
+  let v = row.Remark || ''
+  Modal.confirm({
+    title: `编辑 ID:${row.Id} 的备注`,
+    content: () => h('input', {
+      class: 'ant-input', value: v, style: 'width:100%',
+      onInput: (e: Event) => { v = (e.target as HTMLInputElement).value },
+    }),
+    onOk: async () => {
+      await post('/client/editremark', { id: row.Id, remark: v })
+      message.success('修改成功')
+      load()
+    },
+  })
+}
+
 async function load() {
   loading.value = true
   try {
     // 注意：4.9.3 的业务接口几乎都是 POST（只有少数 GET），这里统一用 post。
-    const res: any = await post('/client/list', { page: page.value, pageSize: pageSize.value, search: keyword.value })
+    const body: any = { page: page.value, pageSize: pageSize.value, search: keyword.value }
+    // 状态：1=在线 2=离线（与 4.9.3 的选项值一致）
+    if (status.value) body.status = Number(status.value)
+    const res: any = await post('/client/list', body)
     rows.value = res?.result?.items || []
     total.value = res?.result?.total || 0
     online.value = res?.result?.clientOnlineCount || 0
@@ -141,8 +163,14 @@ function remove(row: any) {
 <template>
   <a-card :bordered="false">
     <div class="toolbar">
-      <a-input-search v-model:value="keyword" placeholder="搜索主机/用户/备注" style="width: 260px"
-        allow-clear @search="load" @press-enter="load" />
+      <span class="lbl">关键词</span>
+      <a-input v-model:value="keyword" placeholder="主机/用户/备注" style="width: 200px"
+        allow-clear @press-enter="load" />
+      <span class="lbl">状态</span>
+      <a-select v-model:value="status" allow-clear placeholder="全部" style="width: 110px" @change="load">
+        <a-select-option value="1">在线</a-select-option>
+        <a-select-option value="2">离线</a-select-option>
+      </a-select>
       <a-button @click="load">刷新</a-button>
       <a-button danger :disabled="!checkedKeys.length" @click="removeBatch">删除</a-button>
       <span class="mono hint">共 {{ total }} 台，在线 {{ online }}</span>
@@ -175,6 +203,11 @@ function remove(row: any) {
             {{ hbAge(record.PingCheckTime) }}s
           </a-tag>
           <span v-else>-</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'Remark'">
+          <a-tooltip title="点击编辑备注">
+            <span class="editable" @click="inlineEditRemark(record)">{{ record.Remark || '—' }}</span>
+          </a-tooltip>
         </template>
         <template v-else-if="column.dataIndex === 'IsConnect'">
           <a-tag :color="record.IsConnect ? 'green' : 'default'">{{ record.IsConnect ? '在线' : '离线' }}</a-tag>
@@ -250,7 +283,9 @@ function remove(row: any) {
 <style scoped>
 .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
 .hint { color: rgba(0, 0, 0, 0.45); }
+.lbl { color: rgba(0, 0, 0, 0.65); font-size: 13px; }
 .danger { color: #ff4d4f; }
 .os-ico { width: 16px; height: 16px; display: inline-block; vertical-align: -3px; margin-right: 4px; }
+.editable { cursor: text; border-bottom: 1px dashed rgba(0,0,0,.25); }
 .act { width: 14px; height: 14px; display: inline-block; vertical-align: -2px; margin-right: 3px; }
 </style>
