@@ -339,14 +339,20 @@ SEARCH_JS=$(cat <<'JS'
   }
   location.hash = '#/clientManager/index';
   if (!await waitFor(() => document.body.innerText.includes('归属地'), 12000)) return 'SEARCH_FAIL 不在客户端列表';
+  [...document.querySelectorAll('.toolbar button')].find(b => b.innerText.replace(/\s/g,'') === '搜索')?.click();
+  await sleep(500);
+  // 工具栏必须是 4.9.3 的四个按钮（批量删除只在选中时出现，这里断前三个 + 抽屉按钮）
+  const btns = [...document.querySelectorAll('.toolbar button')].map(b => b.innerText.replace(/\s/g,''));
+  const toolbarOK = btns.includes('搜索') && btns.includes('批量选择') && btns.includes('正向连接');
   const labels = [...document.querySelectorAll('.lbl')].map(e => e.innerText.trim());
   const hasEditable = !!document.querySelector('.editable');
   const sel = document.querySelector('.ant-select-selector');
   sel?.dispatchEvent(new MouseEvent('mousedown', {bubbles:true}));
   await sleep(500);
   const opts = [...document.querySelectorAll('.ant-select-item-option-content')].map(e => e.innerText.trim());
-  const ok = labels.includes('关键词') && labels.includes('状态') && hasEditable && opts.includes('在线') && opts.includes('离线');
-  return ok ? 'SEARCH_OK' : 'SEARCH_FAIL ' + JSON.stringify({labels, hasEditable, opts});
+  const ok = toolbarOK && labels.includes('关键词') && labels.includes('状态') && hasEditable
+          && opts.includes('在线') && opts.includes('离线');
+  return ok ? 'SEARCH_OK' : 'SEARCH_FAIL ' + JSON.stringify({btns, labels, hasEditable, opts});
 })()
 JS
 )

@@ -293,6 +293,24 @@ ui-check 增加「文件树点击切换」断言。
 > **显式注入**；另外 `material-icon-theme` 没有 `folder`/`file`/`excel` 这几个名字，
 > 通用目录用 `folder-base`、通用文件用 `document`。
 
+### 客户端工具栏与操作列（R141，按 4.9.3 原文）
+
+`vBWgKrY3R.js` 的 toolbar 与 actionColumn：
+
+```
+工具栏：搜索(primary, ant-design:search) / 批量选择(default, ant-design:select)
+        / 批量删除(仅选中时, color=error, ant-design:delete)
+        / 正向连接(最右, primary, ant-design:plus)
+操作列：行内 2 个（主机管理 grommet-icons:drag、隧道代理 fa-solid:globe，仅在线）
+        + 下拉（删除文件 grommet-icons:trash / 删除主机 grommet-icons:close）
+批量删除确认：「是否确认删除已选中的客户端，包括文件和进程」→ /client/dellist
+```
+
+复刻端已按此实现：搜索栏默认收起（点「搜索」展开，含关键词 + 状态 + 查询/重置）、
+批量选择开关控制勾选框、选中后才出现「批量删除」、最右「正向连接」打开抽屉
+（ebpf / 连接方式 / IP 或域名 / 端口 / WS 地址 / Vkey / 流量加密盐 / 使用代理）。
+操作列改为行内两图标 + 下拉两项。
+
 ### 搜索区与行内编辑（R140，按 4.9.3 原文）
 
 `vBWgKrY3R.js` 里的 `searchFormSchema` 与列定义：

