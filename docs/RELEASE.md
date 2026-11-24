@@ -120,3 +120,19 @@ go test ./...          # 单元/集成测试
   仍未打通（[GAPS A-1](GAPS.md)）。复刻端使用**自己的 agent**（`agent/`）功能完整。
 - **未实现**：需要第三方凭证的通知（企业微信/钉钉）与 OSS 上传/监听；见 [GAPS §F](GAPS.md)。
 - **平台**：只在 Linux 上验证；Windows/macOS 专有功能未适配（按需求约定）。
+
+## 交付包 README（R133 重写）
+
+`~/vshell-release/README.md` 之前写的是旧状态（密码 `admin123`、前端路径 `web/dist`、
+仍列着已按需求移除的"屏幕实时查看/单次截图"）。现已按实际重写并逐条核对：
+
+| README 里的事实 | 实测 |
+|---|---|
+| 账号 `admin` / `123456` | `conf/setting.conf: web_password=123456`，`/api/login` 返回 ok ✅ |
+| 前端 `web2/dist` | 目录存在，`/app/` 由它托管 ✅ |
+| 载荷模板 `stageless/` | 目录存在（缺模板时的报错文案与行为已写入 README）✅ |
+| TCP 传输"无已知缺陷" | e2e §7v 全绿（命令/文件/隧道/插件）✅ |
+| MCP 13 工具 | `scripts/mcp-smoke.sh` 通过 ✅ |
+
+同时把三条容易踩的运维事项写进 README：**同 vkey 只跑一个 agent**、
+`-salt` 必须与监听器一致、模板缺失的补救命令。
