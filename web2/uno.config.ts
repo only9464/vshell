@@ -126,6 +126,10 @@ export default defineConfig({
     'i-devicon:windows8',
     'i-devicon:linux',
     'i-wpf:macos',
+    'i-flat-ui:magic',
+    'i-flat-color-icons:headset',
+    'i-flat-ui:responsive',
+    'i-flat-ui:pc',
   ],
   shortcuts: {
     'flex-col': 'flex flex-col',

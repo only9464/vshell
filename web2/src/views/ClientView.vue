@@ -42,19 +42,19 @@ const pageSize = ref(20)
 
 // 列定义与顺序完全取自 4.9.3 的 bundle（viLthP3eG.js）
 const columns = [
-  { title: 'ID', dataIndex: 'Id', width: 70, sorter: (a: any, b: any) => Number(a.Id || 0) - Number(b.Id || 0) },
-  { title: '备注', dataIndex: 'Remark', width: 110, sorter: (a: any, b: any) => String(a.Remark || '').localeCompare(String(b.Remark || '')) },
-  { title: '连接方式', dataIndex: 'Tp', width: 100 },
-  { title: '外网IP', dataIndex: 'Addr', width: 150, sorter: (a: any, b: any) => String(a.Addr || '').localeCompare(String(b.Addr || '')) },
-  { title: '归属地', dataIndex: 'Location', width: 100, sorter: (a: any, b: any) => String(a.Location || '').localeCompare(String(b.Location || '')) },
-  { title: '内网IP', dataIndex: 'LocalIP', width: 130, sorter: (a: any, b: any) => String(a.LocalIP || '').localeCompare(String(b.LocalIP || '')) },
-  { title: '用户', dataIndex: 'UserName', width: 100 },
-  { title: '主机名', dataIndex: 'HostName', width: 130, sorter: (a: any, b: any) => String(a.HostName || '').localeCompare(String(b.HostName || '')) },
-  { title: '系统类型', dataIndex: 'OsName', width: 100, sorter: (a: any, b: any) => String(a.OsName || '').localeCompare(String(b.OsName || '')) },
-  { title: '进程名', dataIndex: 'ProcessName', width: 120 },
-  { title: '状态', dataIndex: 'IsConnect', width: 90 },
-  { title: '心跳', dataIndex: 'PingCheckTime', width: 160 },
-  { title: '操作', key: 'action', width: 240, fixed: 'right' },
+  { title: 'ID', dataIndex: 'Id', width: 56, sorter: (a: any, b: any) => Number(a.Id || 0) - Number(b.Id || 0) },
+  { title: '备注', dataIndex: 'Remark', width: 90, sorter: (a: any, b: any) => String(a.Remark || '').localeCompare(String(b.Remark || '')) },
+  { title: '连接方式', dataIndex: 'Tp', width: 76 },
+  { title: '外网IP', dataIndex: 'Addr', width: 130, sorter: (a: any, b: any) => String(a.Addr || '').localeCompare(String(b.Addr || '')) },
+  { title: '归属地', dataIndex: 'Location', width: 76, sorter: (a: any, b: any) => String(a.Location || '').localeCompare(String(b.Location || '')) },
+  { title: '内网IP', dataIndex: 'LocalIP', width: 108, sorter: (a: any, b: any) => String(a.LocalIP || '').localeCompare(String(b.LocalIP || '')) },
+  { title: '用户', dataIndex: 'UserName', width: 64 },
+  { title: '主机名', dataIndex: 'HostName', width: 92, sorter: (a: any, b: any) => String(a.HostName || '').localeCompare(String(b.HostName || '')) },
+  { title: '系统类型', dataIndex: 'OsName', width: 96, sorter: (a: any, b: any) => String(a.OsName || '').localeCompare(String(b.OsName || '')) },
+  { title: '进程名', dataIndex: 'ProcessName', width: 88 },
+  { title: '状态', dataIndex: 'IsConnect', width: 56 },
+  { title: '心跳', dataIndex: 'PingCheckTime', width: 64 },
+  { title: '操作', key: 'action', width: 170, fixed: 'right' },
 ]
 
 async function load() {
@@ -164,13 +164,13 @@ function remove(row: any) {
         <template v-else-if="column.key === 'action'">
           <a-space size="small">
             <a-tooltip title="命令控制"><a @click="router.push(`/clientManager/terminal/${record.Id}`)">
-              <span class="act i-material-icon-theme:console" />终端</a></a-tooltip>
+              <span class="act i-material-icon-theme:console" /></a></a-tooltip>
             <a-tooltip title="文件管理"><a @click="router.push(`/clientManager/files/${record.Id}`)">
-              <span class="act i-grommet-icons:folder" />文件</a></a-tooltip>
+              <span class="act i-grommet-icons:folder" /></a></a-tooltip>
             <a-tooltip title="编辑备注"><a @click="editRemark(record)">
-              <span class="act i-ant-design:edit-outlined" />编辑</a></a-tooltip>
+              <span class="act i-ant-design:edit-outlined" /></a></a-tooltip>
             <a-tooltip title="删除主机"><a class="danger" @click="remove(record)">
-              <span class="act i-grommet-icons:trash" />删除</a></a-tooltip>
+              <span class="act i-grommet-icons:trash" /></a></a-tooltip>
           </a-space>
         </template>
       </template>

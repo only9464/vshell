@@ -11,6 +11,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -40,6 +41,9 @@ func main() {
 	typeText := flag.String("type", "", "在 -script 之后向聚焦元素输入这段文本并回车（走 CDP Input 域，真实键盘事件）")
 	netlog := flag.Bool("net", false, "收集页面加载期间的网络请求（URL + 关键请求头）并打印为 JSON")
 	preload := flag.String("preload", "", "在每个新文档加载**之前**执行的 JS（Page.addScriptToEvaluateOnNewDocument），常用来自动登录 / 注入 token")
+	shot := flag.String("shot", "", "把当前视口截图为 PNG 写到该路径（-script 已执行完之后）")
+	shotW := flag.Int("shotw", 1440, "截图视口宽度（配合 -shot，Emulation.setDeviceMetricsOverride）")
+	shotH := flag.Int("shoth", 900, "截图视口高度")
 	flag.Parse()
 
 	cmd := exec.Command(*chrome, "--headless=new", "--disable-gpu", "--no-sandbox",
@@ -120,7 +124,56 @@ func main() {
 		fmt.Println(res2)
 		return
 	}
+	// 截图：先按指定尺寸重排视口，再 Page.captureScreenshot
+	if *shot != "" {
+		_ = call(conn, 30, "Emulation.setDeviceMetricsOverride", map[string]interface{}{
+			"width": *shotW, "height": *shotH, "deviceScaleFactor": 1, "mobile": false,
+		})
+		time.Sleep(800 * time.Millisecond)
+		data, err := captureScreenshot(conn)
+		if err != nil {
+			fail("截图失败: %v", err)
+		}
+		if err := os.WriteFile(*shot, data, 0o644); err != nil {
+			fail("写截图失败: %v", err)
+		}
+		fmt.Fprintf(os.Stderr, "screenshot -> %s (%d bytes)\n", *shot, len(data))
+	}
+
 	fmt.Println(res)
+}
+
+// captureScreenshot 通过 CDP 抓一张 PNG。
+func captureScreenshot(conn *websocket.Conn) ([]byte, error) {
+	req := map[string]interface{}{"id": 31, "method": "Page.captureScreenshot",
+		"params": map[string]interface{}{"format": "png"}}
+	if err := conn.WriteJSON(req); err != nil {
+		return nil, err
+	}
+	for {
+		_, data, err := conn.ReadMessage()
+		if err != nil {
+			return nil, err
+		}
+		var resp struct {
+			ID     int `json:"id"`
+			Result struct {
+				Data string `json:"data"`
+			} `json:"result"`
+			Error *struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		if err := json.Unmarshal(data, &resp); err != nil {
+			continue
+		}
+		if resp.Error != nil {
+			return nil, fmt.Errorf("%s", resp.Error.Message)
+		}
+		if resp.ID == 31 {
+			return base64.StdEncoding.DecodeString(resp.Result.Data)
+		}
+	}
 }
 
 func findPage(base string) target {
