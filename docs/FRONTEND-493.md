@@ -293,6 +293,22 @@ ui-check 增加「文件树点击切换」断言。
 > **显式注入**；另外 `material-icon-theme` 没有 `folder`/`file`/`excel` 这几个名字，
 > 通用目录用 `folder-base`、通用文件用 `document`。
 
+### 客户端列表右键菜单（R139，按 4.9.3 原文重做）
+
+来源：`vBWgKrY3R.js`（行 `onContextmenu` → 菜单项数组）。4.9.3 的菜单是**四项**，
+前三项仅在线时显示（`hidden: !s.IsConnect`）：
+
+| 项 | 图标 | 动作 | 确认框 |
+|---|---|---|---|
+| 主机管理 | `grommet-icons:drag` | 跳 `/clientManager/{id}` | — |
+| 隧道代理 | `fa-solid:globe` | 跳 `/tunnel/{id}` | — |
+| 删除文件 | `grommet-icons:trash` | `POST /client/delfile {id}` | 温馨提示 / 是否确认删除 ID:{id} 客户端进程文件 |
+| 删除主机 | `grommet-icons:close` | `POST /client/delprocess {id}` | 温馨提示 / 是否确认下线 ID:{id} 客户端 |
+
+> 此前放的是「命令控制 / 文件管理 / 查看详情 / 编辑备注 / 删除主机」，与 4.9.3 不符，
+> 已按上表重做（连确认框文案都照抄）。配套补了两条路由：`/clientManager/:id`
+> （主机管理）与 `/tunnel/:id`（隧道页预选该客户端）。
+
 ### 排序列（R111，从 bundle 反推）
 
 4.9.3 的列定义里带 `sorter:!0` 的字段（客户端：ID/备注/外网IP/归属地/内网IP/主机名/系统类型；
