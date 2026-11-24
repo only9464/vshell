@@ -271,6 +271,31 @@ JS
 FCTX_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$FCTX_JS" 2>&1)
 echo "$FCTX_OUT" | grep -q 'FCTX_OK' || fail "文件右键菜单异常: $(echo "$FCTX_OUT" | tail -c 100)"
 
+log "正向客户端：客户端类型只有 windows_amd64 / windows_i386（4.9.3 原文）"
+FWD_JS=$(cat <<'JS'
+(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const waitFor = async (fn, ms) => { const t0=Date.now(); while(Date.now()-t0<ms){ if(fn()) return true; await sleep(300); } return false; };
+  if (document.body.innerText.includes('登录') && document.querySelectorAll('input').length >= 2) {
+    const inputs = [...document.querySelectorAll('input')];
+    const set = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles:true})); };
+    set(inputs[0], 'admin'); set(inputs[1], 'p1');
+    await sleep(300);
+    [...document.querySelectorAll('button')].find(b => b.innerText.replace(/\s/g,'') === '登录')?.click();
+    await waitFor(() => location.hash.includes('/dashboard'), 8000);
+  }
+  location.hash = '#/download/index';
+  if (!await waitFor(() => document.body.innerText.includes('是否UPX压缩'), 12000)) return 'FORWARD_ARCH_FAIL 不在生成页';
+  await sleep(600);
+  const radios = [...document.querySelectorAll('.ant-radio-button-wrapper')].map(e => e.innerText.trim());
+  const ok = radios.length === 2 && radios.includes('windows_amd64') && radios.includes('windows_i386');
+  return ok ? 'FORWARD_ARCH_OK' : 'FORWARD_ARCH_FAIL ' + JSON.stringify(radios);
+})()
+JS
+)
+FWD_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$FWD_JS" 2>&1)
+echo "$FWD_OUT" | grep -q 'FORWARD_ARCH_OK' || fail "正向客户端架构选项不符: $(echo "$FWD_OUT" | tail -c 100)"
+
 log "一键上线命令弹窗（Linux / Windows 两段命令）"
 ONELINER_JS=$(cat <<'JS'
 (async () => {

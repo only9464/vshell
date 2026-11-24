@@ -12,6 +12,9 @@ const form = reactive({
 })
 const arches = ['linux_amd64', 'linux_386', 'linux_arm64', 'linux_arm',
   'windows_amd64', 'windows_386', 'darwin_amd64', 'darwin_arm64']
+// 正向客户端（Windows dll 监听模式）：4.9.3 的「客户端类型」只有这两个选项
+// （v73CBtpUF.js: options = windows_amd64 / windows_i386）
+const forwardArch = ref<'windows_amd64' | 'windows_i386'>('windows_amd64')
 
 async function load() {
   const res: any = await post('/listener/list', { page: 1, pageSize: 100 })
@@ -85,7 +88,7 @@ function downloadForward(ebpf = false) {
         upx: String(form.upx), vkey: form.vkey, salt: form.salt, listen: 'true', ebpf: 'true',
       })
     : downloadURL('/download/listendll', {
-        arch: form.arch, tp: form.tp, host: form.host, port: form.port,
+        arch: forwardArch.value, tp: form.tp, host: form.host, port: form.port,
         vkey: form.vkey, salt: form.salt, upx: String(form.upx),
       })
   location.href = u
@@ -145,6 +148,12 @@ async function copy(kind: 'stageless' | 'listen', platform: 'auto' | 'windows' |
     <a-divider>正向客户端 / ebpf 正向客户端</a-divider>
     <a-alert type="info" show-icon :closable="false" style="margin-bottom: 12px"
       message="正向客户端：Windows dll 监听模式客户端，正向连接上线；ebpf 正向客户端：Linux ebpf 监听模式客户端" />
+    <a-space wrap style="margin-bottom: 12px">
+      <a-radio-group v-model:value="forwardArch">
+        <a-radio-button value="windows_amd64">windows_amd64</a-radio-button>
+        <a-radio-button value="windows_i386">windows_i386</a-radio-button>
+      </a-radio-group>
+    </a-space>
     <a-space wrap style="margin-bottom: 12px">
       <a-button @click="downloadForward(false)">下载正向客户端</a-button>
       <a-button @click="downloadForward(true)">下载 ebpf 正向客户端</a-button>
