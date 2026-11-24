@@ -13,7 +13,7 @@
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 模块划分、请求路径、代码地图 |
 | [docs/PROTOCOL.md](docs/PROTOCOL.md) | 线协议：传输帧、KCP 链路、DNS、24 字节记录 |
 | [docs/API.md](docs/API.md) | 面板 HTTP/WS 契约 + 前端字段契约 |
-| [docs/FRONTEND-493-SPEC.md](docs/FRONTEND-493-SPEC.md) | 4.9.3 前端规格（自动提取：菜单/路由/列/表单/按钮/接口） |
+| [docs/FRONTEND-493-SPEC.md](docs/FRONTEND-493-SPEC.md) | 4.9.3 前端规格（**静态提取 + 动态分析真实 UI**：菜单/路由/列/表单/按钮/接口/布局） |
 | [docs/FRONTEND-493.md](docs/FRONTEND-493.md) | **按 4.9.3 复刻前端**：技术栈、路由/文案证据、逐页清单 |
 | [docs/FRONTEND.md](docs/FRONTEND.md) | 上一版（Element Plus）前端说明 |
 | [docs/CHECKLIST.md](docs/CHECKLIST.md) | 发版门禁与人工确认项 |
@@ -24,11 +24,11 @@
 
 ---
 
-## 一眼看现状（R130）
+## 一眼看现状（R145）
 
 | 维度 | 程度 | 说明 |
 |---|---|---|
-| 前端 | ✅ | **Ant Design Vue 新前端**（`web2/`，与 4.9.3 同栈：Vue3 + UnoCSS + Tailwind + antd），12 个页面；菜单/表头/按钮文案取自 4.9.3 打包产物；深色侧栏 + 多标签页签 + 文件树 + 按类型图标 |
+| 前端 | ✅ | **Ant Design Vue**（`web2/`，与 4.9.3 同栈）：**顶部导航布局**、路由与 4.9.3 逐条一致（`/client/list`、`/listener/list`、`/tunnel/list`、`/download/{index,stage,stageless,listen,ebpf}`…）；菜单/表头/按钮/图标取自打包产物；可关闭页签 + 文件树 + 按类型图标 + 明暗主题 |
 | 后端 | ✅ | **原生 TCP 监听**（首选；e2e 覆盖 checkin/poll/命令/文件列表/隧道/插件）+ HTTP/HTTPS/KCP/WS/DNS；**61 个 API 端点**（原版 47 个全部覆盖，另多 14 个复刻端自用） |
 | MCP | ✅ | `vshell-server mcp`：13 个工具，JWT 鉴权（与面板同一套，401 自动重登）；可驱动 http 与 tcp 客户端 |
 | 协议互通 | ⚠️ | 帧/认证/任务记录逐字节对齐；官方 agent 认证+conf 通过，`main` 偶发成功（[GAPS A-1](docs/GAPS.md)） |

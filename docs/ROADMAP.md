@@ -194,3 +194,35 @@
 | 2026-11-20 | R3 | **四条通道全部打通**（HTTP/KCP/WS/DNS）：agent 补 WebSocket 客户端与 DNS 客户端；DNS 信道对齐 8B agentID 布局、标签分块、TXT base32、结果分片；Basic Auth 与静态服务对齐原版 |
 | 2026-11-20 | R3 | agent 新增 WebSocket 传输（ws/wss）并进 e2e；Basic Auth 与原版逐字对齐（仅保护真实静态文件，未知路径 404）；静态服务改为精确匹配（/→302 /index.html，无 SPA 回退）；修复 router 测试的 SQLite 清理抖动 |
 | 2026-11-20 | R2 | 接入**活体原版 4.9.3** 做黑盒对照：`scripts/probe-original.sh` + `testdata/original/` + `controllers/contract_test.go`；登录/监听器/隧道/客户端/文件/设置/仪表盘/载荷错误文案逐项对齐；dump 原版 SQLite 确认 schema 逐列一致 |
+| 2026-11-22 | R71 | **前端换代**：新增 `web2/`（Vue3 + Ant Design Vue + UnoCSS + Tailwind，与 4.9.3 同栈），服务端 `/app/` 优先托管它；`web/`（Element Plus）保留为回退 |
+| 2026-11-22 | R74 | **TCP 原生监听器**：`c2engine/tcp_listener.go`（checkin / task_poll / result 三类帧），`Mode: "tcp"` 可用；e2e §7v 固化 |
+| 2026-11-22 | R78 | **仪表盘图标对齐**：接入 iconify `flat-ui` / `flat-color-icons`，4 张 KPI 卡使用 4.9.3 同款图标 |
+| 2026-11-22 | R79 | **登录页对齐**：vben 分栏布局 + 4.9.3 占位文案（请输入账号/请输入密码/记住我/忘记密码?） |
+| 2026-11-22 | R80 | **菜单图标 iconify 化**：8 项菜单换 4.9.3 bundle 中出现过的图标；踩到「动态类名需 safelist」「presetIcons 用 mask-image」两坑 |
+| 2026-11-22 | R81–R82 | **文件列表图标**：material-icon-theme（按扩展名 + 按特例文件名：Dockerfile/README/package.json…），目录用 `folder-*` |
+| 2026-11-22 | R83 | **文件树**：自实现懒加载目录树（点击目录切换、默认展开根），替代 antd Tree 以规避 `@select` 不触发 |
+| 2026-11-22 | R88–R89 | **右键菜单**：客户端列表与文件页均支持右键；终端页加「复制全部 / 保存日志」 |
+| 2026-11-22 | R90–R91 | **仪表盘按 4.9.3 重构**：KPI/系统信息/配置信息三组字段与 1s 轮询；`tcpCount/udpCount` 改为真实统计（`Engine.ConnStats`） |
+| 2026-11-22 | R92–R93 | **设置页 / 监听页按 bundle 重写**：钉钉 token·key_word·微信 wx_key；监听 8 列 + 11 项表单（含 ws连接地址 / NS域名） |
+| 2026-11-22 | R94–R96 | **客户端列表 / 隧道页 / 文件页对齐**：12 列顺序、10 列隧道 + RadioButtonGroup、新建文件 / Wget下载文件 / 修改时间 / 权限列 |
+| 2026-11-22 | R97–R98 | **插件页重构 + 一键上线打通**：`/slt`·`/slw`·`/swt`·`/sww` 四个端点，实测 `curl ... | sh` 后新客户端上线 |
+| 2026-11-22 | R99 | **载荷下载修复**：新增 `scripts/make-templates.sh`（交付包此前缺 `stageless/` 模板，下载必失败）；修 `poServerURL` 漏写 `tcp://` 前缀（tcp 载荷 checkin EOF） |
+| 2026-11-22 | R101 | **客户端生成四区块接线**：Stage / 正向客户端(`listendll`，id 改可选) / ebpf 正向客户端按 4.9.3 的 URL 与参数 |
+| 2026-11-22 | R102–R103 | **暗色主题真正生效**（`data-theme` + antd `darkAlgorithm`）；趋势图描边随主题切换；关于页补真实能力说明 |
+| 2026-11-22 | R104–R105 | **客户端列表渲染器**：OS 图标（devicon/wpf）、心跳「<60 绿否则红」；仪表盘补 4 个进度条 |
+| 2026-11-22 | R106 | **仪表盘三卡片结构**：PortCard（标题=统计项、大数字在左、40px 图标在右）/ SystemCard / ConfigCard |
+| 2026-11-22 | R107–R108 | 页签栏 vben 观感；中文本地化（`zh_CN` locale，空态「暂无数据」）与表单校验（`help` 会挡校验文案的坑） |
+| 2026-11-22 | R110–R111 | ui-check 自愈（agent 掉线重启）+ 列排序对齐（客户端 7 列、监听 5 列、隧道 5 列） |
+| 2026-11-23 | R112–R113 | **MCP 冒烟脚本** `scripts/mcp-smoke.sh`；MCP 鉴权失败改为可读错误（不再空白 401） |
+| 2026-11-23 | R114–R116 | 一键上线命令改弹窗（Linux/Windows 两段）；TCP 任务改为「取出即标记已下发」+ 断线重连（`Reset()` + 重新 checkin） |
+| 2026-11-23 | R117–R119 | **TCP 文件列表确认修好**（`/`=26、`/tmp`=1198、`/etc`=314）；e2e 加断言；上传/下载验收（3MB md5 一致） |
+| 2026-11-23 | R120–R121 | **单执行者约束**（同 vkey 多 agent 会「假成功」，按 PID 判重）+ 文件写操作等 agent 确认（`waitTaskResult` 不再把 failed 当成功） |
+| 2026-11-23 | R122–R123 | TCP 帧上限 32MB（插件 base64 2.2MB 曾被 1MB 截断）；列目录失败回错误而非假装空目录 |
+| 2026-11-24 | R127–R129 | **TCP 隧道打通**：根因是轮询不刷新在线位 → 巡检判离线 → `tunnel_open` 发不出；另加「dispatched 超 8s 重投」兜底 |
+| 2026-11-24 | R130–R134 | **文档全量校对**：README/STATUS/MCP/RELEASE 数字与路径按实际修正；交付包 README 重写；`scripts/full-check.sh` 一键全量回归（实测 379s 全绿） |
+| 2026-11-24 | R135–R137 | 路由别名、MCP 13 工具实测矩阵（12 可用）、隧道首连补发 `tunnel_open` |
+| 2026-11-24 | R139–R142 | **按 bundle 原文重做客户端列表**：右键菜单四项（主机管理/隧道代理/删除文件/删除主机）、搜索区（关键词+状态）、备注行内编辑、工具栏（搜索/批量选择/批量删除/正向连接）、操作列（行内两项+下拉） |
+| 2026-11-24 | R143 | **全量解析产物**：`scripts/extract-fe-spec.py` 提取路由/菜单/列/表单/按钮/接口 → `docs/FRONTEND-493-SPEC.md`；菜单按 orderNo/文案/图标逐项还原 |
+| 2026-11-24 | R144 | **动态分析打通**：`scripts/serve-493.py` 本地伺服 static + 代理 `/api` 到真实实例，Chromium 里第一次渲染出 4.9.3 真实 UI 并逐页截图 |
+| 2026-11-24 | R145 | **顶部导航布局 + 路由逐条对齐**：布局改 header 横排菜单 + 可关闭页签；仪表盘左配置右系统；路由改为 `/client/list`、`/listener/list`、`/tunnel/list`、`/download/*` 等原版路径（旧路径重定向） |
+| 2026-11-24 | R146 | **阶段收工**：文档全量同步（README/STATUS/FRONTEND-493/SPEC/本表）；下一步起点见 [GAPS §N](GAPS.md) |

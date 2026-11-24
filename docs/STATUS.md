@@ -34,6 +34,8 @@
 | 重启恢复 | `AppStart` 会按持久化状态重新启动监听器（此前重启后显示"运行"但端口没在听） | `controllers/engine.go` |
 | 插件 | 面板 → 服务端 → 目标机执行 → 输出回显全链路可用；内置 `sysinfo.elf` 示例；支持 .elf/.so/.dylib | `controllers/runner.go`、`plugins/README.md` |
 | 截图/屏幕 | 功能链路正常；本机无图形会话导致截屏工具全部失败，页面已给出安装建议（环境限制） | `web2/`（该页已按需求移除）、GAPS §E2 |
+| 布局 | **顶部导航**（header 横排 8 项菜单 + 可关闭页签），按 4.9.3 真实 UI 截图重做；仪表盘左「配置信息」右「系统信息」 | `web2/src/layout/BasicLayout.vue`、`DashboardView.vue` |
+| 路由 | 与 4.9.3 逐条一致：`/client/list`、`/clientManager/:id`、`/listener/list`、`/download/{index,stage,stageless,listen,ebpf}`、`/terminal/:id`、`/filemanager/:id`、`/pluginrunner/:id`、`/tunnel/list`、`/setting/index`、`/about/index`、`/loginSSO/:token`；旧路径全部重定向 | `web2/src/router/index.ts` |
 | 列目录错误 | 列目录失败时回错误（`ERROR: open /root: permission denied`），不再静默返回空列表被误认为"空目录" | `controllers/file.go` |
 | 文件写入语义 | 写文件/删除/重命名/新建/改时间改为**等 agent 确认**（`dispatchAndWait`，15s 上限）；任务 `failed` 不再被当成功（`waitTaskResult` 修正） | `controllers/file.go`、`controllers/stream_wait.go` |
 | 概览连接数 | `tcpCount`/`udpCount` 改为真实统计（`Engine.ConnStats`：在线客户端每条连接计 1，dns 客户端计入 UDP） | `c2engine/engine.go`、`controllers/engine.go` |

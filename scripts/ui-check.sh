@@ -536,7 +536,7 @@ JS
 CLICK_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$CLICK_JS" 2>&1)
 echo "$CLICK_OUT" | grep -q "$(hostname)" || fail "客户端页刷新后没有主机名: $(echo "$CLICK_OUT" | head -c 200)"
 
-log "点击级：侧边栏折叠（宽度 200px → 64px，选择持久化）"
+log "点击级：顶部菜单切换（4.9.3 是顶部导航，没有侧栏折叠）"
 NAV_JS=$(cat <<'JS'
 (async () => {
   const waitFor = async (fn, ms) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (fn()) return true; await new Promise(r => setTimeout(r, 250)); } return false; };
@@ -548,26 +548,17 @@ NAV_JS=$(cat <<'JS'
     [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
-  const aside = document.querySelector('.ant-layout-sider');
-  if (!aside) return 'NO_ASIDE';
-  const before = aside.getBoundingClientRect().width;
-  const btn = document.querySelector('[data-test="nav-toggle"]');
-  if (!btn) return 'NO_NAV_BTN';
-  btn.click();
-  await new Promise(r => setTimeout(r, 500));
-  const after = aside.getBoundingClientRect().width;
-  const stored = localStorage.getItem('vshell.nav');
-  // 无头浏览器窗口较窄（800px），<900px 时侧栏默认折叠，所以点击是"展开"。
-  // 断言宽度确实变化且状态被记住即可。
-  const expectState = after < before ? 'collapsed' : 'expanded';
-  return after !== before && stored === expectState
-    ? `NAV_OK ${Math.round(before)}→${Math.round(after)} ${stored}`
-    : `NAV_FAIL ${before}→${after} stored=${stored}`;
+  const items = [...document.querySelectorAll('.nav-item')];
+  const target = items.find(e => e.innerText.replace(/\s/g, '') === '客户端管理');
+  if (!target) return 'NO_NAV_ITEM';
+  target.click();
+  const ok = await waitFor(() => location.hash.includes('/client/list'), 6000);
+  return ok ? 'NAV_OK ' + location.hash : 'NAV_FAIL ' + location.hash;
 })()
 JS
 )
 NAV_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$NAV_JS" 2>&1)
-echo "$NAV_OUT" | grep -q 'NAV_OK' || fail "侧边栏折叠异常: $(echo "$NAV_OUT" | tail -c 160)"
+echo "$NAV_OUT" | grep -q 'NAV_OK' || fail "顶部菜单切换异常: $(echo "$NAV_OUT" | tail -c 160)"
 
 log "点击级：暗色主题下 body 背景跟随（避免白底黑字割裂）"
 DARKBG_JS=$(cat <<'JS'
