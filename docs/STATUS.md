@@ -34,6 +34,8 @@
 | 重启恢复 | `AppStart` 会按持久化状态重新启动监听器（此前重启后显示"运行"但端口没在听） | `controllers/engine.go` |
 | 插件 | 面板 → 服务端 → 目标机执行 → 输出回显全链路可用；内置 `sysinfo.elf` 示例；支持 .elf/.so/.dylib | `controllers/runner.go`、`plugins/README.md` |
 | 截图/屏幕 | 功能链路正常；本机无图形会话导致截屏工具全部失败，页面已给出安装建议（环境限制） | `web2/`（该页已按需求移除）、GAPS §E2 |
+| 数据库 | **SQLite `db/data.db`**（`SQLite format 3`），驱动用纯 Go 的 `modernc.org/sqlite`；4 张表 clients/hosts/listeners/tunnels 与原版**逐列一致**（22/23/15/25 列，列名/顺序/类型/默认值 0 差异） | `c2engine/storage.go`（建表语句由 `FUN_011aef60` 解出） |
+| 数据库互通 | 实测把 4.9.3 的 `db/data.db`(+`-wal`/`-shm`) 直接交给复刻端，能读出它的监听器记录（`[(6,'tcp','0.0.0.0:65530')]`） | 临时实例 :18711 |
 | 布局 | **顶部导航**（header 横排 8 项菜单 + 可关闭页签），按 4.9.3 真实 UI 截图重做；仪表盘左「配置信息」右「系统信息」 | `web2/src/layout/BasicLayout.vue`、`DashboardView.vue` |
 | 路由 | 与 4.9.3 逐条一致：`/client/list`、`/clientManager/:id`、`/listener/list`、`/download/{index,stage,stageless,listen,ebpf}`、`/terminal/:id`、`/filemanager/:id`、`/pluginrunner/:id`、`/tunnel/list`、`/setting/index`、`/about/index`、`/loginSSO/:token`；旧路径全部重定向 | `web2/src/router/index.ts` |
 | 列目录错误 | 列目录失败时回错误（`ERROR: open /root: permission denied`），不再静默返回空列表被误认为"空目录" | `controllers/file.go` |

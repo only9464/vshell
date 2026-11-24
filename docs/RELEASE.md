@@ -156,3 +156,18 @@ go test ./...          # 单元/集成测试
 
 同时验证了 README 里那条告警是真的：**同一 vkey 再起第二个 agent 会被拒绝**
 （`duplicate agent for this client`），换一个 vkey 的监听器就正常。
+
+## 数据库与备份（SQLite，与 4.9.3 同构）
+
+- 文件：`db/data.db`（`SQLite format 3`），4 张表 `clients/hosts/listeners/tunnels`，
+  列名/顺序/类型/默认值与原版逐列一致（原版建表语句由 `FUN_011aef60` 解出）
+- 驱动：纯 Go 的 `modernc.org/sqlite`（无 cgo），文件格式标准，**可与原版互换**
+  （实测把原版的 `data.db` 交给复刻端能直接读出监听器记录）
+- ⚠️ **备份要带上 WAL**：原版与复刻端都用 WAL 模式，最新数据可能在
+  `data.db-wal` / `data.db-shm` 里；只拷 `data.db` 会丢数据（我第一次就这么丢了）
+
+```bash
+# 备份：先 checkpoint 再拷，或三个文件一起拷
+sqlite3 db/data.db 'PRAGMA wal_checkpoint(TRUNCATE);'
+cp db/data.db* /backup/
+```
