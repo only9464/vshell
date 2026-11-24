@@ -1,9 +1,11 @@
 <script setup lang="ts">
-// 布局对齐 4.9.3（vben-admin 风格）：
-// 深色 Sider（#001529，可折叠）+ Header（折叠/面包屑/主题/用户）+ 页签栏 + 内容区。
+// 布局按 4.9.3 的真实界面重做（通过 scripts/serve-493.py 跑起来截图确认）：
+//   顶部 header：logo + 管理平台 | 横排菜单 | 明暗/语言/admin/设置/全屏
+//   第二行：可关闭的页签（右侧 刷新 / 更多）
+//   内容区
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { CloseOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons-vue'
+import { CloseOutlined, ReloadOutlined, SettingOutlined, ExpandOutlined, TranslationOutlined } from '@ant-design/icons-vue'
 import { menus } from '../router'
 import { useAuthStore } from '../stores/auth'
 import { isDark, toggleDark } from '../stores/theme'
@@ -12,146 +14,133 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 
-const collapsed = ref(localStorage.getItem('vshell.nav') === 'collapsed')
-function toggleNav() {
-  collapsed.value = !collapsed.value
-  localStorage.setItem('vshell.nav', collapsed.value ? 'collapsed' : 'expanded')
-}
-
-// ---- 页签栏（vben 的多标签页）：按访问顺序记录，可关闭 ----
+// ---- 页签：按访问顺序记录，可关闭（4.9.3 的 header 下方那一条）----
 type Tab = { path: string; title: string }
-const tabs = ref<Tab[]>(
-  JSON.parse(sessionStorage.getItem('vshell.tabs') || '[]') as Tab[],
-)
+const tabs = ref<Tab[]>(JSON.parse(sessionStorage.getItem('vshell.tabs') || '[]') as Tab[])
+const homeTab: Tab = { path: '/dashboard/index', title: '仪表盘' }
+if (!tabs.value.length) tabs.value = [homeTab]
 
-const titleOf = (path: string) => {
-  const hit = menus.find((m) => path.startsWith(m.path.split('/').slice(0, 2).join('/')))
-  if (hit) return hit.title
-  if (path.includes('/terminal/')) return '终端'
-  if (path.includes('/files/')) return '文件管理'
-  if (path.startsWith('/login')) return '登录'
-  return path
+function titleOf(path: string) {
+  if (path.startsWith('/clientManager/files') || path.startsWith('/filemanager/')) return '文件管理'
+  if (path.startsWith('/clientManager/terminal') || path.startsWith('/terminal/')) return '命令控制'
+  if (path.startsWith('/tunnel/')) return '隧道代理'
+  const hit = menus.find((m) => path.startsWith(m.path.replace('/index', '').replace('/list', '')))
+  return hit ? hit.title : path
 }
 
-watch(
-  () => route.path,
-  (p) => {
-    if (p === '/' || p.startsWith('/login')) return
-    if (!tabs.value.some((t) => t.path === p)) {
-      tabs.value.push({ path: p, title: titleOf(p) })
-      sessionStorage.setItem('vshell.tabs', JSON.stringify(tabs.value))
-    }
-  },
-  { immediate: true },
-)
+watch(() => route.path, (p) => {
+  if (p === '/' || p.startsWith('/login')) return
+  if (!tabs.value.some((t) => t.path === p)) {
+    tabs.value.push({ path: p, title: titleOf(p) })
+    sessionStorage.setItem('vshell.tabs', JSON.stringify(tabs.value))
+  }
+}, { immediate: true })
 
 function closeTab(path: string) {
   const idx = tabs.value.findIndex((t) => t.path === path)
   if (idx < 0) return
   tabs.value.splice(idx, 1)
+  if (!tabs.value.length) tabs.value = [homeTab]
   sessionStorage.setItem('vshell.tabs', JSON.stringify(tabs.value))
-  if (route.path === path) {
-    const next = tabs.value[idx] || tabs.value[idx - 1] || { path: '/dashboard/index' }
-    router.push(next.path)
-  }
+  if (route.path === path) router.push((tabs.value[idx] || tabs.value[idx - 1] || homeTab).path)
 }
 
-// 子页面（/clientManager/terminal/:id、/clientManager/files/:id）也要让"客户端"菜单保持高亮
-const current = computed(() => menus.find((m) => route.path.startsWith(m.path.split('/').slice(0, 2).join('/'))) || menus[0])
-const selectedKeys = computed(() => [String(current.value.path)])
-const openKeys = computed(() => [String(current.value.path.split('/')[1])])
+// 当前高亮：子页面让父菜单高亮
+const activeKey = computed(() => {
+  const p = route.path
+  if (p.startsWith('/clientManager')) return '/client/list'
+  if (p.startsWith('/filemanager')) return '/filemanager/index'
+  if (p.startsWith('/terminal')) return '/terminal/index'
+  if (p.startsWith('/tunnel') || p.startsWith('/tunnel/list')) return '/tunnel/list'
+  return p
+})
 
-// 主题状态放到 store，App.vue 的 config-provider 会跟着切暗色算法
-const dark = isDark
-function toggleTheme() { toggleDark() }
+function toggleFullscreen() {
+  if (document.fullscreenElement) document.exitFullscreen()
+  else document.documentElement.requestFullscreen()
+}
 
-function onUserMenu({ key }: { key: string }) {
-  if (key === 'logout') {
-    auth.logout()
-    sessionStorage.removeItem('vshell.tabs')
-    router.push('/login')
-  }
+function logout() {
+  auth.logout?.()
+  sessionStorage.removeItem('vshell.tabs')
+  router.replace('/login')
 }
 </script>
 
 <template>
-  <a-layout style="height: 100%">
-    <a-layout-sider
-      :collapsed="collapsed" :width="210" :collapsed-width="64" collapsible
-      :trigger="null" theme="dark" class="sider" :style="{ background: '#001529' }"
-    >
-      <div class="logo">
-        <span class="logo-mark">VS</span>
-        <span v-show="!collapsed" class="logo-text">管理平台</span>
+  <div class="shell">
+    <!-- header：logo + 标题 | 横排菜单 | 右侧图标组 -->
+    <header class="header">
+      <div class="brand">
+        <span class="logo">VS</span>
+        <span class="brand-title">管理平台</span>
       </div>
-      <a-menu
-        v-model:selectedKeys="selectedKeys" :open-keys="openKeys" theme="dark" mode="inline"
-        :style="{ background: 'transparent' }" @click="(e: any) => router.push(String(e.key))"
-      >
-        <a-menu-item v-for="m in menus" :key="m.path">
-          <span class="menu-ico" :class="`i-${m.icon}`" />
+      <nav class="nav">
+        <a v-for="m in menus" :key="m.path" class="nav-item" :class="{ active: activeKey === m.path }"
+          @click="router.push(m.path)">
+          <span v-if="m.icon" class="nav-ico" :class="`i-${m.icon}`" />
           <span>{{ m.title }}</span>
-        </a-menu-item>
-      </a-menu>
-    </a-layout-sider>
+        </a>
+      </nav>
+      <div class="actions">
+        <a-tooltip :title="isDark ? '亮色主题' : '黑暗主题'">
+          <a class="icon-btn" @click="toggleDark"><span class="act i-ant-design:bulb-outlined" /></a>
+        </a-tooltip>
+        <a-tooltip title="语言"><a class="icon-btn"><TranslationOutlined /></a></a-tooltip>
+        <span class="user">{{ auth.username || 'admin' }}</span>
+        <a-tooltip title="设置"><a class="icon-btn" @click="router.push('/setting/index')"><SettingOutlined /></a></a-tooltip>
+        <a-tooltip title="全屏"><a class="icon-btn" @click="toggleFullscreen"><ExpandOutlined /></a></a-tooltip>
+        <a-tooltip title="退出"><a class="icon-btn" @click="logout"><CloseOutlined /></a></a-tooltip>
+      </div>
+    </header>
 
-    <a-layout>
-      <a-header class="header">
-        <span data-test="nav-toggle" class="trigger" @click="toggleNav">
-          <component :is="collapsed ? MenuUnfoldOutlined : MenuFoldOutlined" />
-        </span>
-        <a-breadcrumb class="crumb">
-          <a-breadcrumb-item>首页</a-breadcrumb-item>
-          <a-breadcrumb-item>{{ current.title }}</a-breadcrumb-item>
-        </a-breadcrumb>
-        <div class="spacer" />
-        <a-button type="text" @click="toggleTheme">{{ dark ? '亮色主题' : '黑暗主题' }}</a-button>
-        <a-dropdown>
-          <a class="user" @click.prevent>{{ auth.username || 'admin' }}</a>
-          <template #overlay>
-            <a-menu @click="onUserMenu">
-              <a-menu-item key="logout">退出登录</a-menu-item>
-            </a-menu>
-          </template>
-        </a-dropdown>
-      </a-header>
-
-      <!-- 页签栏（对齐 vben 的多标签） -->
-      <div class="tabs">
-        <span
-          v-for="t in tabs" :key="t.path" class="tab" :class="{ active: route.path === t.path }"
-          @click="router.push(t.path)"
-        >
+    <!-- 页签行 -->
+    <div class="tabs">
+      <div class="tab-list">
+        <span v-for="t in tabs" :key="t.path" class="tab" :class="{ active: route.path === t.path }"
+          @click="router.push(t.path)">
+          <span class="tab-ico" :class="`i-${(menus.find(m => t.path.startsWith(m.path.replace('/index',''))) || {}).icon || 'ant-design:file-outlined'}`" />
           {{ t.title }}
           <CloseOutlined class="tab-close" @click.stop="closeTab(t.path)" />
         </span>
       </div>
+      <div class="tab-tools">
+        <a class="icon-btn" @click="router.go(0)"><ReloadOutlined /></a>
+        <a class="icon-btn"><span class="act i-ant-design:ellipsis-outlined" /></a>
+      </div>
+    </div>
 
-      <a-layout-content class="content">
-        <router-view />
-      </a-layout-content>
-    </a-layout>
-  </a-layout>
+    <main class="content">
+      <router-view />
+    </main>
+  </div>
 </template>
 
 <style scoped>
-.sider { overflow: auto; }
-.logo { height: 56px; display: flex; align-items: center; gap: 8px; padding: 0 16px; color: #fff; }
-.menu-ico { width: 16px; height: 16px; display: inline-block; margin-right: 8px; vertical-align: -3px; }
-.logo-mark { width: 26px; height: 26px; border-radius: 6px; background: #1677ff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
-.logo-text { font-weight: 600; letter-spacing: 1px; white-space: nowrap; }
-.header { display: flex; align-items: center; gap: 12px; background: var(--vshell-header-bg, #fff); padding: 0 16px; height: 56px; line-height: 56px; border-bottom: 1px solid #f0f0f0; }
-.trigger { font-size: 18px; cursor: pointer; display: inline-flex; align-items: center; }
-.crumb { margin-left: 4px; }
-.spacer { flex: 1; }
-.user { color: rgba(0, 0, 0, 0.85); }
-/* 页签栏对齐 vben：28px 高、激活项浅蓝底 + 蓝字、hover 深一档 */
-.tabs { display: flex; gap: 6px; padding: 6px 12px; background: var(--ant-color-bg-container, #fff); border-bottom: 1px solid var(--ant-color-border-split, #f0f0f0); overflow-x: auto; }
-.tab { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; font-size: 12px; border: 1px solid var(--ant-color-border, #e5e7eb); border-radius: 4px; background: transparent; cursor: pointer; white-space: nowrap; transition: all .15s; }
-.tab:hover { color: #1677ff; border-color: #1677ff; }
-.tab.active { background: rgba(22, 119, 255, .1); color: #1677ff; border-color: #1677ff; }
-.tab-close { font-size: 10px; opacity: .35; }
-.tab:hover .tab-close, .tab.active .tab-close { opacity: .8; }
-.tab-close:hover { opacity: 1; color: #ff4d4f; }
-.content { padding: 16px; overflow: auto; background: #f5f5f5; }
+.shell { display: flex; flex-direction: column; height: 100vh; background: var(--ant-color-bg-layout, #f0f2f5); }
+/* header */
+.header { display: flex; align-items: center; height: 48px; padding: 0 12px; background: var(--ant-color-bg-container, #fff); border-bottom: 1px solid var(--ant-color-border-split, #f0f0f0); }
+.brand { display: flex; align-items: center; gap: 8px; width: 168px; }
+.logo { width: 28px; height: 28px; border-radius: 6px; background: #1677ff; color: #fff; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+.brand-title { font-size: 15px; font-weight: 600; }
+.nav { display: flex; align-items: center; gap: 4px; flex: 1; overflow-x: auto; }
+.nav-item { display: inline-flex; align-items: center; gap: 6px; height: 48px; padding: 0 12px; font-size: 14px; color: var(--ant-color-text, rgba(0,0,0,.85)); cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; }
+.nav-item:hover { color: #1677ff; }
+.nav-item.active { color: #1677ff; border-bottom-color: #1677ff; }
+.nav-ico { width: 16px; height: 16px; display: inline-block; }
+.actions { display: flex; align-items: center; gap: 6px; }
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; cursor: pointer; color: var(--ant-color-text-secondary, rgba(0,0,0,.65)); }
+.icon-btn:hover { background: rgba(0,0,0,.04); color: #1677ff; }
+.act { width: 16px; height: 16px; display: inline-block; }
+.user { font-size: 13px; padding: 0 4px; color: var(--ant-color-text, rgba(0,0,0,.85)); }
+/* tabs */
+.tabs { display: flex; align-items: center; height: 36px; padding: 0 8px; background: var(--ant-color-bg-container, #fff); border-bottom: 1px solid var(--ant-color-border-split, #f0f0f0); }
+.tab-list { display: flex; align-items: center; gap: 6px; flex: 1; overflow-x: auto; }
+.tab { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px; font-size: 12px; color: #1677ff; background: rgba(22,119,255,.08); border-radius: 3px; cursor: pointer; white-space: nowrap; }
+.tab.active { background: #1677ff; color: #fff; }
+.tab-ico { width: 12px; height: 12px; display: inline-block; }
+.tab-close { font-size: 10px; opacity: .7; }
+.tab-tools { display: flex; align-items: center; gap: 4px; }
+/* content */
+.content { flex: 1; overflow: auto; padding: 12px; }
 </style>

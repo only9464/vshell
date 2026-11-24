@@ -88,6 +88,13 @@ onBeforeUnmount(() => timer && window.clearInterval(timer))
     <!-- 系统信息 / 配置信息：4.9.3 的 SystemCard + ConfigCard，行内 key 左、value 右 -->
     <a-row :gutter="[16, 16]" style="margin-top: 16px">
       <a-col :xs="24" :lg="12">
+        <a-card size="small" title="配置信息">
+          <div v-for="it in cfgInfo" :key="it.key" class="kv-row">
+            <span>{{ it.key }}</span><span class="mono">{{ it.value }}</span>
+          </div>
+        </a-card>
+      </a-col>
+      <a-col :xs="24" :lg="12">
         <a-card size="small" title="系统信息">
           <div class="meter"><span>处理器</span><a-progress :percent="Math.round(Number(info.cpu) || 0)" size="small" status="active" /></div>
           <div class="meter"><span>磁盘</span><a-progress :percent="Math.round(Number(info.disk) || 0)" size="small" status="active" /></div>
@@ -98,35 +105,8 @@ onBeforeUnmount(() => timer && window.clearInterval(timer))
           </div>
         </a-card>
       </a-col>
-      <a-col :xs="24" :lg="12">
-        <a-card size="small" title="配置信息">
-          <div v-for="it in cfgInfo" :key="it.key" class="kv-row">
-            <span>{{ it.key }}</span><span class="mono">{{ it.value }}</span>
-          </div>
-        </a-card>
-      </a-col>
     </a-row>
 
-    <a-row :gutter="[16, 16]" style="margin-top: 16px">
-      <a-col :xs="24" :lg="12">
-        <a-card size="small" title="负载趋势（每 1 秒采样）">
-          <div class="chart-row">
-            <div><div class="label">CPU</div><Sparkline :values="cpuSeries" /></div>
-            <div><div class="label">磁盘</div><Sparkline :values="diskSeries" color="#52c41a" /></div>
-          </div>
-        </a-card>
-      </a-col>
-    </a-row>
-
-    <a-card size="small" title="最近上线客户端" style="margin-top: 16px">
-      <a-table :columns="recentColumns" :data-source="recent" row-key="Id" size="small" :pagination="false">
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.dataIndex === 'IsConnect'">
-            <a-tag :color="record.IsConnect ? 'green' : 'default'">{{ record.IsConnect ? '在线' : '离线' }}</a-tag>
-          </template>
-        </template>
-      </a-table>
-    </a-card>
   </a-spin>
 </template>
 

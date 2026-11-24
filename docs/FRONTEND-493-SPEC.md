@@ -148,3 +148,37 @@ go run ./tools/uiprobe -url http://127.0.0.1:18990/ -wait 8s -shot /tmp/x.png -s
 
 见截图：工具栏「搜索 / 批量选择」「正向连接 + 刷新/字号/设置图标」；表格列与我们已对齐的
 13 列一致；备注列有 ✎ 图标（行内编辑）；空态是文件夹图标 +「暂无数据」。
+
+### 3.5 路由（已按原版改造）
+
+复刻端的路由现在与 4.9.3 **逐条一致**（旧路径保留重定向）：
+
+| 4.9.3 | 复刻端 | 说明 |
+|---|---|---|
+| `/dashboard/index` | ✅ | 仪表盘 |
+| `/client/list` | ✅ | 客户端列表（`/clientManager/index` 重定向到此） |
+| `/clientManager/index`、`/clientManager/:id` | ✅ | 主机管理 |
+| `/listener/list`、`/listener/:id` | ✅ | 监听（`/listener/index` 重定向） |
+| `/download/index|stage|stageless|listen|ebpf` | ✅ | 5 个子路由（同一页按页签区分） |
+| `/terminal/index`、`/terminal/:id` | ✅ | 命令控制 |
+| `/filemanager/index`、`/filemanager/:id` | ✅ | 文件管理 |
+| `/pluginrunner/index`、`/pluginrunner/:id` | ✅ | 插件运行 |
+| `/tunnel/list`、`/tunnel/:id` | ✅ | 隧道（`/tunnel/index` 重定向） |
+| `/setting/index` | ✅ | 系统设置 |
+| `/about/index` | ✅ | 关于 |
+| `/login`、`/loginSSO/:token` | ✅ | 登录 / SSO 入口 |
+| `/screenshot/*`、`/screen/*` | — | 按需求不做 |
+| `/serviceInstall/*` | — | 未实现 |
+| `/error-log`、`/redirect/*` | — | 未实现 |
+
+实测 9 条一级/子路由全部渲染正确。
+
+### 3.6 文件管理页（真实 UI）
+
+- 左侧「文件树」面板：搜索框 + ⋮ 菜单 + 树/空态（暂无数据）
+- 右侧工具栏：`↻`（刷新）`🏠`（根目录）`↑`（上级）`↻`（重载）+ 路径输入 + **Open** +
+  **新建文件夹** + **新建文件** + **wget文件** + **上传文件**
+- 表格列头是英文：**Name / Time / Mode / Size**（不是中文）
+
+> 我们的实现：按钮文案是「打开 / 上级 / Wget下载文件 / 上传插件」，列头是中文
+> 「文件名/大小/修改时间/权限」——按原版应改成上表。

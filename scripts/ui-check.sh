@@ -36,6 +36,15 @@ fail() { echo "[ui] FAIL: $*" >&2; exit 1; }
 command -v "$CHROME" >/dev/null || fail "找不到 $CHROME"
 [[ -f "$ROOT/web/dist/index.html" ]] || fail "web/dist 未构建（cd web && pnpm build）"
 
+# 端口若被历史遗留实例占用，先清掉：否则断言会打到旧服务（旧 conf / 旧前端）上，
+# 现象是"登录密码不对"或"页面是上一版前端"。
+OLD_PID=$(ss -tlnp 2>/dev/null | awk -v p=":$WEB_PORT" '$0 ~ p {match($0,/pid=([0-9]+)/,m); print m[1]}' | head -1)
+if [[ -n "${OLD_PID:-}" ]]; then
+  echo "[ui] 端口 $WEB_PORT 被 PID $OLD_PID 占用，先结束它" >&2
+  kill -9 "$OLD_PID" 2>/dev/null
+  sleep 1
+fi
+
 mkdir -p "$TMP/conf" "$TMP/db"
 ln -sfn "$ROOT/static" "$TMP/static"
 # 新前端（web2，Ant Design Vue 版）是当前默认前端；同时保留旧 web 目录
@@ -145,9 +154,10 @@ MENU_JS=$(cat <<'JS'
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
   await sleep(1200);
-  const items = [...document.querySelectorAll('.ant-menu-item, .ant-menu-submenu-title')]
+  // 4.9.3 是顶部导航（.nav-item），只有 8 项（命令控制/文件管理从客户端行内进入）
+  const items = [...document.querySelectorAll('.nav-item')]
     .map(e => e.innerText.replace(/\s/g,'')).filter(Boolean);
-  const want = ['仪表盘','客户端管理','监听管理','客户端生成','命令控制','文件管理','插件运行','隧道代理','系统设置','关于'];
+  const want = ['仪表盘','客户端管理','监听管理','客户端生成','插件运行','隧道代理','系统设置','关于'];
   const got = items.slice(0, want.length);
   const ok = want.every((w, i) => got[i] === w);
   return ok ? 'MENU493_OK' : 'MENU493_FAIL ' + JSON.stringify(got);
@@ -161,9 +171,8 @@ log "渲染 #/dashboard"
 render '#/dashboard/index' "$TMP/dash.html"
 expect "$TMP/dash.html" '系统信息' 'dashboard 未渲染（缺系统信息卡片）'
 expect "$TMP/dash.html" '版本' 'dashboard 缺少 KPI'
-expect "$TMP/dash.html" '负载趋势' 'dashboard 缺少趋势卡片'
-expect "$TMP/dash.html" 'polyline' 'dashboard 趋势图未渲染（sparkline 没出 SVG）'
-expect "$TMP/dash.html" '最近上线客户端' 'dashboard 缺少最近上线卡片'
+# 4.9.3 的仪表盘就是 KPI + 配置信息 + 系统信息（没有趋势图/最近上线，已按原版移除）
+expect "$TMP/dash.html" '配置信息' 'dashboard 缺少配置信息卡片'
 expect "$TMP/dash.html" '在线客户端' 'dashboard 缺少「在线客户端」卡片'
 expect "$TMP/dash.html" 'TCP 通讯 (已建立)' 'dashboard 缺少系统信息表'
 expect "$TMP/dash.html" '虚拟内存' 'dashboard 缺少系统信息进度条'
@@ -172,7 +181,7 @@ expect "$TMP/dash.html" '配置信息' 'dashboard 缺少配置信息表'
 expect "$TMP/dash.html" '在线监听数' 'dashboard 缺少「在线监听数」副标题'
 
 log "渲染 #/clients"
-render '#/clientManager/index' "$TMP/clients.html"
+render '#/client/list' "$TMP/clients.html"
 expect "$TMP/clients.html" "$(hostname)" '客户端列表没有主机名（字段契约不符？）'
 expect "$TMP/clients.html" '在线' '客户端列表没有在线状态'
 expect "$TMP/clients.html" '心跳' '客户端列表缺少心跳列'
@@ -183,7 +192,7 @@ expect "$TMP/clients.html" '正向连接' '客户端页缺少「正向连接」�
 expect "$TMP/clients.html" 'ant-table-selection-column' '客户端页缺少多选列'
 
 log "渲染 #/files/1"
-render '#/clientManager/files/1' "$TMP/files.html"
+render '#/filemanager/1' "$TMP/files.html"
 expect "$TMP/files.html" '修改时间' '文件页表头缺失'
 expect "$TMP/files.html" '重命名' '文件页缺少重命名按钮'
 expect "$TMP/files.html" '新建文件' '文件页缺少新建文件按钮'
@@ -200,7 +209,7 @@ if not any(c.endswith('/') or c.endswith('.txt') or c for c in cells[:4]):
 PY
 
 log "渲染 #/terminal/1"
-render '#/clientManager/terminal/1' "$TMP/term.html"
+render '#/terminal/1' "$TMP/term.html"
 expect "$TMP/term.html" 'xterm' '终端 xterm 未挂载'
 expect "$TMP/term.html" '已连接' '终端 WebSocket 未连上'
 expect "$TMP/term.html" '清屏' '终端缺少清屏按钮'
@@ -220,9 +229,9 @@ TABS_JS=$(cat <<'JS'
     [...document.querySelectorAll('button')].find(b => b.innerText.replace(/\s/g,'') === '登录')?.click();
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
-  location.hash = '#/clientManager/index';
+  location.hash = '#/client/list';
   await new Promise(r => setTimeout(r, 1200));
-  location.hash = '#/listener/index';
+  location.hash = '#/listener/list';
   await new Promise(r => setTimeout(r, 1200));
   const tabs = [...document.querySelectorAll('.tab')].map(t => t.innerText.trim());
   return tabs.length >= 2 ? 'TABS_OK ' + JSON.stringify(tabs) : 'TABS_FAIL ' + JSON.stringify(tabs);
@@ -246,7 +255,7 @@ TREE_JS=$(cat <<'JS'
     [...document.querySelectorAll('button')].find(b => b.innerText.replace(/\s/g,'') === '登录')?.click();
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
-  location.hash = '#/clientManager/files/1';
+  location.hash = '#/filemanager/1';
   // 先等文件页自身渲染出来（表头出现），再等树节点，避免页面还没挂载就断言
   await waitFor(() => document.body.innerText.includes('文件名'), 12000);
   // 树是懒加载的：若首屏没列出节点，点一下根节点强制再拉一次
@@ -286,7 +295,7 @@ FCTX_JS=$(cat <<'JS'
     [...document.querySelectorAll('button')].find(b => b.innerText.replace(/\s/g,'') === '登录')?.click();
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
-  location.hash = '#/clientManager/files/1';
+  location.hash = '#/filemanager/1';
   await waitFor(() => document.body.innerText.includes('文件名'), 12000);
   if (!await waitFor(() => document.querySelectorAll('.ant-table-row').length > 0, 15000)) return 'FCTX_FAIL 无行';
   let ok = false;
@@ -369,7 +378,7 @@ SEARCH_JS=$(cat <<'JS'
     [...document.querySelectorAll('button')].find(b => b.innerText.replace(/\s/g,'') === '登录')?.click();
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
-  location.hash = '#/clientManager/index';
+  location.hash = '#/client/list';
   if (!await waitFor(() => document.body.innerText.includes('归属地'), 12000)) return 'SEARCH_FAIL 不在客户端列表';
   [...document.querySelectorAll('.toolbar button')].find(b => b.innerText.replace(/\s/g,'') === '搜索')?.click();
   await sleep(500);
@@ -404,7 +413,7 @@ SORT_JS=$(cat <<'JS'
     [...document.querySelectorAll('button')].find(b => b.innerText.replace(/\s/g,'') === '登录')?.click();
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
-  location.hash = '#/clientManager/index';
+  location.hash = '#/client/list';
   // 先确认真的在客户端列表（表头「归属地」是这一页独有的），否则可能在文件页数到 0 个排序器
   if (!await waitFor(() => document.body.innerText.includes('归属地'), 12000)) return 'SORT_FAIL 不在客户端列表';
   if (!await waitFor(() => document.querySelectorAll('.ant-table-row').length > 0, 12000)) return 'SORT_FAIL 无行';
@@ -429,7 +438,7 @@ FILEICO_JS=$(cat <<'JS'
     [...document.querySelectorAll('button')].find(b => b.innerText.replace(/\s/g,'') === '登录')?.click();
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
-  location.hash = '#/clientManager/files/1';
+  location.hash = '#/filemanager/1';
   await waitFor(() => document.querySelectorAll('.file-ico').length > 0, 10000);
   const all = [...document.querySelectorAll('.file-ico')];
   const rendered = all.filter(e => getComputedStyle(e).backgroundImage !== 'none').length;
@@ -441,7 +450,7 @@ FILEICO_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -sc
 echo "$FILEICO_OUT" | grep -q 'FILE_ICO_OK' || fail "文件图标未渲染: $(echo "$FILEICO_OUT" | tail -c 120)"
 
 log "渲染 #/listeners"
-render '#/listener/index' "$TMP/listeners.html"
+render '#/listener/list' "$TMP/listeners.html"
 expect "$TMP/listeners.html" '监听地址' '监听页表头缺失'
 expect "$TMP/listeners.html" '超时心跳次数（次）' '监听页缺少超时心跳列'
 expect "$TMP/listeners.html" '外网连接地址' '监听页缺少外网连接地址列'
@@ -460,7 +469,7 @@ expect "$TMP/download.html" 'Windows 上线命令' '下载页缺少 Windows 上�
 expect "$TMP/download.html" '加密key明文内容' '下载页缺少加密key字段'
 
 log "渲染 #/tunnels"
-render '#/tunnel/index' "$TMP/tunnels.html"
+render '#/tunnel/list' "$TMP/tunnels.html"
 # 4.9.3 的隧道列名是「端口」（表单里才叫「服务端端口」）
 expect "$TMP/tunnels.html" '目标 (IP:端口)' '隧道页表头缺失（目标列）'
 
@@ -512,7 +521,7 @@ CLICK_JS=$(cat <<'JS'
   [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
   await new Promise(r => setTimeout(r, 2200));
 
-  location.hash = '#/clientManager/index';
+  location.hash = '#/client/list';
   await new Promise(r => setTimeout(r, 1500));
   // 4.9.3 的刷新是表格工具栏里的图标按钮（无文字），这里用 data-test 或标题匹配
   const btn = document.querySelector('button[data-test="refresh"]')
@@ -624,8 +633,8 @@ DRAWER_JS=$(cat <<'JS'
     [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
-  if (!location.hash.includes('/clientManager')) { location.hash = '#/clientManager/index'; }
-  // 注意：仪表盘现在也有表格（最近上线客户端），必须等到客户端页自己的工具栏出现，
+  if (!location.hash.includes('/clientManager')) { location.hash = '#/client/list'; }
+  // 注意：必须等到客户端页自己的工具栏出现，
   // 否则会抓到仪表盘的行（R56 踩到：NO_HOST_LINK）。
   await waitFor(() => location.hash.includes('/clients') && document.body.innerText.includes('共'), 10000);
   await waitFor(() => document.querySelectorAll('.ant-table-row, .el-table__row').length > 0, 10000);
@@ -660,7 +669,7 @@ RENAME_JS=$(cat <<'JS'
   [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
   await new Promise(r => setTimeout(r, 2200));
 
-  location.hash = '#/clientManager/files/1';
+  location.hash = '#/filemanager/1';
   await new Promise(r => setTimeout(r, 1200));
 
   // 等文件页真正加载出表格（首屏可能还在拉 /file/ls）
@@ -727,7 +736,7 @@ TERM_JS=$(cat <<'JS'
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
   if (!location.hash.includes('/terminal/')) {
-    location.hash = '#/clientManager/terminal/1';
+    location.hash = '#/terminal/1';
   }
   // 等 WebSocket 真正连上（页面状态文本出现"已连接"），再等首屏输出
   await waitFor(() => document.body.innerText.includes('已连接'), 15000);
@@ -790,7 +799,7 @@ CTX_JS=$(cat <<'JS'
     [...document.querySelectorAll('button')].find(b => b.innerText.replace(/\s/g,'') === '登录')?.click();
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
-  location.hash = '#/clientManager/index';
+  location.hash = '#/client/list';
   if (!await waitFor(() => document.querySelectorAll('.ant-table-row').length > 0, 10000)) return 'CTX_FAIL 无行';
   let ok = false;
   for (let i = 0; i < 3 && !ok; i++) {
@@ -821,7 +830,7 @@ LS_JS=$(cat <<'JS'
     [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '登录')?.click();
     await waitFor(() => location.hash.includes('/dashboard'), 8000);
   }
-  if (!location.hash.includes('/listener')) { location.hash = '#/listener/index'; await new Promise(r => setTimeout(r, 1500)); }
+  if (!location.hash.includes('/listener')) { location.hash = '#/listener/list'; await new Promise(r => setTimeout(r, 1500)); }
   await waitFor(() => [...document.querySelectorAll('button')].some(b => b.innerText.trim() === '新增监听'), 8000);
 
   [...document.querySelectorAll('button')].find(b => b.innerText.trim() === '新增监听')?.click();

@@ -57,7 +57,7 @@ function ctxAction(key: string) {
   if (!row) return
   if (key === 'manage') {
     // 4.9.3：跳 /clientManager/:id（主机管理，即文件 + 终端入口）
-    router.push(`/clientManager/files/${row.Id}`)
+    router.push(`/clientManager/${row.Id}`)
   } else if (key === 'tunnel') {
     // 4.9.3：跳 /tunnel/:id
     router.push(`/tunnel/${row.Id}`)
@@ -282,7 +282,7 @@ function remove(row: any) {
           <!-- 4.9.3：行内只放两个（主机管理 / 隧道代理，仅在线），其余进下拉 -->
           <a-space size="small">
             <template v-if="record.IsConnect">
-              <a-tooltip title="主机管理"><a @click="router.push(`/clientManager/files/${record.Id}`)">
+              <a-tooltip title="主机管理"><a @click="router.push(`/clientManager/${record.Id}`)">
                 <span class="act i-grommet-icons:drag" /></a></a-tooltip>
               <a-tooltip title="隧道代理"><a @click="router.push(`/tunnel/${record.Id}`)">
                 <span class="act i-fa6-solid:globe" /></a></a-tooltip>
