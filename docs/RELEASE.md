@@ -136,3 +136,23 @@ go test ./...          # 单元/集成测试
 
 同时把三条容易踩的运维事项写进 README：**同 vkey 只跑一个 agent**、
 `-salt` 必须与监听器一致、模板缺失的补救命令。
+
+## 全新部署验证（R134）
+
+把交付包按 README 的清单复制到一个空目录（只带 `vshell-server`/`agent`/`web2`/`static`/
+`stageless`/`plugins`/`certs`/`start.sh`），新写 `conf/` 与空 `db/`，逐条走 README：
+
+| 步骤 | 结果 |
+|---|---|
+| 面板 `/app/` | 200 ✅ |
+| 登录 admin/123456 | 拿到 JWT ✅ |
+| 新建 tcp 监听器（:18501） | 自动启动 ✅ |
+| 方式 A：通用 agent 上线 | 客户端 #1 在线；`echo fresh-install-ok` 正常 ✅ |
+| 文件列表 /tmp | total 1252 ✅ |
+| 载荷下载 | 9.2MB ✅ |
+| 一键上线 `/slt` | 返回可执行 shell 脚本 ✅ |
+| 方式 B：下载载荷直接运行 | 日志 `config: loaded from file trailer (mode="tcp" server="tcp://…:18502")` → 客户端 #2 在线 ✅ |
+| MCP `list_clients` | clientCount=2 / online=2 ✅ |
+
+同时验证了 README 里那条告警是真的：**同一 vkey 再起第二个 agent 会被拒绝**
+（`duplicate agent for this client`），换一个 vkey 的监听器就正常。
