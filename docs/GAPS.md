@@ -275,3 +275,14 @@ e2e §7v 的隧道与插件断言恢复为**硬失败**（不再是 KNOWN-ISSUE�
 **R128 复测：e2e 全绿**（ls error / file list 1209 / tunnel ok / plugin ok / listener ok）。
 下一步：让 `GetAndMarkPendingTasks` 带上"下发时间"，超过 N 秒仍是 dispatched
 就退回 pending 重发。
+
+## M: 隧道首次通道可能没配上（R136 修复）
+
+现象：用 MCP 的 `start_tunnel`（或 API 刚建好就立刻连）时，公网连接挂在 `pending`，
+但 agent 没收到 `tunnel_open`，客户端 15 秒后超时；把隧道 stop 再 start 就正常
+（日志里能看到 `public conn -> chan 1 (pending=1 waiting=0)` 之后没有 relaying）。
+
+修法：`handlePublicConn` 在等待期间**补发一次** `tunnel_open`（3 秒后，仅当仍
+`pending` 且没有 `waiting` 连接时），把"首连刚好撞上客户端重连"这类偶发情况兜住。
+
+复测：`start_tunnel` 之后立刻连 `:28711` → 一次成功拿到 `ECHO-28437`。

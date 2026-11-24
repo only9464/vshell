@@ -37,6 +37,8 @@ const (
 	TunnelMagic = "VST1"
 	// tunnelPairTimeout 是公网连接等待 agent 接入的上限。
 	tunnelPairTimeout = 15 * time.Second
+	// tunnelPairRetry 是"首次 tunnel_open 没配上"时的补发延迟。
+	tunnelPairRetry = 3 * time.Second
 	// tunnelPeekTimeout 是判断"agent 注册 vs 公网客户端"的短探测窗口。
 	tunnelPeekTimeout = 300 * time.Millisecond
 )
@@ -238,7 +240,24 @@ func (ts *TunnelServer) handlePublicConn(conn net.Conn) {
 		}
 	}
 
-	// 等 agent 接入；超时则关闭，避免连接堆积。
+	// 等 agent 接入；中途补发一次 tunnel_open（首次下发可能因为客户端刚好在重连
+	// 而落空，实测 MCP/API 立刻建隧道时偶发），超时则关闭避免堆积。
+	go func() {
+		time.Sleep(tunnelPairRetry)
+		ts.mu.Lock()
+		_, stillPending := ts.pending[chanID]
+		_, alreadyWaiting := ts.waiting[chanID]
+		cb2 := ts.onOpen
+		ts.mu.Unlock()
+		if stillPending && !alreadyWaiting && cb2 != nil {
+			if err := cb2(chanID); err != nil {
+				Logf("Tunnel %d: retry tunnel_open for chan %d failed: %v", ts.id, chanID, err)
+			} else {
+				Logf("Tunnel %d: retried tunnel_open for chan %d", ts.id, chanID)
+			}
+		}
+	}()
+
 	select {
 	case <-time.After(tunnelPairTimeout):
 		ts.mu.Lock()
