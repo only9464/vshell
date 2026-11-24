@@ -955,14 +955,36 @@ func (e *Engine) GetAndMarkPendingTasks(clientID int64) []*Task {
 	defer e.mu.Unlock()
 
 	var result []*Task
+	cutoff := time.Now().Add(-redispatchAfter)
 	for _, t := range e.tasks {
-		if t.ClientID == clientID && t.Status == "pending" {
+		if t.ClientID != clientID {
+			continue
+		}
+		switch t.Status {
+		case "pending":
 			t.Status = "dispatched"
+			t.SentAt = time.Now()
 			result = append(result, t)
+		case "dispatched":
+			// 已经下发但迟迟没有结果：多半是那次下发丢了（连接重连/帧被丢）。
+			// 重投有限次，避免真的"执行中"的任务被反复重跑。
+			if t.Redispatch < maxRedispatch && t.SentAt.Before(cutoff) {
+				t.Redispatch++
+				t.SentAt = time.Now()
+				result = append(result, t)
+				Logf("Task %d re-dispatched (attempt %d) for client %d", t.ID, t.Redispatch, clientID)
+			}
 		}
 	}
 	return result
 }
+
+// redispatchAfter 是"下发后多久还没结果就重投"的阈值。
+// 取 8 秒：正常的命令/文件任务都在 1~2 秒内回结果，插件等长任务有 timeout 兜底。
+const redispatchAfter = 8 * time.Second
+
+// maxRedispatch 是同一任务的重投次数上限（避免执行中的长任务被反复重跑）。
+const maxRedispatch = 3
 
 // GetTaskByMd5Password finds a task by its MD5 password (task-specific auth)
 func (e *Engine) GetTaskByMd5Password(md5pass string) *Task {

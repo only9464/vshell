@@ -378,15 +378,17 @@ func (t *Target) AddTarget(target string) {
 // Task 任务记录（NewTask 0x11979c0 / UpdateTask 0x1197d00 / DelTask 0x1197da0 /
 // GetTaskByMd5Password 0x1197e20 / GetTask 0x1197fe0）。
 type Task struct {
-	ID       int64      `json:"Id"`
-	ClientID int64      `json:"ClientId"`
-	Command  string     `json:"command"`
-	Result   string     `json:"result"`
-	Status   string     `json:"Status"` // pending/dispatched/running/completed/failed/timeout
-	MD5Pass  string     `json:"md5_Password,omitempty"`
-	SentAt   time.Time  `json:"sent_at"`
-	DoneAt   *time.Time `json:"done_at,omitempty"`
-	Timeout  int        `json:"timeout"`
+	ID       int64     `json:"Id"`
+	ClientID int64     `json:"ClientId"`
+	Command  string    `json:"command"`
+	Result   string    `json:"result"`
+	Status   string    `json:"Status"` // pending/dispatched/running/completed/failed/timeout
+	MD5Pass  string    `json:"md5_Password,omitempty"`
+	SentAt   time.Time `json:"sent_at"`
+	// Redispatch 记录该任务被重投的次数（TCP 轮询丢包时的兜底，见 GetAndMarkPendingTasks）。
+	Redispatch int        `json:"redispatch,omitempty"`
+	DoneAt     *time.Time `json:"done_at,omitempty"`
+	Timeout    int        `json:"timeout"`
 }
 
 // TargetSetting 任务目标配置。

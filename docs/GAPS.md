@@ -264,6 +264,10 @@ e2e §7v 的隧道与插件断言恢复为**硬失败**（不再是 KNOWN-ISSUE�
 `waitTaskResult`。如果任务创建与 agent 取任务之间发生一次重连（`Reset()`），
 这一批任务可能已被标记 `dispatched` 但没真正送达 agent。
 
+**R129 已加兜底**：`GetAndMarkPendingTasks` 现在会把「dispatched 超过 8 秒仍无结果」
+的任务重投（最多 3 次，`Task.Redispatch` 计量），单测
+`TestGetAndMarkPendingTasksRedispatch` 覆盖「首次不重投 / 超时重投 / 到上限停止」。
+
 当前处置：e2e 的 TCP 断言加重试（3 次），失败仍然 fail；同时把 e2e 里
 `api()` 助手的超时从 10s 提到 90s（插件任务内联 2.2MB base64，10s 会被 curl 掐断，
 表现为"响应为空"而不是报错）。

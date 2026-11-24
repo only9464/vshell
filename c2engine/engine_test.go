@@ -1,6 +1,9 @@
 package c2engine
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestEngineIsPubClientReturnsStoredClientStatus(t *testing.T) {
 	e := &Engine{
@@ -107,5 +110,51 @@ func TestConnStats(t *testing.T) {
 	tcp, udp := e.ConnStats()
 	if tcp != 4 || udp != 1 {
 		t.Fatalf("ConnStats = (%d,%d)，期望 (4,1)", tcp, udp)
+	}
+}
+
+// 任务下发后迟迟没结果时应重投，但重投次数受限，避免执行中的任务被反复重跑。
+func TestGetAndMarkPendingTasksRedispatch(t *testing.T) {
+	e := &Engine{
+		clients:   map[int64]*Client{1: {ID: 1, Status: true}},
+		listeners: map[int64]*Listener{},
+		tunnels:   map[int64]*Tunnel{},
+		hosts:     map[int64]*Host{},
+		tasks:     map[int64]*Task{},
+	}
+	// 不走 CreateTask（它会写存储层），直接塞一个 pending 任务
+	task := &Task{ID: 1, ClientID: 1, Command: "echo hi", Status: "pending", Timeout: 30}
+	e.tasks[1] = task
+	// 第一次取：pending → dispatched
+	if got := e.GetAndMarkPendingTasks(1); len(got) != 1 {
+		t.Fatalf("首次取任务应返回 1 个，实际 %d", len(got))
+	}
+	// 立刻再取：还没到重投阈值，应返回 0
+	if got := e.GetAndMarkPendingTasks(1); len(got) != 0 {
+		t.Fatalf("刚下发不应重投，实际 %d", len(got))
+	}
+	// 把 SentAt 拨回 10 秒前，模拟"下发丢了"
+	func() {
+		e.mu.Lock()
+		defer e.mu.Unlock()
+		e.tasks[task.ID].SentAt = time.Now().Add(-10 * time.Second)
+	}()
+	if got := e.GetAndMarkPendingTasks(1); len(got) != 1 {
+		t.Fatalf("超过阈值应重投 1 次，实际 %d", len(got))
+	}
+	// 一直不完成：重投到上限后就停止
+	for i := 0; i < maxRedispatch+2; i++ {
+		func() {
+			e.mu.Lock()
+			defer e.mu.Unlock()
+			e.tasks[task.ID].SentAt = time.Now().Add(-10 * time.Second)
+		}()
+		e.GetAndMarkPendingTasks(1)
+	}
+	e.mu.RLock()
+	rd := e.tasks[task.ID].Redispatch
+	e.mu.RUnlock()
+	if rd != maxRedispatch {
+		t.Fatalf("重投次数应封顶在 %d，实际 %d", maxRedispatch, rd)
 	}
 }
