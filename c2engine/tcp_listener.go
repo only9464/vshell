@@ -141,6 +141,11 @@ func (l *TCPListener) handleConn(conn net.Conn) {
 			l.mu.Lock()
 			l.lastSeen[clientID] = time.Now()
 			l.mu.Unlock()
+			// 刷新在线位与 LastSeen：TCP 客户端只靠轮询证明活着，
+			// 不刷新就会被巡检判离线（表现为面板忽上忽下、派发报 connection error）。
+			if c := GetEngine().GetClient(clientID); c != nil {
+				c.SetOnline(true)
+			}
 		}
 
 		// 1) checkin：没有 type 字段、但带 verify_key + hostname

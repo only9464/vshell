@@ -760,13 +760,8 @@ try:
     print(c.recv(64).decode(errors='replace').strip()); c.close()
 except Exception as e:
     print('ERR', e)")
-if echo "$TUN_BYTES" | grep -q 'TCP-TUNNEL-OK'; then
-  log "tcp tunnel ok (经 TCP 客户端转发拿到回包)"
-else
-  # 已知问题（docs/GAPS.md §K）：TCP 客户端的数据面回连还没打通，
-  # 这里不 fail 以免掩盖其它回归，但每次都把真实结果打出来。
-  log "tcp tunnel KNOWN-ISSUE: $TUN_BYTES"
-fi
+echo "$TUN_BYTES" | grep -q 'TCP-TUNNEL-OK' || fail "TCP 客户端隧道转发失败: $TUN_BYTES"
+log "tcp tunnel ok (经 TCP 客户端转发拿到回包)"
 api POST /tunnel/del "{\"id\":$TUN_ID}" >/dev/null
 kill "$ECHO_PID" 2>/dev/null
 
@@ -781,11 +776,8 @@ if [[ -f "$PLUGIN_SRC" ]]; then
   echo "$UP_OUT" | grep -q '"code":0' || log "plugin upload resp: $(echo "$UP_OUT" | head -c 120)"
   PL_OUT=$(api POST /runner/runplugin "{\"id\":$TCP_CID,\"pluginName\":\"sysinfo.elf\",\"procArg\":\"\"}" 2>/dev/null)
   # 只判断有没有 output 字段，绝不把响应原文打进日志（插件 base64 会把日志刷爆）
-  if echo "$PL_OUT" | grep -q '"output"'; then
-    log "tcp plugin ok"
-  else
-    log "tcp plugin KNOWN-ISSUE: $(echo "$PL_OUT" | head -c 100)"
-  fi
+  echo "$PL_OUT" | grep -q '"output"' || fail "TCP 客户端插件执行失败: $(echo "$PL_OUT" | head -c 120)"
+  log "tcp plugin ok"
 fi
 
 

@@ -201,7 +201,9 @@ func (ts *TunnelServer) handleAgentConn(conn net.Conn, br *bufio.Reader) {
 		return
 	}
 	ts.waiting[chanID] = conn
+	pend := len(ts.pending)
 	ts.mu.Unlock()
+	Logf("Tunnel %d: agent conn %s -> chan %d (pending=%d, no match)", ts.id, conn.RemoteAddr(), chanID, pend)
 	Logf("Tunnel %d: agent channel %d registered for %s", ts.id, chanID, string(target))
 }
 
@@ -217,6 +219,7 @@ func (ts *TunnelServer) handlePublicConn(conn net.Conn) {
 		return
 	}
 	ts.pending[chanID] = conn
+	Logf("Tunnel %d: public conn %s -> chan %d (pending=%d waiting=%d)", ts.id, conn.RemoteAddr(), chanID, len(ts.pending), len(ts.waiting))
 	// 在读锁区间内顺手取回调，避免重复加锁（非重入互斥锁会死锁）
 	cb := ts.onOpen
 	ts.mu.Unlock()
