@@ -219,6 +219,10 @@ function remove(row: any) {
       <a-button type="primary" class="ml-auto" @click="forwardOpen = true">
         <span class="act i-ant-design:plus-outlined" />正向连接
       </a-button>
+      <!-- 4.9.3 的刷新在表格工具栏里（vxe 的刷新工具），这里放一个同语义的图标按钮 -->
+      <a-tooltip title="刷新">
+        <a-button data-test="refresh" @click="load"><span class="act i-ion:reload-sharp" /></a-button>
+      </a-tooltip>
       <span class="mono hint">共 {{ total }} 台，在线 {{ online }}</span>
     </div>
 
