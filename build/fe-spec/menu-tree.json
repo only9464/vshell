@@ -1,0 +1,263 @@
+[
+  {
+    "path": "/about",
+    "name": "About",
+    "orderNo": 23,
+    "icon": "",
+    "titleKey": "routes.dashboard.about",
+    "children": [
+      [
+        "index",
+        "AboutPage",
+        "routes.dashboard.about"
+      ]
+    ]
+  },
+  {
+    "path": "/client",
+    "name": "client",
+    "orderNo": 11,
+    "icon": "fa-solid:desktop",
+    "titleKey": "routes.client.ClientManagement",
+    "children": [
+      [
+        "list",
+        "ClientList",
+        "routes.client.ClientManagement"
+      ]
+    ]
+  },
+  {
+    "path": "/clientManager",
+    "name": "clientManager",
+    "orderNo": 22,
+    "icon": "grommet-icons:drag",
+    "titleKey": "routes.client.ClientManagement",
+    "children": [
+      [
+        "index",
+        "ClientManagerIndex",
+        "routes.client.ClientManagement"
+      ],
+      [
+        ":id",
+        "ClientManagerTab",
+        "routes.client.ClientManagement"
+      ]
+    ]
+  },
+  {
+    "path": "/dashboard",
+    "name": "Dashboard",
+    "orderNo": 10,
+    "icon": "fa-solid:tachometer-alt",
+    "titleKey": "routes.dashboard.dashboard",
+    "children": [
+      [
+        "index",
+        "DashboardIndex",
+        "routes.dashboard.dashboard"
+      ]
+    ]
+  },
+  {
+    "path": "/download",
+    "name": "Download",
+    "orderNo": 13,
+    "icon": "fa-solid:download",
+    "titleKey": "routes.download.download",
+    "children": [
+      [
+        "index",
+        "index",
+        "routes.download.download"
+      ],
+      [
+        "stage",
+        "stage",
+        "routes.download.stage"
+      ],
+      [
+        "stageless",
+        "stageless",
+        "routes.download.stageless"
+      ],
+      [
+        "listen",
+        "listen",
+        "routes.download.listen"
+      ],
+      [
+        "ebpf",
+        "ebpf",
+        "routes.download.ebpf"
+      ]
+    ]
+  },
+  {
+    "path": "/filemanager",
+    "name": "filemanager",
+    "orderNo": 15,
+    "icon": "grommet-icons:folder",
+    "titleKey": "routes.filemanager.filemanager",
+    "children": [
+      [
+        "index",
+        "filemanagerIndex",
+        "routes.filemanager.filemanager"
+      ],
+      [
+        ":id",
+        "filemanagerTab",
+        "routes.filemanager.filemanager"
+      ]
+    ]
+  },
+  {
+    "path": "/listener",
+    "name": "Listener",
+    "orderNo": 12,
+    "icon": "fa-solid:headphones",
+    "titleKey": "routes.listener.ListenerManagement",
+    "children": [
+      [
+        "list",
+        "ListenerIndex",
+        "routes.listener.ListenerManagement"
+      ],
+      [
+        ":id",
+        "ListenerTab",
+        "routes.listener.ListenerManagement"
+      ]
+    ]
+  },
+  {
+    "path": "/pluginrunner",
+    "name": "pluginrunner",
+    "orderNo": 18,
+    "icon": "grommet-icons:action",
+    "titleKey": "routes.pluginrunner.pluginrunner",
+    "children": [
+      [
+        "index",
+        "PluginRunner",
+        "routes.pluginrunner.pluginrunner"
+      ],
+      [
+        ":id",
+        "PluginRunnerTab",
+        "routes.pluginrunner.pluginrunner"
+      ]
+    ]
+  },
+  {
+    "path": "/screen",
+    "name": "Screen",
+    "orderNo": 21,
+    "icon": "fa-image",
+    "titleKey": "routes.screen.screen",
+    "children": [
+      [
+        "index",
+        "ScreenIndex",
+        "routes.screen.screen"
+      ],
+      [
+        ":quality/:id",
+        "ScreenTab",
+        "routes.screen.screen"
+      ]
+    ]
+  },
+  {
+    "path": "/screenshot",
+    "name": "screenshot",
+    "orderNo": 16,
+    "icon": "fa-image",
+    "titleKey": "routes.screenshot.screenshot",
+    "children": [
+      [
+        "index",
+        "screenshotIndex",
+        "routes.screenshot.screenshot"
+      ],
+      [
+        ":id",
+        "screenshotTab",
+        "routes.screenshot.screenshot"
+      ]
+    ]
+  },
+  {
+    "path": "/serviceInstall",
+    "name": "serviceInstall",
+    "orderNo": 17,
+    "icon": "grommet-icons:services",
+    "titleKey": "routes.serviceInstall.serviceInstall",
+    "children": [
+      [
+        "index",
+        "serviceInstallIndex",
+        "routes.serviceInstall.serviceInstall"
+      ],
+      [
+        ":id",
+        "serviceInstallTab",
+        "routes.serviceInstall.serviceInstall"
+      ]
+    ]
+  },
+  {
+    "path": "/setting",
+    "name": "setting",
+    "orderNo": 20,
+    "icon": "fa6-solid:gear",
+    "titleKey": "routes.setting.setting",
+    "children": [
+      [
+        "index",
+        "settingIndex",
+        "routes.setting.setting"
+      ]
+    ]
+  },
+  {
+    "path": "/terminal",
+    "name": "terminal",
+    "orderNo": 14,
+    "icon": "fa-terminal",
+    "titleKey": "routes.terminal.terminal",
+    "children": [
+      [
+        "index",
+        "terminalIndex",
+        "routes.terminal.terminal"
+      ],
+      [
+        ":id",
+        "terminalTab",
+        "routes.terminal.terminal"
+      ]
+    ]
+  },
+  {
+    "path": "/tunnel",
+    "name": "tunnel",
+    "orderNo": 19,
+    "icon": "fa-solid:globe",
+    "titleKey": "routes.tunnel.tunnel",
+    "children": [
+      [
+        "list",
+        "TunnelIndex",
+        "routes.tunnel.tunnel"
+      ],
+      [
+        ":id",
+        "TunnelTab",
+        "routes.tunnel.tunnel"
+      ]
+    ]
+  }
+]

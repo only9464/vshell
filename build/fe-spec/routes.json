@@ -1,0 +1,370 @@
+[
+  {
+    "path": "/error-log",
+    "name": "ErrorLog",
+    "title": "ErrorLog",
+    "icon": "",
+    "chunk": "",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "list",
+    "name": "ErrorLogList",
+    "title": "",
+    "icon": "",
+    "chunk": "vBk1Ojf5O.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "/about",
+    "name": "About",
+    "title": "",
+    "icon": "",
+    "chunk": "",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "index",
+    "name": "AboutPage",
+    "title": "",
+    "icon": "",
+    "chunk": "vCheRbUJL.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "/client",
+    "name": "client",
+    "title": "",
+    "icon": "fa-solid:desktop",
+    "chunk": "",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "list",
+    "name": "ClientList",
+    "title": "",
+    "icon": "fa-solid:desktop",
+    "chunk": "vBWgKrY3R.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "/clientManager",
+    "name": "clientManager",
+    "title": "",
+    "icon": "grommet-icons:drag",
+    "chunk": "",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "index",
+    "name": "ClientManagerIndex",
+    "title": "",
+    "icon": "",
+    "chunk": "vB668wrX8.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": ":id",
+    "name": "ClientManagerTab",
+    "title": "",
+    "icon": "",
+    "chunk": "vB668wrX8.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "/dashboard",
+    "name": "Dashboard",
+    "title": "",
+    "icon": "fa-solid:tachometer-alt",
+    "chunk": "",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "index",
+    "name": "DashboardIndex",
+    "title": "",
+    "icon": "fa-solid:tachometer-alt",
+    "chunk": "vDYKYb90e.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "/download",
+    "name": "Download",
+    "title": "",
+    "icon": "fa-solid:download",
+    "chunk": "",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "index",
+    "name": "index",
+    "title": "",
+    "icon": "fa-solid:download",
+    "chunk": "vPEW3_jBu.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "stage",
+    "name": "stage",
+    "title": "",
+    "icon": "fa-solid:download",
+    "chunk": "vB_gqekWG.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "stageless",
+    "name": "stageless",
+    "title": "",
+    "icon": "fa-solid:download",
+    "chunk": "vC9dJtxax.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "listen",
+    "name": "listen",
+    "title": "",
+    "icon": "fa-solid:download",
+    "chunk": "vD0Hvxc6e.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "ebpf",
+    "name": "ebpf",
+    "title": "",
+    "icon": "fa-solid:download",
+    "chunk": "v6LhUIT_X.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "/filemanager",
+    "name": "filemanager",
+    "title": "",
+    "icon": "grommet-icons:folder",
+    "chunk": "",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "index",
+    "name": "filemanagerIndex",
+    "title": "",
+    "icon": "grommet-icons:folder",
+    "chunk": "vCY43ofss.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": ":id",
+    "name": "filemanagerTab",
+    "title": "",
+    "icon": "grommet-icons:folder",
+    "chunk": "vCY43ofss.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "/listener",
+    "name": "Listener",
+    "title": "",
+    "icon": "fa-solid:headphones",
+    "chunk": "",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "list",
+    "name": "ListenerIndex",
+    "title": "",
+    "icon": "fa-solid:headphones",
+    "chunk": "vD-JDSf5y.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": ":id",
+    "name": "ListenerTab",
+    "title": "",
+    "icon": "fa-solid:headphones",
+    "chunk": "vD-JDSf5y.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "/pluginrunner",
+    "name": "pluginrunner",
+    "title": "",
+    "icon": "grommet-icons:action",
+    "chunk": "",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "index",
+    "name": "PluginRunner",
+    "title": "",
+    "icon": "grommet-icons:action",
+    "chunk": "vD-pDrbd4.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": ":id",
+    "name": "PluginRunnerTab",
+    "title": "",
+    "icon": "grommet-icons:action",
+    "chunk": "vDrSEEInN.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "/screen",
+    "name": "Screen",
+    "title": "",
+    "icon": "fa-image",
+    "chunk": "",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "index",
+    "name": "ScreenIndex",
+    "title": "",
+    "icon": "fa-image",
+    "chunk": "vDHrpQWPl.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": ":quality/:id",
+    "name": "ScreenTab",
+    "title": "",
+    "icon": "fa-image",
+    "chunk": "vl9djw6e1.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "/screenshot",
+    "name": "screenshot",
+    "title": "",
+    "icon": "fa-image",
+    "chunk": "",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "index",
+    "name": "screenshotIndex",
+    "title": "",
+    "icon": "fa-image",
+    "chunk": "vBPbNtxqd.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": ":id",
+    "name": "screenshotTab",
+    "title": "",
+    "icon": "fa-image",
+    "chunk": "vBPbNtxqd.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "/serviceInstall",
+    "name": "serviceInstall",
+    "title": "",
+    "icon": "grommet-icons:services",
+    "chunk": "",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "index",
+    "name": "serviceInstallIndex",
+    "title": "",
+    "icon": "grommet-icons:services",
+    "chunk": "vZKbjT2vT.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": ":id",
+    "name": "serviceInstallTab",
+    "title": "",
+    "icon": "grommet-icons:services",
+    "chunk": "vZKbjT2vT.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "/setting",
+    "name": "setting",
+    "title": "",
+    "icon": "fa6-solid:gear",
+    "chunk": "",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "index",
+    "name": "settingIndex",
+    "title": "",
+    "icon": "fa6-solid:gear",
+    "chunk": "vtg7DcMBU.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "/terminal",
+    "name": "terminal",
+    "title": "",
+    "icon": "fa-terminal",
+    "chunk": "",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "index",
+    "name": "terminalIndex",
+    "title": "",
+    "icon": "fa-terminal",
+    "chunk": "vC5gqvPSL.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": ":id",
+    "name": "terminalTab",
+    "title": "",
+    "icon": "fa-terminal",
+    "chunk": "vx1HaAWu5.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "/tunnel",
+    "name": "tunnel",
+    "title": "",
+    "icon": "fa-solid:globe",
+    "chunk": "",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "list",
+    "name": "TunnelIndex",
+    "title": "",
+    "icon": "fa-solid:globe",
+    "chunk": "vDPoYx1dk.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": ":id",
+    "name": "TunnelTab",
+    "title": "",
+    "icon": "fa-solid:globe",
+    "chunk": "vDPoYx1dk.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "/",
+    "name": "Root",
+    "title": "Root",
+    "icon": "",
+    "chunk": "",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "/login",
+    "name": "Login",
+    "title": "",
+    "icon": "",
+    "chunk": "vDCr-bJBH.js",
+    "in": "vr0UQxwYG.js"
+  },
+  {
+    "path": "/loginSSO/:token",
+    "name": "LoginSSO",
+    "title": "",
+    "icon": "",
+    "chunk": "vBmfu3EBm.js",
+    "in": "vr0UQxwYG.js"
+  }
+]

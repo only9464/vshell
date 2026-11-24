@@ -1,0 +1,3226 @@
+{
+  "v--1HU_l7.js": {
+    "size": 1453,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "v-aw7TVhQ.js": {
+    "size": 671,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "v0CmZ_odi.js": {
+    "size": 329,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "v2tzwa08M.js": {
+    "size": 3267,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "参数，当它的值变化后，会重新触发请求。",
+      "可以是计算类型",
+      "依赖刷新"
+    ]
+  },
+  "v3oBZUNJe.js": {
+    "size": 1152,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "处理器",
+      "磁盘",
+      "内存",
+      "虚拟内存",
+      "系统信息"
+    ]
+  },
+  "v48IPFxKN.js": {
+    "size": 338107,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [
+      "/terminal/shell"
+    ],
+    "cn": [
+      "交互式终端",
+      "非交互式终端（备用）",
+      "关闭终端"
+    ]
+  },
+  "v5IYrQ207.js": {
+    "size": 1767,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "保存成功",
+      "保存失败",
+      "保存"
+    ]
+  },
+  "v6LhUIT_X.js": {
+    "size": 402,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "v73CBtpUF.js": {
+    "size": 2269,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [
+      {
+        "component": "RadioButtonGroup",
+        "label": "客户端类型",
+        "field": "arch"
+      },
+      {
+        "component": "ApiSelect",
+        "label": "选择监听器",
+        "field": ""
+      },
+      {
+        "component": "RadioButtonGroup",
+        "label": "格式",
+        "field": "format"
+      }
+    ],
+    "api": [],
+    "cn": [
+      "客户端类型",
+      "选择监听器",
+      "格式",
+      "生成下载",
+      "下载成功",
+      "下载失败！"
+    ]
+  },
+  "v8HP4MLSt.js": {
+    "size": 50319,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vB-I98sLM.js": {
+    "size": 2784,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [
+      {
+        "component": "RadioButtonGroup",
+        "label": "客户端类型",
+        "field": "arch"
+      },
+      {
+        "component": "ApiSelect",
+        "label": "选择监听器",
+        "field": ""
+      },
+      {
+        "component": "Input",
+        "label": "连接代理",
+        "field": "proxy"
+      },
+      {
+        "component": "Switch",
+        "label": "是否UPX压缩",
+        "field": "upx"
+      }
+    ],
+    "api": [],
+    "cn": [
+      "客户端类型",
+      "选择监听器",
+      "连接代理",
+      "不使请留空，仅支持部分协议",
+      "是否UPX压缩",
+      "生成下载",
+      "下载成功",
+      "下载失败！",
+      "完整客户端，反连模式上线"
+    ]
+  },
+  "vB2dXDAOV.js": {
+    "size": 16684,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "日",
+      "一",
+      "二",
+      "三",
+      "四",
+      "五",
+      "六",
+      "确认",
+      "关闭",
+      "取消",
+      "加载中...",
+      "保存",
+      "删除",
+      "重置",
+      "搜索",
+      "查询",
+      "请输入",
+      "请选择",
+      "刷新",
+      "返回",
+      "亮色主题",
+      "黑暗主题",
+      "暂无搜索结果",
+      "切换",
+      "获取验证码",
+      "选择图片",
+      "上传成功",
+      "图片超限",
+      "头像上传",
+      "确认并上传",
+      "逆时针旋转",
+      "顺时针旋转",
+      "水平翻转",
+      "垂直翻转",
+      "放大",
+      "缩小",
+      "预览",
+      "导出数据",
+      "文件类型",
+      "文件名",
+      "收起",
+      "展开",
+      "字符数应小于{0}位",
+      "请等待数据加载完成...",
+      "点击选择图标",
+      "搜索图标",
+      "复制图标成功!",
+      "菜单搜索",
+      "最大化",
+      "还原",
+      "密度",
+      "默认",
+      "中等",
+      "紧凑",
+      "列设置",
+      "列展示",
+      "序号列",
+      "勾选列",
+      "固定到左侧",
+      "固定到右侧",
+      "全屏",
+      "序号",
+      "共 {total} 条数据",
+      "已选择{count}条记录",
+      "清空",
+      "未选中任何记录",
+      "前",
+      "后",
+      "刚刚",
+      "秒",
+      "分钟",
+      "小时",
+      "天",
+      "选择全部",
+      "取消选择",
+      "展开全部",
+      "折叠全部",
+      "层级关联",
+      "层级独立",
+      "上传文件",
+      "图片上传",
+      "已上传",
+      "操作",
+      "下载",
+      "请等待文件上传后，保存!",
+      "没有上传成功的文件，无法保存!",
+      "选择文件",
+      "支持{0}格式",
+      "只能上传{0}格式文件",
+      "单个文件不超过{0}MB",
+      "只能上传不超过{0}MB的文件!",
+      "最多只能同时上传{0}个文件",
+      "略缩图",
+      "文件大小",
+      "状态",
+      "待上传",
+      "开始上传",
+      "上传失败",
+      "上传中",
+      "请等待文件上传结束后操作",
+      "重新上传失败文件",
+      "验证失败！",
+      "验证校验成功,耗时{time}秒！",
+      "点击图片可刷新",
+      "请按住滑块拖动",
+      "验证通过",
+      "在线预览",
+      "在线文档",
+      "切换API",
+      "文档",
+      "退出系统",
+      "错误日志",
+      "锁定屏幕",
+      "消息通知",
+      "退出全屏",
+      "锁屏密码",
+      "锁定",
+      "首页",
+      "重新加载",
+      "关闭标签页",
+      "关闭左侧标签页",
+      "关闭右侧标签页",
+      "关闭其它标签页",
+      "关闭全部标签页",
+      "流式",
+      "定宽",
+      "居左",
+      "居中",
+      "居右",
+      "不显示",
+      "底部",
+      "顶部",
+      "左侧菜单模式",
+      "左侧菜单混合模式",
+      "顶部菜单混合模式",
+      "顶部菜单模式",
+      "开",
+      "关",
+      "操作成功",
+      "重置成功！",
+      "拷贝",
+      "清空缓存并返回登录页",
+      "主题配置",
+      "主题",
+      "导航栏模式",
+      "界面功能",
+      "界面显示",
+      "动画",
+      "分割菜单",
+      "切换页面关闭菜单",
+      "系统主题",
+      "顶栏主题",
+      "菜单主题",
+      "侧边菜单拖拽",
+      "侧边菜单手风琴模式",
+      "折叠菜单",
+      "折叠菜单显示名称",
+      "顶部菜单布局",
+      "菜单折叠按钮",
+      "内容区域宽度",
+      "菜单展开宽度",
+      "面包屑",
+      "面包屑图标",
+      "标签页",
+      "标签详情页",
+      "标签页快捷按钮",
+      "标签页刷新按钮",
+      "标签页折叠按钮",
+      "左侧菜单",
+      "顶栏",
+      "页脚",
+      "全屏内容",
+      "灰色模式",
+      "色弱模式",
+      "顶部进度条",
+      "切换loading",
+      "切换动画",
+      "动画类型",
+      "自动锁屏",
+      "不自动锁屏",
+      "固定header",
+      "固定Sidebar",
+      "混合菜单触发方式",
+      "悬停",
+      "点击",
+      "固定展开菜单",
+      "登录",
+      "错误日志列表",
+      "客户端列表",
+      "客户端管理",
+      "仪表盘",
+      "关于",
+      "工作台",
+      "分析页",
+      "百度地图",
+      "高德地图",
+      "谷歌地图",
+      "图表",
+      "地图",
+      "折线图"
+    ]
+  },
+  "vB3_Mq1dU.js": {
+    "size": 5159,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vB3oJ0GSQ.js": {
+    "size": 356,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vB668wrX8.js": {
+    "size": 2780,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vB6CWLaWj.js": {
+    "size": 927,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vB86-RU5D.js": {
+    "size": 586,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBAvjPCvX.js": {
+    "size": 1432,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBDAG4rs7.js": {
+    "size": 195,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBFsi7hKu.js": {
+    "size": 561,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "配置信息"
+    ]
+  },
+  "vBG86JV9o.js": {
+    "size": 2174,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [
+      {
+        "component": "Input",
+        "label": "客户端",
+        "field": "id"
+      },
+      {
+        "component": "Input",
+        "label": "安装服务名称",
+        "field": "name"
+      },
+      {
+        "component": "Input",
+        "label": "服务描述",
+        "field": "description"
+      }
+    ],
+    "api": [
+      "/install/install",
+      "/install/remove"
+    ],
+    "cn": [
+      "安装成功",
+      "卸载成功",
+      "客户端",
+      "安装服务名称",
+      "服务描述",
+      "安装",
+      "卸载"
+    ]
+  },
+  "vBI7NVyns.js": {
+    "size": 298,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBIJ39JH2.js": {
+    "size": 172,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBJBf-YmB.js": {
+    "size": 195,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBJt3FqIb.js": {
+    "size": 1272652,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "条/页",
+      "跳至",
+      "确定",
+      "页",
+      "上一页",
+      "下一页",
+      "向前 5 页",
+      "向后 5 页",
+      "向前 3 页",
+      "向后 3 页"
+    ]
+  },
+  "vBPAF7Tu9.js": {
+    "size": 1524,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "错误重试",
+      "通过设置"
+    ]
+  },
+  "vBPbNtxqd.js": {
+    "size": 425,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBSGR9S7Z.js": {
+    "size": 134,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBV_2zKfK.js": {
+    "size": 149,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBWgKrY3R.js": {
+    "size": 5030,
+    "columns": [],
+    "menus": [
+      {
+        "label": "主机管理",
+        "icon": "grommet-icons:drag"
+      },
+      {
+        "label": "routes.tunnel.tunnel",
+        "icon": "fa-solid:globe"
+      },
+      {
+        "label": "删除文件",
+        "icon": "grommet-icons:trash"
+      },
+      {
+        "label": "删除主机",
+        "icon": "grommet-icons:close"
+      },
+      {
+        "label": "主机管理",
+        "icon": "grommet-icons:drag"
+      },
+      {
+        "label": "删除文件",
+        "icon": "grommet-icons:trash"
+      },
+      {
+        "label": "删除主机",
+        "icon": "grommet-icons:close"
+      }
+    ],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "操作",
+      "主机管理",
+      "删除文件",
+      "删除主机",
+      "温馨提示",
+      "是否确认删除 ID:",
+      "删除进程文件成功",
+      "删除进程文件失败",
+      "是否确认下线 ID:",
+      "下线成功",
+      "下线失败",
+      "是否确认删除已选中的客户端，包括文件和进程",
+      "批量删除成功",
+      "批量删除失败",
+      "搜索",
+      "批量选择",
+      "批量删除",
+      "正向连接"
+    ]
+  },
+  "vBWp-URsu.js": {
+    "size": 482,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [
+      "/client/add",
+      "/client/delfile",
+      "/client/dellist",
+      "/client/delprocess",
+      "/client/editremark",
+      "/client/list"
+    ],
+    "cn": []
+  },
+  "vBYzjY93U.js": {
+    "size": 35833,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vB_VsCBLb.js": {
+    "size": 1149,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vB_gqekWG.js": {
+    "size": 425,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vB_zNVrxy.js": {
+    "size": 810,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBbCvYcrl.js": {
+    "size": 694,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBcbfn-kM.js": {
+    "size": 100250,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBciIfy4U.js": {
+    "size": 2966,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBdDJOPEk.js": {
+    "size": 1731,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "自动模式",
+      "以下示例演示了自动模式下",
+      "手动模式",
+      "以下示例演示了手动模式下",
+      "的行为。只有当",
+      "等于 true 时，run 才会执行。"
+    ]
+  },
+  "vBfKS7RWH.js": {
+    "size": 1345,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "新增",
+      "新增成功",
+      "新增失败",
+      "新增监听"
+    ]
+  },
+  "vBhGuCSBZ.js": {
+    "size": 4382,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "星期",
+      "日",
+      "一",
+      "二",
+      "三",
+      "四",
+      "五",
+      "六"
+    ]
+  },
+  "vBhoZX99Z.js": {
+    "size": 47112,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBiL-xt2Q.js": {
+    "size": 5984,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "通知",
+      "你收到了 14 份新周报",
+      "你推荐的 曲妮妮 已通过第三轮面试",
+      "这种模板可以区分多种通知类型",
+      "左侧图标用于区分不同的类型",
+      "消息",
+      "曲丽丽 评论了你",
+      "描述信息描述信息描述信息",
+      "朱偏右 回复了你",
+      "这种模板用于提醒谁与你发生了互动",
+      "标题",
+      "待办",
+      "任务名称",
+      "任务需要在 2017-01-12 20:00 前启动",
+      "未开始",
+      "第三方紧急代码变更",
+      "冠霖 需在 2017-01-07 前完成代码变更任务",
+      "马上到期",
+      "信息安全考试",
+      "指派竹尔于 2017-01-09 前完成更新并发布",
+      "已耗时 8 天",
+      "进行中",
+      "你点击了通知，ID="
+    ]
+  },
+  "vBk1Ojf5O.js": {
+    "size": 2177,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBknnEFeP.js": {
+    "size": 402,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBmfu3EBm.js": {
+    "size": 738,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBpNxkCz8.js": {
+    "size": 2560,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "加密模式：CBC",
+      "填充：pkcs5padding",
+      "秘钥长度：256位",
+      "秘钥：配置文件vkey的md5值",
+      "偏移量：配置文件vkey的md5值",
+      "输出：hex",
+      "自定义Stage",
+      "利用Stage接口，可以很方便的自己编写阶段性加载器",
+      "接口地址",
+      "加密key加密模式",
+      "加密key明文内容",
+      "注意事项"
+    ]
+  },
+  "vBq4bafJP.js": {
+    "size": 683,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBu4f7JWt.js": {
+    "size": 14574,
+    "columns": [
+      {
+        "title": "Mode",
+        "dataIndex": "mode",
+        "sorter": false,
+        "edit": false,
+        "width": "60"
+      }
+    ],
+    "menus": [
+      {
+        "label": "编辑",
+        "icon": "ant-design:edit-outlined"
+      },
+      {
+        "label": "重命名",
+        "icon": "ant-design:font-size-outlined"
+      },
+      {
+        "label": "修改时间",
+        "icon": "ant-design:field-time"
+      },
+      {
+        "label": "拷贝路径",
+        "icon": "ant-design:node-index"
+      },
+      {
+        "label": "删除",
+        "icon": "ant-design:delete-outlined"
+      },
+      {
+        "label": "下载至OSS",
+        "icon": "ant-design:cloud-upload-outlined"
+      },
+      {
+        "label": "下载",
+        "icon": "ant-design:download-outlined"
+      },
+      {
+        "label": "编辑",
+        "icon": "ant-design:edit-outlined"
+      },
+      {
+        "label": "重命名",
+        "icon": "ant-design:font-size-outlined"
+      },
+      {
+        "label": "删除",
+        "icon": "ant-design:delete-outlined"
+      },
+      {
+        "label": "下载",
+        "icon": "ant-design:download-outlined"
+      }
+    ],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "请输入内容",
+      "请输入数字",
+      "备注信息",
+      "确定",
+      "取消",
+      "操作",
+      "温馨提示",
+      "是否确认删除已选中文件",
+      "批量删除成功",
+      "批量删除失败",
+      "编辑",
+      "重命名",
+      "修改时间",
+      "拷贝路径",
+      "删除",
+      "下载至OSS",
+      "下载",
+      "拷贝路径成功",
+      "拷贝路径失败",
+      "修改文件时间",
+      "文件时间",
+      "文件时间修改成功",
+      "文件时间修改失败",
+      "新建文件夹",
+      "文件夹名",
+      "文件名新建成功 ",
+      "新建文件",
+      "文件名",
+      "文件新建成功 ",
+      "下载链接",
+      "下载文件成功 ",
+      "文件名修改成功为 ",
+      "确认删除文件 ",
+      "文件 "
+    ]
+  },
+  "vBuwNAzZx.js": {
+    "size": 402,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vBycQCkqZ.js": {
+    "size": 172,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vC0AnFbT7.js": {
+    "size": 2507,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vC1OruhMo.js": {
+    "size": 493,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vC4VbtdOO.js": {
+    "size": 1942,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "在线",
+      "离线",
+      "备注",
+      "请点击输入",
+      "连接方式",
+      "外网IP",
+      "归属地",
+      "内网IP",
+      "用户",
+      "主机名",
+      "系统类型",
+      "进程名",
+      "状态",
+      "心跳",
+      "操作"
+    ]
+  },
+  "vC5gqvPSL.js": {
+    "size": 2116,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [
+      {
+        "component": "ApiSelect",
+        "label": "选择客户端",
+        "field": "id"
+      }
+    ],
+    "api": [],
+    "cn": [
+      "选择客户端",
+      "打开终端"
+    ]
+  },
+  "vC6aJxGDN.js": {
+    "size": 265,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vC9dJtxax.js": {
+    "size": 425,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCA1buY3l.js": {
+    "size": 402,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCD7yKNov.js": {
+    "size": 89,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [
+      "/dashboard/info"
+    ],
+    "cn": []
+  },
+  "vCDVWVoEF.js": {
+    "size": 128,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCICDI1m1.js": {
+    "size": 6369,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "默认用法",
+      "等状态。",
+      "手动触发",
+      "如果设置了",
+      "来触发执行。",
+      "生命周期",
+      "请求之前触发",
+      "请求成功触发",
+      "请求失败触发",
+      "请求完成触发",
+      "刷新（重复上一次请求）",
+      "提供了",
+      "和",
+      "方法，使我们可以使用上一次的参数，重新发起请求。",
+      "取消响应",
+      "函数，用于忽略当前 promise 返回的数据和错误",
+      "管理参数",
+      "返回的",
+      "会记录当次调用",
+      "的参数数组。比如你触发了",
+      "如果我们设置了",
+      "的参数可以通过",
+      "来设置。",
+      "自动请求/手动请求",
+      "轮询",
+      "防抖",
+      "节流",
+      "屏幕聚焦重新请求",
+      "错误重试",
+      "缓存"
+    ]
+  },
+  "vCJIb32Dj.js": {
+    "size": 3203,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCJcyM8qs.js": {
+    "size": 1817,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "流出带宽",
+      "流入带宽",
+      "日志级别",
+      "日志文件",
+      "授权到期时间",
+      "高级授权",
+      "授权客户端数量",
+      "版本",
+      "监听总数",
+      "在线监听数",
+      "客户端总数",
+      "在线客户端"
+    ]
+  },
+  "vCLpI3qYc.js": {
+    "size": 1915,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "一键上线命令查看"
+    ]
+  },
+  "vCOmHI71r.js": {
+    "size": 5750,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "下面的示例，我们设置了",
+      "数据保持新鲜",
+      "通过设置",
+      "更新",
+      "数据共享",
+      "同一个",
+      "的内容，在全局是共享的，这会带来以下几个特性",
+      "请求 Promise 共享，相同的",
+      "的内容均会同步",
+      "参数缓存",
+      "删除缓存",
+      "自定义缓存"
+    ]
+  },
+  "vCP0mSzVf.js": {
+    "size": 2519,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCQd-QQ-x.js": {
+    "size": 628,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCTMULPY8.js": {
+    "size": 2408,
+    "columns": [
+      {
+        "title": "ID",
+        "dataIndex": "Id",
+        "sorter": true,
+        "edit": false,
+        "width": "50"
+      },
+      {
+        "title": "客户端 ID",
+        "dataIndex": "ClientId",
+        "sorter": true,
+        "edit": false,
+        "width": "50"
+      },
+      {
+        "title": "备注",
+        "dataIndex": "Remark",
+        "sorter": true,
+        "edit": true,
+        "width": "100"
+      },
+      {
+        "title": "模式",
+        "dataIndex": "Mode",
+        "sorter": true,
+        "edit": false,
+        "width": "50"
+      },
+      {
+        "title": "端口",
+        "dataIndex": "Port",
+        "sorter": true,
+        "edit": false,
+        "width": "80"
+      },
+      {
+        "title": "目标 (IP:端口)",
+        "dataIndex": "Target",
+        "sorter": false,
+        "edit": false,
+        "width": "100"
+      },
+      {
+        "title": "用户名",
+        "dataIndex": "Username",
+        "sorter": false,
+        "edit": false,
+        "width": "60"
+      },
+      {
+        "title": "密码",
+        "dataIndex": "Password",
+        "sorter": false,
+        "edit": false,
+        "width": "60"
+      }
+    ],
+    "menus": [],
+    "buttons": [],
+    "schemas": [
+      {
+        "component": "ApiSelect",
+        "label": "选择客户端",
+        "field": ""
+      }
+    ],
+    "api": [
+      "/tunnel/add",
+      "/tunnel/del",
+      "/tunnel/dellist",
+      "/tunnel/edit",
+      "/tunnel/editremark",
+      "/tunnel/list",
+      "/tunnel/start",
+      "/tunnel/stop"
+    ],
+    "cn": [
+      "客户端 ID",
+      "备注",
+      "模式",
+      "端口",
+      "目标 (IP:端口)",
+      "用户名",
+      "密码",
+      "隧道状态",
+      "启用",
+      "停用",
+      "客户端状态",
+      "在线",
+      "离线",
+      "选择客户端",
+      "服务端端口",
+      "目标(IP:端口)",
+      "格式：10.1.1.99:80"
+    ]
+  },
+  "vCVrhKMtM.js": {
+    "size": 12581,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCY43ofss.js": {
+    "size": 702,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCZL4WwDj.js": {
+    "size": 1928,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCask9zh3.js": {
+    "size": 48,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCc4wgL8g.js": {
+    "size": 1914,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "默认用法",
+      "通过设置",
+      "轮询错误重试",
+      "通过",
+      "轮询错误重试次数。"
+    ]
+  },
+  "vCcMj5FL7.js": {
+    "size": 17629,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCcgNpaMO.js": {
+    "size": 2903,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [
+      {
+        "component": "RadioButtonGroup",
+        "label": "客户端类型",
+        "field": "arch"
+      },
+      {
+        "component": "ApiSelect",
+        "label": "选择监听器",
+        "field": ""
+      },
+      {
+        "component": "Input",
+        "label": "连接代理",
+        "field": "proxy"
+      },
+      {
+        "component": "Switch",
+        "label": "是否UPX压缩",
+        "field": "upx"
+      }
+    ],
+    "api": [],
+    "cn": [
+      "客户端类型",
+      "选择监听器",
+      "连接代理",
+      "不使请留空",
+      "是否UPX压缩",
+      "生成下载",
+      "下载 Loader",
+      "下载成功",
+      "下载失败！"
+    ]
+  },
+  "vCeZ99r0F.js": {
+    "size": 861,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCgdn0kb1.js": {
+    "size": 1695,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCheRbUJL.js": {
+    "size": 315393,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "复制",
+      "已复制",
+      "复制到公众号",
+      "复制到知乎",
+      "已复制，可到",
+      "知乎",
+      "微信公众号平台",
+      "进行粘贴",
+      "已复制到剪切板",
+      "关于"
+    ]
+  },
+  "vChnloEJF.js": {
+    "size": 2382,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCl1FfsQx.js": {
+    "size": 993,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCmx9UE-E.js": {
+    "size": 2921,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [
+      {
+        "component": "Input",
+        "label": "客户端",
+        "field": "id"
+      },
+      {
+        "component": "ApiSelect",
+        "label": "选择插件",
+        "field": "pluginName"
+      },
+      {
+        "component": "Input",
+        "label": "参数",
+        "field": "procArg"
+      }
+    ],
+    "api": [],
+    "cn": [
+      "客户端",
+      "选择插件",
+      "参数",
+      "运行",
+      "上传插件"
+    ]
+  },
+  "vCpjgSZNr.js": {
+    "size": 2540,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [
+      {
+        "component": "RadioButtonGroup",
+        "label": "客户端类型",
+        "field": "arch"
+      },
+      {
+        "component": "RadioButtonGroup",
+        "label": "监听方式",
+        "field": "tp"
+      },
+      {
+        "component": "InputPassword",
+        "label": "Vkey",
+        "field": "vkey"
+      },
+      {
+        "component": "InputPassword",
+        "label": "流量加密盐",
+        "field": "salt"
+      },
+      {
+        "component": "Switch",
+        "label": "是否UPX压缩",
+        "field": "upx"
+      }
+    ],
+    "api": [],
+    "cn": [
+      "客户端类型",
+      "监听方式",
+      "通信凭证，通信的校验密码",
+      "流量加密盐",
+      "是否UPX压缩",
+      "生成下载",
+      "下载成功",
+      "下载失败！"
+    ]
+  },
+  "vCrWEuEKq.js": {
+    "size": 160,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCsYNpXlN.js": {
+    "size": 2813,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCwa8r0tL.js": {
+    "size": 7023,
+    "columns": [],
+    "menus": [
+      {
+        "label": "主机管理",
+        "icon": "grommet-icons:drag"
+      },
+      {
+        "label": "routes.tunnel.tunnel",
+        "icon": "fa-solid:globe"
+      },
+      {
+        "label": "删除文件",
+        "icon": "grommet-icons:trash"
+      },
+      {
+        "label": "删除主机",
+        "icon": "grommet-icons:close"
+      }
+    ],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "主机管理",
+      "删除文件",
+      "删除主机",
+      "温馨提示",
+      "是否确认删除 ID:",
+      "删除进程文件成功",
+      "删除进程文件失败",
+      "是否确认下线 ID:",
+      "下线成功",
+      "下线失败"
+    ]
+  },
+  "vCzCTblq7.js": {
+    "size": 1977,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCz_RXasy.js": {
+    "size": 18649,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vCzoa22OH.js": {
+    "size": 402,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vD-JDSf5y.js": {
+    "size": 4826,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "操作",
+      "启动成功",
+      "启动失败",
+      "停止成功",
+      "停止失败",
+      "备注成功",
+      "备注失败",
+      "删除监听成功",
+      "删除监听失败",
+      "温馨提示",
+      "是否确认删除已选中的监听",
+      "批量删除成功",
+      "批量删除失败",
+      "批量选择",
+      "启用",
+      "停用",
+      "编辑",
+      "上线命令查看",
+      "删除",
+      "是否确认删除监听"
+    ]
+  },
+  "vD-NfT4bm.js": {
+    "size": 195,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vD-pDrbd4.js": {
+    "size": 3280,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [
+      {
+        "component": "ApiSelect",
+        "label": "选择客户端",
+        "field": "id"
+      },
+      {
+        "component": "ApiSelect",
+        "label": "选择插件",
+        "field": "pluginName"
+      },
+      {
+        "component": "Input",
+        "label": "参数",
+        "field": "procArg"
+      }
+    ],
+    "api": [],
+    "cn": [
+      "选择客户端",
+      "选择插件",
+      "参数",
+      "运行",
+      "上传插件"
+    ]
+  },
+  "vD0ErO3_x.js": {
+    "size": 1030,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vD0Hvxc6e.js": {
+    "size": 402,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vD0xFOdFQ.js": {
+    "size": 262,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [
+      "/runner/list",
+      "/runner/runplugin"
+    ],
+    "cn": []
+  },
+  "vD1BwtfP2.js": {
+    "size": 195,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vD1SCBbnz.js": {
+    "size": 27296,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vD3H4FpW-.js": {
+    "size": 195,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vD5rITJWt.js": {
+    "size": 592,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [
+      "/listener/add",
+      "/listener/del",
+      "/listener/dellist",
+      "/listener/edit",
+      "/listener/editremark",
+      "/listener/list",
+      "/listener/start",
+      "/listener/stop"
+    ],
+    "cn": []
+  },
+  "vD6-3nvsI.js": {
+    "size": 3594,
+    "columns": [
+      {
+        "title": "ID",
+        "dataIndex": "Id",
+        "sorter": true,
+        "edit": false,
+        "width": "40"
+      },
+      {
+        "title": "备注",
+        "dataIndex": "Remark",
+        "sorter": true,
+        "edit": true,
+        "width": "80"
+      },
+      {
+        "title": "模式",
+        "dataIndex": "Mode",
+        "sorter": true,
+        "edit": false,
+        "width": "40"
+      },
+      {
+        "title": "监听地址",
+        "dataIndex": "ListenAddr",
+        "sorter": true,
+        "edit": false,
+        "width": "80"
+      },
+      {
+        "title": "外网连接地址",
+        "dataIndex": "ConnectAddr",
+        "sorter": true,
+        "edit": false,
+        "width": "80"
+      },
+      {
+        "title": "超时心跳次数（次）",
+        "dataIndex": "DisconnectTimeout",
+        "sorter": false,
+        "edit": false,
+        "width": "60"
+      },
+      {
+        "title": "心跳间隔（秒）",
+        "dataIndex": "PingInterval",
+        "sorter": false,
+        "edit": false,
+        "width": "60"
+      }
+    ],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "备注",
+      "模式",
+      "监听地址",
+      "外网连接地址",
+      "超时心跳次数（次）",
+      "心跳间隔（秒）",
+      "状态",
+      "在线",
+      "离线",
+      "公共DOH地址",
+      "公共DOT地址",
+      "公共DNS地址",
+      "超时心跳次数",
+      "次",
+      "心跳间隔",
+      "秒",
+      "此处为监听器验证客户端超时的验证心跳，不是客户端发包频率",
+      "通信凭证，通信的校验密码",
+      "流量加密盐",
+      "读写权限需设置为公共读写"
+    ]
+  },
+  "vDBifDUJn.js": {
+    "size": 687,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "已成功复制到剪切板!",
+      "复制失败!"
+    ]
+  },
+  "vDC1mvoz2.js": {
+    "size": 425,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDCr-bJBH.js": {
+    "size": 333,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDE70-fCq.js": {
+    "size": 264,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDESmNUjD.js": {
+    "size": 839,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDFFrMEeC.js": {
+    "size": 45415,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDHrpQWPl.js": {
+    "size": 448,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDHtiGUMC.js": {
+    "size": 20270,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDI83GZZg.js": {
+    "size": 499,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDMIbyFz_.js": {
+    "size": 6922,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDMslcx2s.js": {
+    "size": 28599,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDOtkvjg9.js": {
+    "size": 8542,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDPoYx1dk.js": {
+    "size": 4594,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "操作",
+      "启动成功",
+      "启动失败",
+      "停止成功",
+      "停止失败",
+      "备注成功",
+      "备注失败",
+      "删除隧道代理成功",
+      "删除隧道代理失败",
+      "温馨提示",
+      "是否确认删除已选中隧道代理",
+      "批量删除成功",
+      "批量删除失败",
+      "支持 TCP、UDP、HTTP、SOCKS5 隧道代理",
+      "批量选择",
+      "启用",
+      "停用",
+      "编辑",
+      "删除",
+      "是否确认删除隧道代理"
+    ]
+  },
+  "vDQdf0X9w.js": {
+    "size": 126,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDRBEMoxx.js": {
+    "size": 1397,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "节流",
+      "通过设置",
+      "或者",
+      "如上示例代码，频繁触发",
+      "你可以在下面 input 框中快速输入文本，体验效果"
+    ]
+  },
+  "vDREzw6-v.js": {
+    "size": 826,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDTrWnpQP.js": {
+    "size": 811,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDW_e3EUZ.js": {
+    "size": 172,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDYKYb90e.js": {
+    "size": 782,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vD_G81Jv3.js": {
+    "size": 1961,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "文件名",
+      "下载至OSS任务开启成功",
+      "下载失败",
+      "下载至OSS",
+      "下载"
+    ]
+  },
+  "vDcEZAykG.js": {
+    "size": 866,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDenKCyco.js": {
+    "size": 195,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDgDQLIOw.js": {
+    "size": 402,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDh9i2G_W.js": {
+    "size": 1245,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "保存",
+      "保存成功",
+      "保存失败",
+      "编辑隧道代理"
+    ]
+  },
+  "vDng0mS-p.js": {
+    "size": 1050,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "屏幕聚焦重新请求",
+      "通过设置"
+    ]
+  },
+  "vDoS8xoip.js": {
+    "size": 968,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDrSEEInN.js": {
+    "size": 448,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDs3GQJjc.js": {
+    "size": 1386,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vDv26gWn0.js": {
+    "size": 1480,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "协议",
+      "端口",
+      "用户名",
+      "密码",
+      "新建管理端配置"
+    ]
+  },
+  "vDxXyKncC.js": {
+    "size": 1395,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "防抖",
+      "通过设置",
+      "或者",
+      "则会以防抖策略进行请求。",
+      "如上示例代码，频繁触发",
+      "你可以在下面 input 框中快速输入文本，体验效果"
+    ]
+  },
+  "vF4SqXDdN.js": {
+    "size": 1775,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vHA51DB22.js": {
+    "size": 3412,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vHGyfcnIO.js": {
+    "size": 1280,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "保存",
+      "保存成功",
+      "保存失败",
+      "编辑监听（编辑后监听重启才会生效）"
+    ]
+  },
+  "vI4yDr-7K.js": {
+    "size": 1370,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "通过设置",
+      "可以延迟 ",
+      "的时间，有效防止闪烁。"
+    ]
+  },
+  "vMua8E6Z5.js": {
+    "size": 425,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vNpmal8v-.js": {
+    "size": 909,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [
+      "/file/cat",
+      "/file/downloadtooss",
+      "/file/downloadtoserver",
+      "/file/edit",
+      "/file/getdisk",
+      "/file/getdownloadper",
+      "/file/ls",
+      "/file/mkdir",
+      "/file/modifytime",
+      "/file/mv",
+      "/file/rm",
+      "/file/rmlist",
+      "/file/touch",
+      "/file/wget"
+    ],
+    "cn": []
+  },
+  "vPEW3_jBu.js": {
+    "size": 1836,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "客户端生成"
+    ]
+  },
+  "vPNC64JSn.js": {
+    "size": 18876,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [
+      {
+        "component": "Input",
+        "label": "客户端",
+        "field": "id"
+      },
+      {
+        "component": "RadioButtonGroup",
+        "label": "清晰度",
+        "field": "quality"
+      }
+    ],
+    "api": [
+      "/screenshot/get"
+    ],
+    "cn": [
+      "客户端",
+      "清晰度",
+      "高",
+      "中",
+      "低",
+      "点击可放大图片",
+      "获取截屏"
+    ]
+  },
+  "vPpgbv2z-.js": {
+    "size": 1844,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vPtA3licr.js": {
+    "size": 2564,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "正在下载到服务端",
+      "下载失败",
+      "后台下载",
+      "关闭",
+      "下载到本地成功",
+      "下载到本地失败！",
+      "下载进度",
+      "下载到本地"
+    ]
+  },
+  "vSjHDjNoY.js": {
+    "size": 1295,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vXAwImGQr.js": {
+    "size": 2259,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [
+      {
+        "component": "RadioButtonGroup",
+        "label": "客户端类型",
+        "field": "arch"
+      },
+      {
+        "component": "ApiSelect",
+        "label": "选择监听器",
+        "field": ""
+      }
+    ],
+    "api": [],
+    "cn": [
+      "客户端类型",
+      "选择监听器",
+      "生成下载",
+      "下载成功",
+      "下载失败！",
+      "小体积客户端，反连模式上线"
+    ]
+  },
+  "vZKbjT2vT.js": {
+    "size": 425,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "v_WSPyplN.js": {
+    "size": 2592,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vbZEWVXnX.js": {
+    "size": 920,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vbw5Ta7i0.js": {
+    "size": 3365,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [
+      {
+        "component": "RadioButtonGroup",
+        "label": "客户端类型",
+        "field": "arch"
+      },
+      {
+        "component": "RadioButtonGroup",
+        "label": "监听方式",
+        "field": "tp"
+      },
+      {
+        "component": "Input",
+        "label": "监听地址",
+        "field": "host"
+      },
+      {
+        "component": "InputNumber",
+        "label": "监听端口",
+        "field": "port"
+      },
+      {
+        "component": "InputPassword",
+        "label": "Vkey",
+        "field": "vkey"
+      },
+      {
+        "component": "InputPassword",
+        "label": "流量加密盐",
+        "field": "salt"
+      },
+      {
+        "component": "Switch",
+        "label": "是否UPX压缩",
+        "field": "upx"
+      }
+    ],
+    "api": [],
+    "cn": [
+      "客户端类型",
+      "监听方式",
+      "监听地址",
+      "监听端口",
+      "通信凭证，通信的校验密码",
+      "流量加密盐",
+      "是否UPX压缩",
+      "生成下载",
+      "下载 Loader",
+      "下载成功",
+      "下载失败！",
+      "正向客户端"
+    ]
+  },
+  "vf5gbhprs.js": {
+    "size": 3264,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [
+      {
+        "component": "RadioButtonGroup",
+        "label": "客户端类型",
+        "field": "arch"
+      },
+      {
+        "component": "RadioButtonGroup",
+        "label": "监听方式",
+        "field": "tp"
+      },
+      {
+        "component": "Input",
+        "label": "监听地址",
+        "field": "host"
+      },
+      {
+        "component": "InputNumber",
+        "label": "监听端口",
+        "field": "port"
+      },
+      {
+        "component": "InputPassword",
+        "label": "Vkey",
+        "field": "vkey"
+      },
+      {
+        "component": "InputPassword",
+        "label": "流量加密盐",
+        "field": "salt"
+      },
+      {
+        "component": "Switch",
+        "label": "是否UPX压缩",
+        "field": "upx"
+      }
+    ],
+    "api": [],
+    "cn": [
+      "客户端类型",
+      "监听方式",
+      "监听地址",
+      "监听端口",
+      "通信凭证，通信的校验密码",
+      "流量加密盐",
+      "是否UPX压缩",
+      "生成下载",
+      "下载成功",
+      "下载失败！",
+      "正向客户端",
+      "监听模式客户端，正向连接上线"
+    ]
+  },
+  "vhbpnJdCq.js": {
+    "size": 1244,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "连接",
+      "连接成功",
+      "连接失败",
+      "新增正向客户端"
+    ]
+  },
+  "viLthP3eG.js": {
+    "size": 2696,
+    "columns": [
+      {
+        "title": "ID",
+        "dataIndex": "Id",
+        "sorter": true,
+        "edit": false,
+        "width": "30"
+      },
+      {
+        "title": "备注",
+        "dataIndex": "Remark",
+        "sorter": true,
+        "edit": true,
+        "width": "80"
+      },
+      {
+        "title": "连接方式",
+        "dataIndex": "Tp",
+        "sorter": false,
+        "edit": false,
+        "width": "40"
+      },
+      {
+        "title": "外网IP",
+        "dataIndex": "Addr",
+        "sorter": true,
+        "edit": false,
+        "width": "60"
+      },
+      {
+        "title": "归属地",
+        "dataIndex": "Location",
+        "sorter": true,
+        "edit": false,
+        "width": "100"
+      },
+      {
+        "title": "内网IP",
+        "dataIndex": "LocalIP",
+        "sorter": true,
+        "edit": false,
+        "width": "60"
+      },
+      {
+        "title": "用户",
+        "dataIndex": "UserName",
+        "sorter": false,
+        "edit": false,
+        "width": "80"
+      },
+      {
+        "title": "主机名",
+        "dataIndex": "HostName",
+        "sorter": true,
+        "edit": false,
+        "width": "80"
+      },
+      {
+        "title": "系统类型",
+        "dataIndex": "OsName",
+        "sorter": true,
+        "edit": false,
+        "width": "80"
+      },
+      {
+        "title": "进程名",
+        "dataIndex": "ProcessName",
+        "sorter": false,
+        "edit": false,
+        "width": "70"
+      }
+    ],
+    "menus": [],
+    "buttons": [],
+    "schemas": [
+      {
+        "component": "Input",
+        "label": "Vkey",
+        "field": "vkey"
+      },
+      {
+        "component": "Input",
+        "label": "流量加密盐",
+        "field": "salt"
+      }
+    ],
+    "api": [],
+    "cn": [
+      "备注",
+      "连接方式",
+      "外网IP",
+      "归属地",
+      "内网IP",
+      "用户",
+      "主机名",
+      "系统类型",
+      "进程名",
+      "状态",
+      "在线",
+      "离线",
+      "心跳",
+      "关键词",
+      "是",
+      "否",
+      "端口",
+      "通信凭证，通信的校验密码",
+      "流量加密盐",
+      "使用代理",
+      "不使请留空"
+    ]
+  },
+  "vjFEICNKy.js": {
+    "size": 402,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vjXAL-tqq.js": {
+    "size": 3061,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vk2YY_npf.js": {
+    "size": 1330,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "新增",
+      "新增成功",
+      "新增失败",
+      "新增隧道代理"
+    ]
+  },
+  "vl9djw6e1.js": {
+    "size": 3605,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "开启失败。不支持 DNS、OSS 协议"
+    ]
+  },
+  "vmp6jU-RL.js": {
+    "size": 3154,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vn-sfWjBP.js": {
+    "size": 3630,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [
+      {
+        "component": "Input",
+        "label": "客户端",
+        "field": "id"
+      },
+      {
+        "component": "RadioButtonGroup",
+        "label": "清晰度",
+        "field": "quality"
+      }
+    ],
+    "api": [],
+    "cn": [
+      "开启失败。不支持 DNS、OSS 协议",
+      "客户端",
+      "清晰度",
+      "高",
+      "中",
+      "低",
+      "查看屏幕",
+      "关闭屏幕查看",
+      "屏幕控制（试用功能，谨慎使用）"
+    ]
+  },
+  "vnsFVxQdB.js": {
+    "size": 195,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vofnOT5qQ.js": {
+    "size": 112146,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "东北",
+      "华北",
+      "华东",
+      "华中",
+      "华南",
+      "西南",
+      "西北",
+      "北京",
+      "北京市",
+      "东城区",
+      "西城区",
+      "朝阳区",
+      "丰台区",
+      "石景山区",
+      "海淀区",
+      "门头沟区",
+      "房山区",
+      "通州区",
+      "顺义区",
+      "昌平区",
+      "大兴区",
+      "怀柔区",
+      "平谷区",
+      "密云县",
+      "延庆县",
+      "其它区",
+      "天津",
+      "天津市",
+      "和平区",
+      "河东区",
+      "河西区",
+      "南开区",
+      "河北区",
+      "红桥区",
+      "东丽区",
+      "西青区",
+      "津南区",
+      "北辰区",
+      "武清区",
+      "宝坻区",
+      "滨海新区",
+      "宁河县",
+      "静海县",
+      "蓟县",
+      "河北省",
+      "石家庄市",
+      "长安区",
+      "桥东区",
+      "桥西区",
+      "新华区",
+      "井陉矿区",
+      "裕华区",
+      "井陉县",
+      "正定县",
+      "栾城县",
+      "行唐县",
+      "灵寿县",
+      "高邑县",
+      "深泽县",
+      "赞皇县",
+      "无极县",
+      "平山县",
+      "元氏县",
+      "赵县",
+      "辛集市",
+      "藁城市",
+      "晋州市",
+      "新乐市",
+      "鹿泉市",
+      "唐山市",
+      "路南区",
+      "路北区",
+      "古冶区",
+      "开平区",
+      "丰南区",
+      "丰润区",
+      "滦县",
+      "滦南县",
+      "乐亭县",
+      "迁西县",
+      "玉田县",
+      "曹妃甸区",
+      "遵化市",
+      "迁安市",
+      "秦皇岛市",
+      "海港区",
+      "山海关区",
+      "北戴河区",
+      "青龙满族自治县",
+      "昌黎县",
+      "抚宁县",
+      "卢龙县",
+      "邯郸市",
+      "邯山区",
+      "丛台区",
+      "复兴区",
+      "峰峰矿区",
+      "邯郸县",
+      "临漳县",
+      "成安县",
+      "大名县",
+      "涉县",
+      "磁县",
+      "肥乡县",
+      "永年县",
+      "邱县",
+      "鸡泽县",
+      "广平县",
+      "馆陶县",
+      "魏县",
+      "曲周县",
+      "武安市",
+      "邢台市",
+      "邢台县",
+      "临城县",
+      "内丘县",
+      "柏乡县",
+      "隆尧县",
+      "任县",
+      "南和县",
+      "宁晋县",
+      "巨鹿县",
+      "新河县",
+      "广宗县",
+      "平乡县",
+      "威县",
+      "清河县",
+      "临西县",
+      "南宫市",
+      "沙河市",
+      "保定市",
+      "新市区",
+      "北市区",
+      "南市区",
+      "满城县",
+      "清苑县",
+      "涞水县",
+      "阜平县",
+      "徐水县",
+      "定兴县",
+      "唐县",
+      "高阳县",
+      "容城县",
+      "涞源县",
+      "望都县",
+      "安新县",
+      "易县",
+      "曲阳县",
+      "蠡县",
+      "顺平县",
+      "博野县",
+      "雄县",
+      "涿州市",
+      "定州市",
+      "安国市",
+      "高碑店市",
+      "张家口市",
+      "宣化区",
+      "下花园区",
+      "宣化县",
+      "张北县",
+      "康保县",
+      "沽源县",
+      "尚义县",
+      "蔚县",
+      "阳原县",
+      "怀安县",
+      "万全县",
+      "怀来县",
+      "涿鹿县",
+      "赤城县",
+      "崇礼县",
+      "承德市",
+      "双桥区",
+      "双滦区",
+      "鹰手营子矿区",
+      "承德县",
+      "兴隆县",
+      "平泉县",
+      "滦平县",
+      "隆化县",
+      "丰宁满族自治县",
+      "宽城满族自治县",
+      "围场满族蒙古族自治县",
+      "沧州市",
+      "运河区",
+      "沧县",
+      "青县",
+      "东光县",
+      "海兴县",
+      "盐山县",
+      "肃宁县",
+      "南皮县",
+      "吴桥县",
+      "献县",
+      "孟村回族自治县",
+      "泊头市",
+      "任丘市",
+      "黄骅市",
+      "河间市"
+    ]
+  },
+  "vr0UQxwYG.js": {
+    "size": 1161743,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [
+      "/getMenuList",
+      "/getPermCode",
+      "/getUserInfo",
+      "/login",
+      "/logout"
+    ],
+    "cn": [
+      "简体中文",
+      "请输入",
+      "请选择",
+      "加载中...",
+      "如果使用分组表头，冻结列必须按组设置",
+      "无法插入到指定位置，请检查参数是否正确",
+      "工具栏无法关联表格",
+      "该浏览器不支持导入/导出功能",
+      "导入失败，请检查字段名和数据格式是否正确",
+      "树表格不支持导入",
+      "暂无数据",
+      "全选/取消",
+      "筛选",
+      "重置",
+      "全部",
+      "升序：最低到最高",
+      "降序：最高到最低",
+      "对所选的列启用筛选",
+      "成功导入 {0} 条记录",
+      "正在导出中",
+      "导出成功",
+      "导出_{0}",
+      "导出_源_{0}",
+      "列设置",
+      "确认",
+      "最大冻结列的数量不能超过 {0} 个",
+      "请至少选择一条记录！",
+      "您确定要删除所选记录吗？",
+      "您确定要移除所选记录吗？",
+      "数据未改动！",
+      "成功删除所选记录！",
+      "保存成功！",
+      "发生错误，操作失败！",
+      "搜索",
+      "加载中",
+      "前往",
+      "共 {0} 条记录",
+      "页",
+      "首页",
+      "上一页",
+      "下一页",
+      "向上跳页",
+      "向下跳页",
+      "末页",
+      "系统提示",
+      "取消",
+      "恢复默认",
+      "确定",
+      "请确认是否恢复成默认列配置？",
+      "移动目标：{0}",
+      "排序",
+      "点击并拖动图标可以调整列的排序",
+      "标题",
+      "是否显示",
+      "冻结列（最多 {0} 列）",
+      "左侧",
+      "不设置",
+      "右侧",
+      "覆盖",
+      "新增",
+      "导入数据",
+      "文件名",
+      "选择文件",
+      "文件类型",
+      "参数设置",
+      "导入",
+      "网页(*.html)",
+      "文本文件(制表符分隔)(*.txt)",
+      "当前数据（当前页的数据）",
+      "选中数据（当前页选中的数据）",
+      "全量数据（包括所有分页的数据）",
+      "打印数据",
+      "导出数据",
+      "请输入文件名",
+      "请输入标题",
+      "保存类型",
+      "选择数据",
+      "全部字段",
+      "选择字段",
+      "表头",
+      "是否需要表头",
+      "表尾",
+      "是否需要表尾",
+      "分组表头",
+      "如果存在，则支持带有分组结构的表头",
+      "合并",
+      "如果存在，则支持带有合并结构的单元格",
+      "展开层级",
+      "如果存在，则支持将带有层级结构的数据全部展开",
+      "样式",
+      "如果存在，则支持带样式的单元格",
+      "源数据",
+      "如果为源数据，则支持导入到表格中",
+      "打印",
+      "导出",
+      "最大化",
+      "还原",
+      "关闭",
+      "收起",
+      "展开",
+      "刷新",
+      "全屏",
+      "冻结在左侧",
+      "冻结在右侧",
+      "取消冻结列",
+      "周",
+      "周日",
+      "周一",
+      "周二",
+      "周三",
+      "周四",
+      "周五",
+      "周六",
+      "一月",
+      "二月",
+      "三月",
+      "四月",
+      "五月",
+      "六月",
+      "七月",
+      "八月",
+      "九月",
+      "十月",
+      "十一月",
+      "十二月",
+      "第一季度",
+      "第二季度",
+      "第三季度",
+      "第四季度",
+      "无法对合并单元格进行该操作",
+      "无法对多重选择区域进行该操作",
+      "该操作无法进行，您选择的区域中存在被禁止的列（{0}）",
+      "查找和替换",
+      "查找",
+      "替换",
+      "查找内容：",
+      "替换为：",
+      "正则表达式",
+      "全词匹配",
+      "区分大小写",
+      "查找下一个",
+      "查找全部",
+      "替换全部",
+      "单元格",
+      "值",
+      "无效的正则表达式",
+      "已找到 {0} 个单元格",
+      "找不到匹配的单元格",
+      "成功替换 {0} 个单元格",
+      "冻结列",
+      "冻结分组",
+      "取消冻结",
+      "冻结左侧",
+      "冻结右侧",
+      "等于",
+      "大于",
+      "小于",
+      "开头是",
+      "结尾是",
+      "包含",
+      "清除排序",
+      "升序",
+      "降序",
+      "清除筛选",
+      "文本筛选",
+      "数值筛选",
+      "自定义筛选的方式",
+      "当前列：",
+      "与",
+      "或",
+      "可用 ? 代表单个字符<br/>用 * 代表任意多个字符",
+      "不等于",
+      "大于或等于",
+      "小于或等于",
+      "开头不是",
+      "结尾不是",
+      "不包含",
+      "介于",
+      "自定义筛选",
+      "不区分大小写",
+      "无匹配项",
+      "锁定列",
+      "锁定组",
+      "取消锁定",
+      "锁定左侧",
+      "锁定右侧",
+      "星期日_星期一_星期二_星期三_星期四_星期五_星期六",
+      "周日_周一_周二_周三_周四_周五_周六",
+      "日_一_二_三_四_五_六",
+      "日",
+      "几秒",
+      "凌晨",
+      "早上",
+      "上午",
+      "中午",
+      "下午",
+      "晚上"
+    ]
+  },
+  "vtg7DcMBU.js": {
+    "size": 2253,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [
+      {
+        "component": "Input",
+        "label": "钉钉 token",
+        "field": "dingding_access_token"
+      },
+      {
+        "component": "Input",
+        "label": "钉钉 key_word",
+        "field": "dingding_key_word"
+      },
+      {
+        "component": "Input",
+        "label": "微信 wx_key",
+        "field": "wx_key"
+      }
+    ],
+    "api": [
+      "/setting/edit",
+      "/setting/get"
+    ],
+    "cn": [
+      "设置成功",
+      "钉钉 token",
+      "钉钉 key_word",
+      "微信 wx_key",
+      "设置",
+      "无需重启修改部分设置",
+      "保存"
+    ]
+  },
+  "vtmJZWwmw.js": {
+    "size": 15833,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": [
+      "加载中...",
+      "右键选择可新建窗口打开",
+      "新窗口打开",
+      "文件树"
+    ]
+  },
+  "vv5r8L9Qx.js": {
+    "size": 114800,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vx-CjbT_V.js": {
+    "size": 305569,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vx1HaAWu5.js": {
+    "size": 241,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  },
+  "vz5ePqnIP.js": {
+    "size": 1999,
+    "columns": [],
+    "menus": [],
+    "buttons": [],
+    "schemas": [],
+    "api": [],
+    "cn": []
+  }
+}

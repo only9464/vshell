@@ -293,6 +293,34 @@ ui-check 增加「文件树点击切换」断言。
 > **显式注入**；另外 `material-icon-theme` 没有 `folder`/`file`/`excel` 这几个名字，
 > 通用目录用 `folder-base`、通用文件用 `document`。
 
+### 菜单结构（R143，路由定义原文）
+
+从 `vr0UQxwYG.js` 的路由 `orderNo` + `icon` 与 `vB2dXDAOV.js` 的 locale 得到 4.9.3 的菜单：
+
+| order | path | 图标 | 标题 |
+|---|---|---|---|
+| 10 | /dashboard | `fa-solid:tachometer-alt` | 仪表盘 |
+| 11 | /client | `fa-solid:desktop` | 客户端管理（子页 客户端列表） |
+| 12 | /listener | `fa-solid:headphones` | 监听管理（子页 监听列表） |
+| 13 | /download | `fa-solid:download` | 客户端生成（子页 Stage / Stageless / 正向客户端 / ebpf正向客户端） |
+| 14 | /terminal | `fa-terminal` | 命令控制 |
+| 15 | /filemanager | `grommet-icons:folder` | 文件管理 |
+| 16 | /screenshot | `fa-image` | 屏幕截屏（按需求不做） |
+| 17 | /serviceInstall | `grommet-icons:services` | 开机启动（未实现） |
+| 18 | /pluginrunner | `grommet-icons:action` | 插件运行 |
+| 19 | /tunnel | `fa-solid:globe` | 隧道代理 |
+| 20 | /setting | `fa6-solid:gear` | 系统设置 |
+| 21 | /screen | `fa-image` | 屏幕监控（按需求不做） |
+| 22 | /clientManager | `grommet-icons:drag` | 客户端管理（主机管理，不进菜单） |
+| 23 | /about | — | 关于 |
+
+复刻端已按此顺序/文案/图标重排菜单，并补齐两个一级入口 `命令控制`
+（/terminal/index）与 `文件管理`（/filemanager/index）——它们是"先选客户端再进入"的页面。
+
+> 图标集合的坑：4.9.3 用的是 **Font Awesome 5**（`fa-solid:*` / `fa-terminal`），
+> 不是 FA6（`fa6-solid:*`）。需要 `@iconify-json/fa-solid` 与 `@iconify-json/fa` 两个包，
+> 且动态类名必须进 UnoCSS safelist。
+
 ### 客户端工具栏与操作列（R141，按 4.9.3 原文）
 
 `vBWgKrY3R.js` 的 toolbar 与 actionColumn：

@@ -131,6 +131,32 @@ JS
 LOGINPH_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$LOGINPH_JS" 2>&1)
 echo "$LOGINPH_OUT" | grep -q 'LOGINPH_OK' || fail "登录页文案未对齐 4.9.3: $(echo "$LOGINPH_OUT" | tail -c 160)"
 
+log "菜单结构（4.9.3 顺序/文案：仪表盘…客户端管理…监听管理…）"
+MENU_JS=$(cat <<'JS'
+(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const waitFor = async (fn, ms) => { const t0=Date.now(); while(Date.now()-t0<ms){ if(fn()) return true; await sleep(300); } return false; };
+  if (document.body.innerText.includes('登录') && document.querySelectorAll('input').length >= 2) {
+    const inputs = [...document.querySelectorAll('input')];
+    const set = (el, v) => { el.value = v; el.dispatchEvent(new Event('input', {bubbles:true})); };
+    set(inputs[0], 'admin'); set(inputs[1], 'p1');
+    await sleep(300);
+    [...document.querySelectorAll('button')].find(b => b.innerText.replace(/\s/g,'') === '登录')?.click();
+    await waitFor(() => location.hash.includes('/dashboard'), 8000);
+  }
+  await sleep(1200);
+  const items = [...document.querySelectorAll('.ant-menu-item, .ant-menu-submenu-title')]
+    .map(e => e.innerText.replace(/\s/g,'')).filter(Boolean);
+  const want = ['仪表盘','客户端管理','监听管理','客户端生成','命令控制','文件管理','插件运行','隧道代理','系统设置','关于'];
+  const got = items.slice(0, want.length);
+  const ok = want.every((w, i) => got[i] === w);
+  return ok ? 'MENU493_OK' : 'MENU493_FAIL ' + JSON.stringify(got);
+})()
+JS
+)
+MENU_OUT=$(uiprobe -url "http://127.0.0.1:$WEB_PORT/app/#/login" -wait 4s -script "$MENU_JS" 2>&1)
+echo "$MENU_OUT" | grep -q 'MENU493_OK' || fail "菜单与 4.9.3 不一致: $(echo "$MENU_OUT" | tail -c 120)"
+
 log "渲染 #/dashboard"
 render '#/dashboard/index' "$TMP/dash.html"
 expect "$TMP/dash.html" '系统信息' 'dashboard 未渲染（缺系统信息卡片）'

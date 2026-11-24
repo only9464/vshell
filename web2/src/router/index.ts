@@ -6,15 +6,19 @@ import { TOKEN_KEY } from '../api/http'
 // 菜单文案取自 4.9.3 前端 locale（static/assets/vB2dXDAOV.js）：
 // 客户端列表/监听列表/命令控制/隧道代理/插件运行/文件管理/系统设置/客户端生成
 // 菜单图标也用 4.9.3 bundle 里出现过的 iconify 图标（ant-design / fa6-solid / ion / grommet-icons）
+// 菜单：顺序 / 文案 / 图标全部取自 4.9.3 的路由定义（vr0UQxwYG.js 的 orderNo + icon +
+// vB2dXDAOV.js 的 locale）。4.9.3 的菜单项是"父级"标题（子页 hideMenu）。
 export const menus = [
-  { path: '/dashboard/index', name: 'Dashboard', title: '工作台', icon: 'ant-design:home-outlined' },
-  { path: '/clientManager/index', name: 'ClientManager', title: '客户端列表', icon: 'fa6-solid:desktop' },
-  { path: '/listener/index', name: 'Listener', title: '监听列表', icon: 'fa6-solid:headphones' },
-  { path: '/download/index', name: 'Download', title: '客户端生成', icon: 'fa6-solid:download' },
-  { path: '/tunnel/index', name: 'Tunnel', title: '隧道代理', icon: 'ant-design:swap-outlined' },
-  { path: '/pluginrunner/index', name: 'PluginRunner', title: '插件运行', icon: 'grommet-icons:services' },
-  { path: '/setting/index', name: 'Setting', title: '系统设置', icon: 'ion:settings-outline' },
-  { path: '/about/index', name: 'About', title: '关于', icon: 'grommet-icons:action' },
+  { path: '/dashboard/index', name: 'Dashboard', title: '仪表盘', icon: 'fa-solid:tachometer-alt' },
+  { path: '/clientManager/index', name: 'ClientManager', title: '客户端管理', icon: 'fa-solid:desktop' },
+  { path: '/listener/index', name: 'Listener', title: '监听管理', icon: 'fa-solid:headphones' },
+  { path: '/download/index', name: 'Download', title: '客户端生成', icon: 'fa-solid:download' },
+  { path: '/terminal/index', name: 'Terminal', title: '命令控制', icon: 'fa-terminal' },
+  { path: '/filemanager/index', name: 'FileManager', title: '文件管理', icon: 'grommet-icons:folder' },
+  { path: '/pluginrunner/index', name: 'PluginRunner', title: '插件运行', icon: 'grommet-icons:action' },
+  { path: '/tunnel/index', name: 'Tunnel', title: '隧道代理', icon: 'fa-solid:globe' },
+  { path: '/setting/index', name: 'Setting', title: '系统设置', icon: 'fa6-solid:gear' },
+  { path: '/about/index', name: 'About', title: '关于', icon: '' },
 ]
 
 const routes = [
@@ -32,8 +36,9 @@ const routes = [
       { path: 'clientManager/:id', component: () => import('../views/FilesView.vue') },
       // 4.9.3 的独立路由：/filemanager、/terminal（我们历史上把它们挂在
       // clientManager 下）。这里加别名，两种 URL 都能进同一个页面。
+      { path: 'filemanager/index', component: () => import('../views/ClientPickerView.vue'), props: { kind: 'filemanager' } },
       { path: 'filemanager/:id', component: () => import('../views/FilesView.vue') },
-      { path: 'filemanager', redirect: '/clientManager/index' },
+      { path: 'terminal/index', component: () => import('../views/ClientPickerView.vue'), props: { kind: 'terminal' } },
       { path: 'terminal/:id', component: () => import('../views/TerminalView.vue') },
       { path: 'client/:id', redirect: (to: any) => `/clientManager/index` },
       { path: 'listener/index', component: () => import('../views/ListenerView.vue') },

@@ -42,6 +42,12 @@ importers:
       '@iconify-json/devicon':
         specifier: ^1.2.83
         version: 1.2.83
+      '@iconify-json/fa':
+        specifier: ^1.2.2
+        version: 1.2.2
+      '@iconify-json/fa-solid':
+        specifier: ^1.2.2
+        version: 1.2.2
       '@iconify-json/fa6-solid':
         specifier: ^1.2.4
         version: 1.2.4
@@ -458,8 +464,14 @@ packages:
   '@iconify-json/devicon@1.2.83':
     resolution: {integrity: sha512-OFk+brnEWQssazYhxFRkKAClMIUauertAcXtpM3MJavtiWzh0omjErQeJalroGvlmLRmCdX56ttt1YDddy92lw==}
 
+  '@iconify-json/fa-solid@1.2.2':
+    resolution: {integrity: sha512-V8TDk62dGswAwbWwoSTnaoiTVEfQyjLCq4/TPmI29evFb9GwPyU0OGX4+BdQMGsDDzk8ByR81RjR618FtELSaw==}
+
   '@iconify-json/fa6-solid@1.2.4':
     resolution: {integrity: sha512-LmDNNdJVyvF5mPm1yxWvL8KjCc/E8LzoqnF1LNTVpyY2ZJRUlGOWuPIThdbuFBF2IovgttkIyumhyqfmlHdwKg==}
+
+  '@iconify-json/fa@1.2.2':
+    resolution: {integrity: sha512-Rw0L97uO3W0Gy2rq4cM/TH3QjzuPuRca1F2steumZ57zOeheGQdiqo50O6KHjm+WgImmV92IFPUTU6eiaJsrTw==}
 
   '@iconify-json/flat-color-icons@1.2.3':
     resolution: {integrity: sha512-KcmJ7CY0TKFv5GuBjiS4/v++jEcNXna1jfY+yq014tnw/MN/jMI2oYpoMHGuIpYtUqDu7eove+WySnOYO8nS3w==}
@@ -1762,7 +1774,15 @@ snapshots:
     dependencies:
       '@iconify/types': 2.0.0
 
+  '@iconify-json/fa-solid@1.2.2':
+    dependencies:
+      '@iconify/types': 2.0.0
+
   '@iconify-json/fa6-solid@1.2.4':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-json/fa@1.2.2':
     dependencies:
       '@iconify/types': 2.0.0
 

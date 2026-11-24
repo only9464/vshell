@@ -138,6 +138,13 @@ export default defineConfig({
     'i-fa6-solid:globe',
     'i-grommet-icons:drag',
     'i-grommet-icons:close',
+    'i-fa-solid:tachometer-alt',
+    'i-fa-terminal',
+    'i-fa-solid:globe',
+    'i-fa6-solid:gear',
+    'i-fa-solid:headphones',
+    'i-fa-solid:download',
+    'i-fa-solid:desktop',
   ],
   shortcuts: {
     'flex-col': 'flex flex-col',
