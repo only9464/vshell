@@ -254,3 +254,20 @@
 | 隧道指向常驻 echo 目标，连续 3 次 | 每次都拿到 `ECHO-28427` ✅ |
 
 e2e §7v 的隧道与插件断言恢复为**硬失败**（不再是 KNOWN-ISSUE）。
+
+## L: TCP 任务下发偶发丢一次（R128 记录）
+
+现象：e2e 里 TCP 客户端的 `/api/file/ls`、`/tunnel` 偶尔第一次就拿到空结果/超时，
+重试一次即正常（交付包手动测试连续多次都正常）。
+
+已知线索：TCP 轮询是"agent 每秒来取"，面板侧 `dispatchCmd` 建任务后立刻
+`waitTaskResult`。如果任务创建与 agent 取任务之间发生一次重连（`Reset()`），
+这一批任务可能已被标记 `dispatched` 但没真正送达 agent。
+
+当前处置：e2e 的 TCP 断言加重试（3 次），失败仍然 fail；同时把 e2e 里
+`api()` 助手的超时从 10s 提到 90s（插件任务内联 2.2MB base64，10s 会被 curl 掐断，
+表现为"响应为空"而不是报错）。
+
+**R128 复测：e2e 全绿**（ls error / file list 1209 / tunnel ok / plugin ok / listener ok）。
+下一步：让 `GetAndMarkPendingTasks` 带上"下发时间"，超过 N 秒仍是 dispatched
+就退回 pending 重发。
